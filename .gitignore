@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# SQLite database & backups
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+database/data/*
+database/backups/*
+!database/backups/.gitkeep
+!database/data/.gitkeep
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pm2-*.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Coverage / test artifacts
+coverage/
