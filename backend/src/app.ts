@@ -13,6 +13,9 @@ import orderRoutes from './routes/order.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import reviewRoutes from './routes/review.routes.js';
+import technicianRoutes from './routes/technician.routes.js';
+import managerRoutes from './routes/manager.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 
 const app = express();
 
@@ -54,6 +57,9 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/orders', chatRoutes);
 app.use('/api', notificationRoutes);
 app.use('/api', reviewRoutes);
+app.use('/api/technician', technicianRoutes);
+app.use('/api/manager', managerRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
