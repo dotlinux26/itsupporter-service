@@ -47,7 +47,7 @@ export function getSystemSettings(): SystemSettings {
     technicianSharePercent: Number(readSetting('technician_share_percent', '70')),
     teamSharePercent: Number(readSetting('team_share_percent', '30')),
     teamName: readSetting('team_name', 'IT Supporter HaUI'),
-    university: readSetting('university', 'Trường Đại học Công nghiệp Hà Nội'),
+    university: readSetting('university', 'Đại học Công nghiệp Hà Nội'),
     workshopAddress: readSetting('workshop_address', 'Phòng 1603, Tòa A1, Cơ sở 1 - Đại học Công nghiệp Hà Nội'),
     contactPhone: readSetting('contact_phone', '0981.234.567'),
     contactEmail: readSetting('contact_email', 'support@itsupporter.vn'),

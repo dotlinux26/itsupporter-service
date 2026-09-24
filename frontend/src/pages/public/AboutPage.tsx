@@ -6,7 +6,7 @@ export function AboutPage() {
   const { t } = useTranslation();
   const [info, setInfo] = useState<any>({
     team_name: 'IT Supporter HaUI',
-    university: 'Trường Đại học Công nghiệp Hà Nội',
+    university: 'Đại học Công nghiệp Hà Nội',
     workshop_address: 'Phòng 1603, Tòa A1, Cơ sở 1 - Đại học Công nghiệp Hà Nội',
     contact_phone: '0981.234.567',
     email: 'support@itsupporter.vn',

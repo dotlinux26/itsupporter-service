@@ -104,13 +104,13 @@ export function AdminSettings() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Trường trực thuộc</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Đơn vị trực thuộc / Đại học</label>
               <input
                 type="text"
-                value={settings.university ?? 'Trường Đại học Công nghiệp Hà Nội'}
+                value={settings.university ?? 'Đại học Công nghiệp Hà Nội'}
                 onChange={e => setSettings((prev: any) => ({ ...prev, university: e.target.value }))}
                 className="input w-full"
-                placeholder="VD: Trường Đại học Công nghiệp Hà Nội"
+                placeholder="VD: Đại học Công nghiệp Hà Nội"
               />
             </div>
 
