@@ -17,8 +17,7 @@ import {
 } from 'lucide-react';
 import { Avatar } from '../../components/Avatar';
 import { AvatarUploadModal } from '../../components/AvatarUploadModal';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { MarkdownRenderer } from '../../components/MarkdownRenderer';
 
 type Tab = 'profile' | 'technician_profile' | 'password';
 
@@ -534,11 +533,9 @@ export function ProfilePage() {
                   placeholder={`### Xin chào! Mình là KTV IT Supporter HaUI 🛠️\n\n- **Chuyên môn**: Vệ sinh laptop gaming nhiệt độ cao, bảo dưỡng PC phòng máy.\n- **Cam kết**: Thao tác cẩn thận, không làm gãy ngàm máy, keo tản nhiệt loại xịn.\n- **Kinh nghiệm**: Đã xử lý hơn 100+ máy tính cho sinh viên & cán bộ trường.\n\n*Hẹn gặp các bạn tại phòng 1603 Tòa A1 nhé!*`}
                 />
               ) : (
-                <div className="min-h-[220px] p-4 bg-gray-50/70 border border-gray-200 rounded-xl prose prose-sm max-w-none text-xs leading-relaxed text-gray-800">
+                <div className="min-h-[220px] p-4 bg-gray-50/70 border border-gray-200 rounded-xl max-w-none text-xs leading-relaxed text-gray-800">
                   {publicProfile.trim() ? (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {publicProfile}
-                    </ReactMarkdown>
+                    <MarkdownRenderer content={publicProfile} />
                   ) : (
                     <p className="text-gray-400 italic">Chưa có nội dung xem trước.</p>
                   )}

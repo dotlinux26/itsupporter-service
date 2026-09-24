@@ -115,10 +115,14 @@ export function getAvailableTechnicians(date: string, start: string): Technician
   const placeholders = ids.map(() => '?').join(',');
   return getDb()
     .prepare(
-      `SELECT u.id, u.name, u.avatar_url, tp.bio, tp.public_profile
+      `SELECT u.id, u.name, u.avatar_url, tp.bio, tp.public_profile,
+              ROUND(COALESCE(AVG(r.rating), 0), 1) AS rating,
+              COUNT(r.id) AS rating_count
        FROM users u
        LEFT JOIN technician_profiles tp ON tp.user_id = u.id
-       WHERE u.id IN (${placeholders})`
+       LEFT JOIN reviews r ON r.technician_id = u.id
+       WHERE u.id IN (${placeholders})
+       GROUP BY u.id`
     )
     .all(...ids) as TechnicianBrief[];
 }

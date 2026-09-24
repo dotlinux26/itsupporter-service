@@ -198,15 +198,17 @@ export function HomePage() {
           <div className={`grid gap-8 text-center ${isWarrantyActive ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
             <div>
               <div className="text-3xl sm:text-4xl font-black text-slate-900 font-mono">
-                {siteInfo.stats?.completed_orders_count !== undefined && siteInfo.stats.completed_orders_count > 0
-                  ? `${siteInfo.stats.completed_orders_count}+`
-                  : `${siteInfo.stats?.total_orders_count || 10}+`}
+                {siteInfo.stats?.completed_orders_count !== undefined
+                  ? `${siteInfo.stats.completed_orders_count}`
+                  : `${siteInfo.stats?.total_orders_count || 0}`}
               </div>
               <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">Máy tính đã vệ sinh an toàn</div>
             </div>
             <div>
               <div className="text-3xl sm:text-4xl font-black text-orange-600 font-mono">
-                {siteInfo.stats?.satisfaction_percent ? `${siteInfo.stats.satisfaction_percent}%` : '100%'}
+                {siteInfo.stats?.satisfaction_percent !== undefined
+                  ? `${siteInfo.stats.satisfaction_percent}%`
+                  : '100%'}
               </div>
               <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
                 Khách hàng hài lòng 5 sao ({siteInfo.stats?.total_reviews || 0} đánh giá)

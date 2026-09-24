@@ -68,8 +68,8 @@ export function ManagerReviews() {
 
   const avgRating =
     reviews.length > 0
-      ? (reviews.reduce((acc, r) => acc + (r.rating || 0), 0) / reviews.length).toFixed(1)
-      : '5.0';
+      ? `${(reviews.reduce((acc, r) => acc + (r.rating || 0), 0) / reviews.length).toFixed(1)} / 5.0 ⭐`
+      : 'Chưa có đánh giá';
 
   return (
     <div className="container py-10 md:py-12 max-w-6xl mx-auto space-y-8">
@@ -91,7 +91,7 @@ export function ManagerReviews() {
           </div>
           <div>
             <span className="text-xs text-amber-800 font-semibold block">Đánh giá trung bình</span>
-            <span className="text-xl font-bold text-amber-900">{avgRating} / 5.0 ⭐</span>
+            <span className="text-xl font-bold text-amber-900">{avgRating}</span>
           </div>
         </div>
       </div>

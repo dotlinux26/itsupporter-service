@@ -116,7 +116,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
             }
           } catch {}
 
-          const skills = parsedProfile.skills || ['Vệ sinh PC/Laptop', 'Tra keo tản nhiệt'];
+          const skills = parsedProfile.skills || [];
 
           return (
             <div
@@ -152,7 +152,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
 
                 {/* Short Bio snippet */}
                 <p className="text-slate-600 text-xs mt-2 line-clamp-2 leading-relaxed px-1">
-                  {tech.bio || 'Chuyên viên kỹ thuật phần cứng máy tính và tối ưu hệ thống nhiệt độ.'}
+                  {tech.bio || 'Kỹ thuật viên IT Supporter · Đại học Công nghiệp Hà Nội.'}
                 </p>
 
                 {/* Skills tags preview */}
@@ -170,16 +170,28 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                       +{skills.length - 2}
                     </span>
                   )}
+                  {skills.length === 0 && (
+                    <span className="px-2 py-0.5 bg-slate-50 text-slate-400 rounded-md text-[10px]">
+                      KTV HaUI
+                    </span>
+                  )}
                 </div>
               </div>
 
               {/* Bottom rating & detail link */}
               <div className="w-full pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs">
-                <div className="inline-flex items-center gap-1 font-semibold text-slate-800">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  <span>{tech.rating ? tech.rating.toFixed(1) : '5.0'}</span>
-                  <span className="text-slate-400 text-[10px]">({tech.rating_count || 12})</span>
-                </div>
+                {tech.rating_count && tech.rating_count > 0 ? (
+                  <div className="inline-flex items-center gap-1 font-semibold text-slate-800">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span>{Number(tech.rating).toFixed(1)}</span>
+                    <span className="text-slate-400 text-[10px]">({tech.rating_count})</span>
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400">
+                    <Star className="w-3.5 h-3.5 text-slate-300" />
+                    <span>Mới</span>
+                  </div>
+                )}
                 <span className="text-orange-600 font-semibold group-hover:underline flex items-center gap-0.5 text-xs">
                   Xem hồ sơ <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                 </span>
@@ -227,13 +239,21 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                 <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
                   <Laptop className="w-3.5 h-3.5 text-orange-500 shrink-0" /> Kỹ thuật viên IT Supporter · ĐH Công nghiệp Hà Nội
                 </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="flex items-center text-amber-500 text-xs font-bold gap-1 bg-amber-50 px-2 py-0.5 rounded-md">
-                    <Star className="w-3.5 h-3.5 fill-current" />
-                    <span>{selectedTech.rating ? selectedTech.rating.toFixed(1) : '5.0'} / 5.0</span>
+                {selectedTech.rating_count && selectedTech.rating_count > 0 ? (
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center text-amber-500 text-xs font-bold gap-1 bg-amber-50 px-2 py-0.5 rounded-md">
+                      <Star className="w-3.5 h-3.5 fill-current" />
+                      <span>{Number(selectedTech.rating).toFixed(1)} / 5.0</span>
+                    </div>
+                    <span className="text-slate-400 text-xs">({selectedTech.rating_count} đánh giá hoàn tất)</span>
                   </div>
-                  <span className="text-slate-400 text-xs">({selectedTech.rating_count || 12} đánh giá)</span>
-                </div>
+                ) : (
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-slate-400 text-xs bg-slate-50 border border-slate-200/60 px-2.5 py-0.5 rounded-md">
+                      Kỹ thuật viên mới · Chưa có đánh giá
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -266,12 +286,11 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                       }
                     } catch {}
                     if (!skills.length) {
-                      skills = [
-                        'Tháo lắp Laptop / PC chống tĩnh điện',
-                        'Tra keo tản nhiệt gốm & kim loại lỏng',
-                        'Vệ sinh cánh quạt & tra dầu trục quạt',
-                        'Kiểm tra nhiệt độ & Stress-test'
-                      ];
+                      return (
+                        <span className="text-xs text-slate-400 italic">
+                          Chưa cập nhật danh sách kỹ năng
+                        </span>
+                      );
                     }
                     return skills.map((s, idx) => (
                       <span

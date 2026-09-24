@@ -131,10 +131,14 @@ router.get('/technicians', (req, res, next) => {
       const allTechs = db
         .prepare(`
           SELECT u.id, u.name, u.email, u.phone, u.avatar_url,
-                 p.bio, p.public_profile
+                 p.bio, p.public_profile,
+                 ROUND(COALESCE(AVG(r.rating), 0), 1) AS rating,
+                 COUNT(r.id) AS rating_count
           FROM users u
           LEFT JOIN technician_profiles p ON p.user_id = u.id
+          LEFT JOIN reviews r ON r.technician_id = u.id
           WHERE u.role = 'TECHNICIAN' AND u.status = 'ACTIVE' AND u.is_deleted = 0
+          GROUP BY u.id
           ORDER BY u.name ASC
         `)
         .all();
