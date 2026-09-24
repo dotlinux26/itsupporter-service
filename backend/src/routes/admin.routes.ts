@@ -122,7 +122,6 @@ router.get('/stats', authenticate, requireRole('ADMIN'), (req, res, next) => {
 // Admin: GET /settings
 router.get('/settings', authenticate, requireRole('ADMIN'), (req, res, next) => {
   try {
-    const { getSystemSettings } = require('../services/settingsService.js');
     const settings = getSystemSettings();
     res.json({ data: settings });
   } catch (err) { next(err); }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { adminApi } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import {
   Users,
   Search,
@@ -30,11 +31,13 @@ interface UserRow {
 }
 
 export function AdminUsers() {
+  const { user: currentUser, refreshUser } = useAuth();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [updatingRoleId, setUpdatingRoleId] = useState<number | null>(null);
 
   // Modals state
   const [resetModalUser, setResetModalUser] = useState<UserRow | null>(null);
@@ -75,12 +78,18 @@ export function AdminUsers() {
   };
 
   const handleRoleChange = async (userId: number, newRole: 'GUEST' | 'TECHNICIAN' | 'MANAGER' | 'ADMIN') => {
+    setUpdatingRoleId(userId);
     try {
       await adminApi.updateUserRole(userId, newRole);
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
+      if (currentUser && currentUser.id === userId) {
+        await refreshUser();
+      }
       showFeedback('success', `Đã cập nhật vai trò thành công.`);
     } catch (err: any) {
       showFeedback('error', err.response?.data?.message || 'Cập nhật vai trò thất bại.');
+    } finally {
+      setUpdatingRoleId(null);
     }
   };
 
@@ -337,24 +346,27 @@ export function AdminUsers() {
 
                     {/* Role selector dropdown */}
                     <td className="py-3.5 px-4">
-                      <select
-                        value={user.role}
-                        onChange={(e) => handleRoleChange(user.id, e.target.value as any)}
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-lg border appearance-none cursor-pointer transition ${
-                          user.role === 'ADMIN'
-                            ? 'bg-purple-50 text-purple-700 border-purple-200'
-                            : user.role === 'MANAGER'
-                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                            : user.role === 'TECHNICIAN'
-                            ? 'bg-amber-50 text-amber-700 border-amber-200'
-                            : 'bg-gray-50 text-gray-700 border-gray-200'
-                        }`}
-                      >
-                        <option value="GUEST">Guest (Khách)</option>
-                        <option value="TECHNICIAN">Technician (KTV)</option>
-                        <option value="MANAGER">Manager (Quản lý)</option>
-                        <option value="ADMIN">Admin (Quản trị)</option>
-                      </select>
+                      <div className="relative inline-block">
+                        <select
+                          value={user.role}
+                          disabled={updatingRoleId === user.id}
+                          onChange={(e) => handleRoleChange(user.id, e.target.value as any)}
+                          className={`text-xs font-semibold px-2.5 py-1 rounded-lg border cursor-pointer transition ${
+                            user.role === 'ADMIN'
+                              ? 'bg-purple-50 text-purple-700 border-purple-200'
+                              : user.role === 'MANAGER'
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : user.role === 'TECHNICIAN'
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
+                              : 'bg-gray-50 text-gray-700 border-gray-200'
+                          } ${updatingRoleId === user.id ? 'opacity-50 cursor-wait' : ''}`}
+                        >
+                          <option value="GUEST">Guest (Khách)</option>
+                          <option value="TECHNICIAN">Technician (KTV)</option>
+                          <option value="MANAGER">Manager (Quản lý)</option>
+                          <option value="ADMIN">Admin (Quản trị)</option>
+                        </select>
+                      </div>
                     </td>
 
                     {/* Status badge */}

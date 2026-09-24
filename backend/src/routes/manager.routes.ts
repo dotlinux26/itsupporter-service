@@ -5,6 +5,8 @@ import { getAuthUser } from '../middleware/auth.js';
 import { getDb } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import type { OrderRow } from '../models/index.js';
+import { listSettlements, createSettlement } from '../services/financeService.js';
+import { getSystemSettings } from '../services/settingsService.js';
 
 const router = Router();
 
@@ -58,16 +60,14 @@ router.get('/packages', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res
 // Manager: GET /settlements
 router.get('/settlements', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
   try {
-    const { listSettlements } = require('../services/financeService.js');
-    const data = listSettlements({ limit: 100, offset: 0 });
-    res.json({ data });
+    const data = listSettlements({ limit: 50, page: 1 });
+    res.json(data);
   } catch (err) { next(err); }
 });
 
 // Manager: GET /reviews
 router.get('/reviews', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
   try {
-    const { getReviewsByTechnician, getReviewsByCustomer } = require('../repositories/notificationReviewRepository.js');
     // List all reviews with technician/customer info
     const rows = getDb()
       .prepare(`SELECT r.*, o.code AS order_code, p.name AS package_name,
@@ -87,7 +87,6 @@ router.get('/reviews', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res,
 // Manager: GET /settings
 router.get('/settings', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
   try {
-    const { getSystemSettings } = require('../services/settingsService.js');
     const settings = getSystemSettings();
     res.json({ data: settings });
   } catch (err) { next(err); }
@@ -201,7 +200,6 @@ router.post('/settlements', authenticate, requireRole('MANAGER', 'ADMIN'), (req,
     const notes = req.body.notes ? String(req.body.notes) : undefined;
     const authUser = getAuthUser(req);
     const managerId = authUser ? authUser.id : 1;
-    const { createSettlement } = require('../services/financeService.js');
     const result = createSettlement(technicianId, managerId, notes);
     res.json({ data: result, message: 'Tạo phiếu quyết toán thành công.' });
   } catch (err) { next(err); }
