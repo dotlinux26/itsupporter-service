@@ -31,7 +31,7 @@ export function ServicePackages({ packages, loading }: ServicePackagesProps) {
           {t('home.selectPackage')}
         </h2>
         <p className="text-sm text-slate-500 mt-2">
-          Sử dụng vật tư tản nhiệt chính hãng (Thermal Grizzly / MX-4 / Phobya), quy trình 9 bước vệ sinh vi mạch chống tĩnh điện an toàn tuyệt đối.
+          Sử dụng keo tản nhiệt chất lượng cao, quy trình 9 bước vệ sinh vi mạch chống tĩnh điện an toàn tuyệt đối.
         </p>
       </div>
 

@@ -17,13 +17,13 @@ const DEFAULT_SETTINGS: Array<[string, string, string]> = [
 const DEFAULT_PACKAGES = [
   {
     name: 'BASIC',
-    description: 'Quy trình 9 bước vệ sinh vi mạch an toàn chống tĩnh điện ESD, làm sạch bụi bẩn buồng tản nhiệt và thay keo tản nhiệt tiêu chuẩn chính hãng Arctic MX-4 / Noctua NT-H1.',
+    description: 'Quy trình 9 bước vệ sinh vi mạch an toàn chống tĩnh điện ESD, làm sạch bụi bẩn buồng tản nhiệt và thay keo tản nhiệt tiêu chuẩn chính hãng.',
     price: 50000,
     duration_minutes: 60,
     features: JSON.stringify([
       'Quy trình 9 bước vệ sinh vi mạch chống tĩnh điện an toàn ESD',
       'Làm sạch quạt gió & thổi bụi khe tản nhiệt chuyên sâu',
-      'Tra keo tản nhiệt Arctic MX-4 / Noctua NT-H1 chính hãng',
+      'Tra keo tản nhiệt tiêu chuẩn chất lượng cao chính hãng',
       'Kiểm tra nhiệt độ CPU & GPU trước/sau bảo dưỡng',
     ]),
     display_order: 1,
@@ -31,12 +31,12 @@ const DEFAULT_PACKAGES = [
   },
   {
     name: 'PREMIUM',
-    description: 'Quy trình 9 bước chuyên sâu cho Laptop Gaming & Workstation. Sử dụng keo tản nhiệt cao cấp Thermal Grizzly Kryonaut / Honeywell PTM7950 & tra dầu bôi trơn trục quạt.',
+    description: 'Quy trình 9 bước chuyên sâu cho Laptop Gaming & Workstation. Sử dụng keo tản nhiệt hiệu năng cao chuyên dụng & tra dầu bôi trơn trục quạt.',
     price: 100000,
     duration_minutes: 60,
     features: JSON.stringify([
       'Quy trình 9 bước vệ sinh vi mạch chống tĩnh điện ESD toàn diện',
-      'Tra keo tản nhiệt cao cấp Thermal Grizzly Kryonaut / Honeywell PTM7950',
+      'Tra keo tản nhiệt hiệu năng cao chuyên dụng',
       'Tháo rời cánh quạt, vệ sinh kỹ & tra dầu bôi trơn trục quạt êm ái',
       'Làm sạch chi tiết các cổng cắm (Type-C, USB, HDMI, Jack Audio)',
       'Stress-test hiệu năng & Tối ưu luồng gió tản nhiệt',

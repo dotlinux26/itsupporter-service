@@ -24,9 +24,10 @@ import { MarkdownRenderer } from '../../components/MarkdownRenderer';
 type Tab = 'profile' | 'technician_profile' | 'password';
 
 const PRESET_SKILLS = [
+  'Vệ sinh Laptop Văn Phòng',
   'Vệ sinh Laptop Gaming',
-  'Tra keo tản nhiệt PTM7950',
-  'Thermal Grizzly Kryonaut',
+  'Tra keo tản nhiệt chất lượng cao',
+  'Tra keo hiệu năng cao chuyên dụng',
   'Bảo dưỡng PC Desktop',
   'Cài đặt Windows 10/11 & macOS',
   'Nâng cấp RAM & SSD NVMe',

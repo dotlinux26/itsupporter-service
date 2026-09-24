@@ -14,7 +14,7 @@ async function seed() {
       bio: 'Trưởng ban Kỹ thuật IT Supporter HaUI. Chuyên sâu về sửa chữa, tối ưu phần cứng PC/Laptop và tản nhiệt cao cấp.',
       public_profile: JSON.stringify({
         skills: [],
-        article: '### Giới thiệu Kỹ thuật viên Nguyễn Đức Cảnh\n- **Đơn vị công tác**: Đội Hỗ trợ Kỹ thuật IT Supporter - Trường Đại học Công nghiệp Hà Nội (HaUI).\n- **Cam kết chất lượng**: Thực hiện đúng quy trình 9 bước vệ sinh & bảo dưỡng máy tính trực tiếp trước sự quan sát của khách hàng.\n- **Chuyên môn nổi bật**: Tháo lắp an toàn chống tĩnh điện ESD, tra keo tản nhiệt hiệu năng cao (Thermal Grizzly / MX-4 / Honeywell PTM7950), tối ưu luồng gió tản nhiệt cho máy tính bàn & laptop gaming.\n- **Kinh nghiệm thực tế**: Đã bảo dưỡng thành công hơn 300+ máy tính cho sinh viên & cán bộ giảng viên tại cơ sở Nhổn & Hà Nam.\n\n*Rất sẵn lòng hỗ trợ các bạn tại Phòng 1603 Tòa A1!*'
+        article: '### Giới thiệu Kỹ thuật viên Nguyễn Đức Cảnh\n- **Đơn vị công tác**: Đội Hỗ trợ Kỹ thuật IT Supporter - Trường Đại học Công nghiệp Hà Nội (HaUI).\n- **Cam kết chất lượng**: Thực hiện đúng quy trình 9 bước vệ sinh & bảo dưỡng máy tính trực tiếp trước sự quan sát của khách hàng.\n- **Chuyên môn nổi bật**: Tháo lắp an toàn chống tĩnh điện ESD, tra keo tản nhiệt hiệu năng cao chính hãng, tối ưu luồng gió tản nhiệt cho máy tính bàn & laptop gaming.\n- **Kinh nghiệm thực tế**: Đã bảo dưỡng thành công hơn 300+ máy tính cho sinh viên & cán bộ giảng viên tại cơ sở Nhổn & Hà Nam.\n\n*Rất sẵn lòng hỗ trợ các bạn tại Phòng 1603 Tòa A1!*'
       }),
     },
     {
