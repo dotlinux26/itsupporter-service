@@ -6,6 +6,7 @@ import { Avatar } from './Avatar';
 import { publicApi } from '../api/client';
 import { ExternalLink } from 'lucide-react';
 import { ScrollToTopButton } from './ScrollToTopButton';
+import { NotificationBell } from './NotificationBell';
 
 export function PublicHeader() {
   const { t } = useTranslation();
@@ -91,6 +92,7 @@ export function PublicHeader() {
               >
                 {t('nav.orders')}
               </NavLink>
+              <NotificationBell />
               <NavLink to="/profile" className="flex items-center gap-2 hover:opacity-80 transition" title={user?.name}>
                 <Avatar name={user?.name || ''} email={user?.email || ''} size={32} />
               </NavLink>
@@ -210,7 +212,8 @@ export function AuthenticatedHeader() {
         </nav>
 
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2.5">
+          <NotificationBell />
+          <Link to="/profile" className="flex items-center gap-2.5 hover:opacity-80 transition" title={user?.name}>
             <Avatar
               src={user?.avatar_url}
               name={user?.name}
@@ -218,7 +221,7 @@ export function AuthenticatedHeader() {
               size={32}
             />
             <span className="hidden sm:block text-sm font-semibold text-text">{user?.name}</span>
-          </div>
+          </Link>
           <button onClick={() => logout()} className="btn btn-ghost text-sm">
             {t('nav.logout')}
           </button>
