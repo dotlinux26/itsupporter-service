@@ -237,18 +237,22 @@ export function getOrderTimeline(orderId: number): Array<{
 }> {
   return getDb()
     .prepare(
-      `SELECT h.from_status, h.to_status, h.actor_id, u.name AS actor_name, h.note, h.created_at
+      `SELECT h.id, h.order_id, h.from_status, h.to_status, h.actor_id, u.name AS actor_name, u.name AS changed_by_name, h.note, h.note AS reason, h.created_at
        FROM order_status_history h
        LEFT JOIN users u ON u.id = h.actor_id
        WHERE h.order_id = ?
        ORDER BY h.created_at ASC, h.id ASC`
     )
     .all(orderId) as Array<{
+    id?: number;
+    order_id?: number;
     from_status: string | null;
     to_status: string;
     actor_id: number | null;
     actor_name: string | null;
+    changed_by_name?: string | null;
     note: string | null;
+    reason: string | null;
     created_at: string;
   }>;
 }
