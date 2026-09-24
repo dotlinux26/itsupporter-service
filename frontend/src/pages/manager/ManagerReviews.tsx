@@ -122,13 +122,13 @@ export function ManagerReviews() {
       {/* FILTER & SEARCH */}
       <div className="card p-5 bg-white flex flex-col sm:flex-row items-center gap-3">
         <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm kiếm theo mã đơn, khách hàng, KTV hoặc nội dung..."
-            className="input pl-10 pr-4 text-xs font-medium w-full"
+            className="input input-search pl-11 pr-4 text-xs font-medium w-full"
           />
         </div>
 

@@ -242,13 +242,13 @@ export function AdminUsers() {
         <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
           {/* Search box */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm theo họ tên, email hoặc số điện thoại..."
-              className="input pl-10 pr-4 text-sm w-full"
+              className="input input-search pl-11 pr-4 text-sm w-full"
             />
           </div>
 

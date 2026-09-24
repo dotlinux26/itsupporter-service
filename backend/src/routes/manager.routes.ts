@@ -61,7 +61,7 @@ router.get('/packages', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res
 router.get('/settlements', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
   try {
     const data = listSettlements({ limit: 50, page: 1 });
-    res.json(data);
+    res.json({ data: data.data, total: data.total });
   } catch (err) { next(err); }
 });
 

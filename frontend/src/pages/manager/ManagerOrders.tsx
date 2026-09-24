@@ -212,13 +212,13 @@ export function ManagerOrders() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {/* Keyword Search */}
           <div className="relative lg:col-span-2">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm mã đơn, tên khách, KTV..."
-              className="input pl-10 pr-4 text-xs font-medium w-full"
+              className="input input-search pl-11 pr-4 text-xs font-medium w-full"
             />
           </div>
 

@@ -1,10 +1,10 @@
-import { NavLink, Outlet, Link } from 'react-router-dom';
+import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { Avatar } from './Avatar';
 import { publicApi } from '../api/client';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ScrollToTopButton } from './ScrollToTopButton';
 import { NotificationBell } from './NotificationBell';
 
@@ -51,6 +51,28 @@ export function AppHeader() {
   }
 
   const isCustomer = !user?.role || user?.role === 'GUEST';
+  const location = useLocation();
+  const PAGE_SIZE = 4;
+  const [navPage, setNavPage] = useState(0);
+
+  const totalNavPages = Math.ceil(navItems.length / PAGE_SIZE);
+
+  // Auto-focus the nav page containing the currently active route
+  useEffect(() => {
+    const activeIndex = navItems.findIndex((item) =>
+      item.path === '/' || item.path === '/admin' || item.path === '/manager' || item.path === '/technician'
+        ? location.pathname === item.path
+        : location.pathname.startsWith(item.path)
+    );
+    if (activeIndex !== -1) {
+      const targetPage = Math.floor(activeIndex / PAGE_SIZE);
+      setNavPage(targetPage);
+    }
+  }, [location.pathname, navItems]);
+
+  const displayedNavItems = navItems.length > PAGE_SIZE
+    ? navItems.slice(navPage * PAGE_SIZE, (navPage + 1) * PAGE_SIZE)
+    : navItems;
 
   return (
     <header className="border-b border-border bg-white sticky top-0 z-40">
@@ -77,24 +99,68 @@ export function AppHeader() {
         </div>
 
         {/* DESKTOP NAV */}
-        <nav className="hidden md:flex flex-1 justify-center px-4 overflow-x-auto">
-          <ul className="flex items-center gap-4 lg:gap-6 whitespace-nowrap">
-            {navItems.map((item) => (
-              <li key={item.path}>
-                <NavLink
-                  to={item.path}
-                  end={item.path === '/' || item.path === '/admin' || item.path === '/manager' || item.path === '/technician'}
-                  className={({ isActive }) =>
-                    `text-sm font-medium transition-colors ${
-                      isActive ? 'text-primary font-semibold' : 'text-text-secondary hover:text-primary'
-                    }`
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
+        <nav className="hidden md:flex flex-1 justify-center px-4">
+          {navItems.length > PAGE_SIZE ? (
+            <div className="flex items-center gap-1.5 bg-gray-50/90 p-1 rounded-xl border border-gray-100">
+              <button
+                type="button"
+                onClick={() => setNavPage((p) => Math.max(0, p - 1))}
+                disabled={navPage === 0}
+                className="p-1 rounded-lg text-gray-500 hover:text-primary hover:bg-white disabled:opacity-20 disabled:pointer-events-none transition"
+                title="Trang chức năng trước"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <ul className="flex items-center gap-1 lg:gap-2 px-1 whitespace-nowrap">
+                {displayedNavItems.map((item) => (
+                  <li key={item.path}>
+                    <NavLink
+                      to={item.path}
+                      end={item.path === '/' || item.path === '/admin' || item.path === '/manager' || item.path === '/technician'}
+                      className={({ isActive }) =>
+                        `text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-all ${
+                          isActive
+                            ? 'bg-white text-primary shadow-xs font-bold'
+                            : 'text-text-secondary hover:text-primary hover:bg-white/60'
+                        }`
+                      }
+                    >
+                      {item.label}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                type="button"
+                onClick={() => setNavPage((p) => Math.min(totalNavPages - 1, p + 1))}
+                disabled={navPage >= totalNavPages - 1}
+                className="p-1 rounded-lg text-gray-500 hover:text-primary hover:bg-white disabled:opacity-20 disabled:pointer-events-none transition"
+                title="Trang chức năng tiếp"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <ul className="flex items-center gap-4 lg:gap-6 whitespace-nowrap">
+              {navItems.map((item) => (
+                <li key={item.path}>
+                  <NavLink
+                    to={item.path}
+                    end={item.path === '/' || item.path === '/admin' || item.path === '/manager' || item.path === '/technician'}
+                    className={({ isActive }) =>
+                      `text-sm font-medium transition-colors ${
+                        isActive ? 'text-primary font-semibold' : 'text-text-secondary hover:text-primary'
+                      }`
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          )}
         </nav>
 
         {/* RIGHT ACTIONS */}

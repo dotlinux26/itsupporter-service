@@ -38,7 +38,14 @@ export function ManagerSettlements() {
         managerApi.settlements({ limit: 100, offset: 0 }),
         managerApi.technicians(),
       ]);
-      setSettlements(settleRes.data?.data || []);
+      const settleItems = Array.isArray(settleRes.data?.data)
+        ? settleRes.data.data
+        : Array.isArray(settleRes.data?.data?.data)
+        ? settleRes.data.data.data
+        : Array.isArray(settleRes.data)
+        ? settleRes.data
+        : [];
+      setSettlements(settleItems);
       setTechnicians(techRes.data?.data || []);
     } catch (error) {
       console.error('Failed to load settlements:', error);
