@@ -12,7 +12,6 @@ import {
   ShieldCheck, 
   Sparkles,
   ArrowRight,
-  CheckCircle2,
 } from 'lucide-react';
 import type { ServicePackage, TechnicianBrief } from '../../types';
 
@@ -104,14 +103,10 @@ export function BookingPage() {
         ? res.data
         : [];
       setTechnicians(techList);
-      if (techList.length === 1) {
-        setSelectedTechId(techList[0].id);
-      } else if (techList.length > 1) {
-        // If current selected tech is not in this slot's techList, randomly select one
+      if (techList.length > 0) {
         setSelectedTechId((prev) => {
           if (prev && techList.some((t: any) => t.id === prev)) return prev;
-          const randomIndex = Math.floor(Math.random() * techList.length);
-          return techList[randomIndex].id;
+          return null; // default to auto-dispatch
         });
       } else {
         setSelectedTechId(null);
@@ -351,33 +346,45 @@ export function BookingPage() {
                   Chưa có Kỹ thuật viên nào đăng ký trực vào khung giờ <strong>{selectedTime} ngày {selectedDate}</strong>. Quý khách vui lòng chọn một khung giờ hoặc ngày khác để tiếp tục.
                 </span>
               </div>
-            ) : technicians.length === 1 ? (
-              <div className="space-y-3">
-                <div className="text-xs text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 flex items-center gap-1.5 font-medium">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Ca trực này do kỹ thuật viên sau trực tiếp phụ trách tiếp nhận:</span>
-                </div>
-
-                <div className="flex items-center gap-3 p-3.5 rounded-xl border border-orange-500 bg-orange-50/40">
-                  <Avatar name={technicians[0].name} src={technicians[0].avatar_url} size={40} />
-                  <div className="flex-1">
-                    <div className="font-bold text-sm text-slate-900">{technicians[0].name}</div>
-                    <div className="text-xs text-slate-500 mt-0.5">
-                      {technicians[0].bio || 'Kỹ thuật viên IT Supporter HaUI · Nhiệt huyết & tận tâm'}
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
-                    Đang trực ca
-                  </span>
-                </div>
-              </div>
             ) : (
               <div className="space-y-3">
                 <p className="text-xs text-slate-500">
-                  Có <strong>{technicians.length}</strong> Kỹ thuật viên sẵn sàng trong ca này. Bạn có thể chọn người bạn tin tưởng hoặc để hệ thống chọn ngẫu nhiên:
+                  Có <strong>{technicians.length}</strong> Kỹ thuật viên sẵn sàng trong ca này. Bạn có thể để Quản lý tự phân công hoặc chỉ định kỹ thuật viên bạn mong muốn:
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Option: Auto-dispatch */}
+                  <label
+                    className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                      selectedTechId === null
+                        ? 'border-orange-500 bg-orange-50/50 shadow-xs ring-1 ring-orange-500'
+                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="technician"
+                      checked={selectedTechId === null}
+                      onChange={() => setSelectedTechId(null)}
+                      className="text-orange-600 focus:ring-orange-500"
+                    />
+                    <div className="w-9 h-9 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center text-base flex-shrink-0">
+                      🤖
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-sm text-slate-800 truncate flex items-center gap-1.5">
+                        <span>Hệ thống / Quản lý điều phối</span>
+                        <span className="text-[10px] font-extrabold bg-orange-500 text-white px-1.5 py-0.5 rounded-full">
+                          Tự động
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-500 truncate">
+                        Ban quản lý sẽ giao ca cho KTV rảnh & tối ưu nhất
+                      </div>
+                    </div>
+                  </label>
+
+                  {/* Specific technicians */}
                   {technicians.map((tech) => (
                     <label
                       key={tech.id}

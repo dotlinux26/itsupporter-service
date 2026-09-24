@@ -101,10 +101,8 @@ router.get('/orders/:id/available-technicians', authenticate, requireRole('MANAG
     const order = db.prepare('SELECT id, code, scheduled_date, scheduled_start, technician_id FROM orders WHERE id = ?').get(orderId) as OrderRow | undefined;
     if (!order) throw new AppError('NOT_FOUND', 'Không tìm thấy đơn hàng.', 404);
 
-    // Get candidate technicians who are on shift and available in this slot
     const availableTechs = getAvailableTechnicians(order.scheduled_date, order.scheduled_start);
 
-    // Also get all active technicians in system for manager fallback / manual override
     const allTechs = db.prepare(`
       SELECT u.id, u.name, u.email, u.phone, u.avatar_url, tp.bio
       FROM users u
@@ -112,15 +110,6 @@ router.get('/orders/:id/available-technicians', authenticate, requireRole('MANAG
       WHERE u.role = 'TECHNICIAN' AND u.status = 'ACTIVE' AND u.is_deleted = 0
       ORDER BY u.name ASC
     `).all() as any[];
-
-    const annotated = allTechs.map((t) => {
-      const isCandidate = availableTechs.some((at) => at.id === t.id);
-      return {
-        ...t,
-        is_available_in_slot: isCandidate,
-        is_current: order.technician_id === t.id,
-      };
-    });
 
     const candidateIds = availableTechs.map((t) => t.id);
     const autoRecommendedId = candidateIds.length > 0
@@ -137,7 +126,7 @@ router.get('/orders/:id/available-technicians', authenticate, requireRole('MANAG
           current_technician_id: order.technician_id,
         },
         available_technicians: availableTechs,
-        all_technicians: annotated,
+        all_technicians: allTechs,
         auto_recommended_id: autoRecommendedId,
       },
     });

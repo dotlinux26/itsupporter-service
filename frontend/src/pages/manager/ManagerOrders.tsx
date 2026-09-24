@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { managerApi } from '../../api/client';
+import { managerApi, publicApi } from '../../api/client';
+import { Avatar } from '../../components/Avatar';
 import {
   FileSpreadsheet,
   FileText,
@@ -10,13 +11,9 @@ import {
   AlertCircle,
   X,
   Package,
-  Sparkles,
   Zap,
-  Check,
-  Clock,
-  User,
+  Sparkles,
 } from 'lucide-react';
-import { Avatar } from '../../components/Avatar';
 
 export function ManagerOrders() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -29,12 +26,9 @@ export function ManagerOrders() {
   // Assign modal state
   const [assignModalOrder, setAssignModalOrder] = useState<any | null>(null);
   const [selectedTechId, setSelectedTechId] = useState<number | ''>('');
-  const [assignLoading, setAssignLoading] = useState(false);
-  const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [slotCandidates, setSlotCandidates] = useState<any[]>([]);
-  const [allSlotTechs, setAllSlotTechs] = useState<any[]>([]);
-  const [autoRecommendedId, setAutoRecommendedId] = useState<number | null>(null);
-  const [assignTab, setAssignTab] = useState<'available' | 'all'>('available');
+  const [candidatesLoading, setCandidatesLoading] = useState(false);
+  const [assignLoading, setAssignLoading] = useState(false);
 
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -52,36 +46,6 @@ export function ManagerOrders() {
       setTechnicians(res.data?.data || []);
     } catch (err) {
       console.error('Failed to load technicians:', err);
-    }
-  };
-
-  const openAssignModal = async (order: any) => {
-    setAssignModalOrder(order);
-    setSelectedTechId(order.technician_id || '');
-    setLoadingCandidates(true);
-    setAssignTab('available');
-    try {
-      const res = await managerApi.getAvailableTechniciansForOrder(order.id);
-      const data = res.data?.data;
-      const candidates = data?.available_technicians || [];
-      const all = data?.all_technicians || [];
-      const recId = data?.auto_recommended_id;
-
-      setSlotCandidates(candidates);
-      setAllSlotTechs(all);
-      setAutoRecommendedId(recId);
-
-      if (!order.technician_id && recId) {
-        setSelectedTechId(recId);
-      }
-      if (candidates.length === 0) {
-        setAssignTab('all');
-      }
-    } catch (err) {
-      console.error('Failed to load available technicians for order slot:', err);
-      setSlotCandidates([]);
-    } finally {
-      setLoadingCandidates(false);
     }
   };
 
@@ -107,6 +71,50 @@ export function ManagerOrders() {
     setTimeout(() => setFeedback(null), 4000);
   };
 
+  const openAssignModal = async (order: any) => {
+    setAssignModalOrder(order);
+    setSelectedTechId(order.technician_id || '');
+    setSlotCandidates([]);
+    setCandidatesLoading(true);
+    try {
+      const res = await managerApi.orderAvailableTechnicians(order.id);
+      const data = res.data?.data;
+      const list = data?.available_technicians || [];
+      setSlotCandidates(list);
+      if (data?.all_technicians?.length) {
+        setTechnicians(data.all_technicians);
+      }
+      if (!order.technician_id && data?.auto_recommended_id) {
+        setSelectedTechId(data.auto_recommended_id);
+      }
+    } catch (err) {
+      console.error('Failed to load candidates:', err);
+      try {
+        const fallbackRes = await publicApi.technicians(order.scheduled_date, order.scheduled_start);
+        const list = Array.isArray(fallbackRes.data?.data) ? fallbackRes.data.data : [];
+        setSlotCandidates(list);
+        if (!order.technician_id && list.length > 0) {
+          setSelectedTechId(list[0].id);
+        }
+      } catch (fbErr) {
+        console.error('Fallback failed:', fbErr);
+      }
+    } finally {
+      setCandidatesLoading(false);
+    }
+  };
+
+  const handleAutoPickCandidate = () => {
+    if (slotCandidates.length === 0) return;
+    const others = slotCandidates.filter((c) => c.id !== selectedTechId);
+    if (others.length > 0) {
+      const randomCandidate = others[Math.floor(Math.random() * others.length)];
+      setSelectedTechId(randomCandidate.id);
+    } else {
+      setSelectedTechId(slotCandidates[0].id);
+    }
+  };
+
   const handleStatusChange = async (orderId: number, nextStatus: string) => {
     try {
       await managerApi.updateOrderStatus(orderId, nextStatus);
@@ -117,20 +125,19 @@ export function ManagerOrders() {
     }
   };
 
-  const handleAssignSubmit = async (e?: React.FormEvent, techIdToAssign?: number) => {
-    if (e) e.preventDefault();
-    const techId = techIdToAssign || selectedTechId;
-    if (!assignModalOrder || !techId) return;
+  const handleAssignSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignModalOrder || !selectedTechId) return;
     setAssignLoading(true);
     try {
-      await managerApi.assignTechnician(assignModalOrder.id, Number(techId));
-      const tech = technicians.find((t) => t.id === Number(techId)) || allSlotTechs.find((t) => t.id === Number(techId));
+      await managerApi.assignTechnician(assignModalOrder.id, Number(selectedTechId));
+      const tech = technicians.find((t) => t.id === Number(selectedTechId));
       setOrders((prev) =>
         prev.map((o) =>
           o.id === assignModalOrder.id
             ? {
                 ...o,
-                technician_id: Number(techId),
+                technician_id: Number(selectedTechId),
                 technician_name: tech?.name || 'KTV',
                 status: o.status === 'PENDING' ? 'CONFIRMED' : o.status,
               }
@@ -387,10 +394,11 @@ export function ManagerOrders() {
                         </span>
                       ) : (
                         <button
+                          type="button"
                           onClick={() => openAssignModal(order)}
-                          className="text-xs text-orange-600 hover:text-orange-700 bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200 font-semibold inline-flex items-center gap-1 hover:bg-orange-100 transition"
+                          className="text-xs text-orange-600 hover:text-orange-700 bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200 font-semibold"
                         >
-                          <Zap className="w-3 h-3" /> Gán KTV
+                          + Gán KTV
                         </button>
                       )}
                     </td>
@@ -471,271 +479,134 @@ export function ManagerOrders() {
       {/* ASSIGN TECHNICIAN MODAL */}
       {assignModalOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/70">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-lg w-full overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-orange-100 text-primary flex items-center justify-center">
-                  <UserCheck className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 text-sm">Điều phối & Phân công Kỹ thuật viên</h3>
-                  <p className="text-[11px] text-gray-500">
-                    Đơn hàng #{assignModalOrder.code} · Khách hàng: {assignModalOrder.customer_name}
-                  </p>
-                </div>
+                <UserCheck className="w-5 h-5 text-primary" />
+                <h3 className="font-bold text-gray-900 text-base">Điều phối Kỹ thuật viên</h3>
               </div>
               <button
                 onClick={() => setAssignModalOrder(null)}
-                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                className="p-1 text-gray-400 hover:text-gray-600 rounded-lg transition"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-4 flex-1">
-              {/* Order Slot Context Banner */}
-              <div className="p-3.5 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl border border-orange-100/80 text-xs space-y-1.5">
-                <div className="flex items-center justify-between font-semibold text-gray-900">
-                  <span className="flex items-center gap-1.5 text-primary font-mono">
-                    <Package className="w-3.5 h-3.5" />
-                    {assignModalOrder.package_name}
-                  </span>
-                  <span className="flex items-center gap-1 text-gray-600 font-mono">
-                    <Clock className="w-3.5 h-3.5 text-amber-600" />
-                    {new Date(assignModalOrder.scheduled_date).toLocaleDateString('vi-VN', {
-                      weekday: 'short',
-                      day: '2-digit',
-                      month: '2-digit',
-                    })}{' '}
-                    · {assignModalOrder.scheduled_start}
+            <form onSubmit={handleAssignSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+              {/* Order summary info */}
+              <div className="p-3.5 bg-orange-50/60 rounded-xl border border-orange-100 text-xs space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-orange-950 font-mono text-sm">#{assignModalOrder.code}</span>
+                  <span className="text-gray-600 font-medium">
+                    {new Date(assignModalOrder.scheduled_date).toLocaleDateString('vi-VN')} · {assignModalOrder.scheduled_start}
                   </span>
                 </div>
-                <div className="text-[11px] text-gray-600 flex items-center gap-2">
-                  <span>Khách: <strong>{assignModalOrder.customer_name}</strong></span>
-                  {assignModalOrder.customer_phone && (
-                    <span>· SĐT: <strong className="font-mono">{assignModalOrder.customer_phone}</strong></span>
-                  )}
+                <div className="text-gray-700">
+                  <strong>Khách hàng:</strong> {assignModalOrder.customer_name} ({assignModalOrder.customer_phone || 'Không có SĐT'})
+                </div>
+                <div className="text-gray-700">
+                  <strong>Gói dịch vụ:</strong> {assignModalOrder.package_name}
                 </div>
               </div>
 
-              {/* Auto Recommend 1-Click Action */}
-              {autoRecommendedId && (
-                <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-emerald-950">
-                        Gợi ý phân công nhanh (Auto-dispatch)
-                      </div>
-                      <div className="text-[11px] text-emerald-800">
-                        {allSlotTechs.find((t) => t.id === autoRecommendedId)?.name || 'KTV khả dụng'} (Trực ca rảnh)
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={assignLoading}
-                    onClick={() => handleAssignSubmit(undefined, autoRecommendedId)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition disabled:opacity-50 flex-shrink-0"
-                  >
-                    <Zap className="w-3.5 h-3.5" />
-                    Gán ngay
-                  </button>
-                </div>
-              )}
-
-              {/* Selection Tabs */}
-              <div className="flex border-b border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => setAssignTab('available')}
-                  className={`pb-2 text-xs font-bold px-3 transition-colors border-b-2 flex items-center gap-1.5 ${
-                    assignTab === 'available'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  KTV Trực ca sẵn sàng ({slotCandidates.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAssignTab('all')}
-                  className={`pb-2 text-xs font-bold px-3 transition-colors border-b-2 flex items-center gap-1.5 ${
-                    assignTab === 'all'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <User className="w-3.5 h-3.5" />
-                  Tất cả KTV ({allSlotTechs.length || technicians.length})
-                </button>
-              </div>
-
-              {/* Tab 1: Available candidates in slot */}
-              {assignTab === 'available' && (
-                <div className="space-y-2">
-                  {loadingCandidates ? (
-                    <div className="py-6 text-center space-y-2">
-                      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                      <p className="text-xs text-gray-500">Đang kiểm tra lịch trực ca KTV...</p>
-                    </div>
-                  ) : slotCandidates.length === 0 ? (
-                    <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-900 text-xs space-y-1">
-                      <div className="font-bold flex items-center gap-1.5">
-                        <AlertCircle className="w-4 h-4 text-amber-600" />
-                        Chưa có KTV nào trực ca này hoặc đã kín lịch
-                      </div>
-                      <p className="text-[11px] text-amber-800">
-                        Vui lòng chuyển sang tab <strong>"Tất cả KTV"</strong> để chọn thủ công hoặc chỉ định KTV hỗ trợ ngoài ca.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {slotCandidates.map((tech) => {
-                        const isSelected = Number(selectedTechId) === tech.id;
-                        return (
-                          <div
-                            key={tech.id}
-                            onClick={() => setSelectedTechId(tech.id)}
-                            className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-3 ${
-                              isSelected
-                                ? 'bg-orange-50/70 border-primary shadow-sm ring-1 ring-primary'
-                                : 'bg-white border-gray-200 hover:border-orange-200 hover:bg-orange-50/20'
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <Avatar
-                                src={tech.avatar_url}
-                                name={tech.name}
-                                email={tech.email}
-                                size={36}
-                              />
-                              <div>
-                                <div className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                                  {tech.name}
-                                  <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">
-                                    Đang trực ca
-                                  </span>
-                                </div>
-                                <div className="text-[11px] text-gray-500 font-mono">
-                                  {tech.phone || tech.email}
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              {isSelected ? (
-                                <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs">
-                                  <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                </div>
-                              ) : (
-                                <div className="w-6 h-6 rounded-full border border-gray-300" />
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+              {/* Slot Candidate Technicians */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                    KTV trực ca khả dụng ({slotCandidates.length})
+                  </label>
+                  {slotCandidates.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={handleAutoPickCandidate}
+                      className="text-xs font-semibold text-primary hover:text-orange-700 bg-orange-50 px-2.5 py-1 rounded-lg border border-orange-200 transition flex items-center gap-1"
+                      title="Chọn ngẫu nhiên 1 KTV trong ca"
+                    >
+                      <Zap className="w-3 h-3" /> Auto-pick KTV
+                    </button>
                   )}
                 </div>
-              )}
 
-              {/* Tab 2: All technicians fallback */}
-              {assignTab === 'all' && (
-                <div className="space-y-2">
-                  <p className="text-[11px] text-gray-500">
-                    Chọn bất kỳ kỹ thuật viên nào trong hệ thống để gán cho đơn hàng này:
-                  </p>
-                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                    {(allSlotTechs.length > 0 ? allSlotTechs : technicians).map((tech) => {
-                      const isSelected = Number(selectedTechId) === tech.id;
-                      return (
-                        <div
-                          key={tech.id}
-                          onClick={() => setSelectedTechId(tech.id)}
-                          className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-3 ${
-                            isSelected
-                              ? 'bg-orange-50/70 border-primary shadow-sm ring-1 ring-primary'
-                              : 'bg-white border-gray-200 hover:border-orange-200 hover:bg-orange-50/20'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <Avatar
-                              src={tech.avatar_url}
-                              name={tech.name}
-                              email={tech.email}
-                              size={36}
-                            />
-                            <div>
-                              <div className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                                {tech.name}
-                                {tech.is_available_in_slot && (
-                                  <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">
-                                    Trực ca
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-[11px] text-gray-500 font-mono">
-                                {tech.phone || tech.email}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            {isSelected ? (
-                              <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs">
-                                <Check className="w-3.5 h-3.5 stroke-[3]" />
-                              </div>
-                            ) : (
-                              <div className="w-6 h-6 rounded-full border border-gray-300" />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                {candidatesLoading ? (
+                  <div className="p-4 text-center text-xs text-gray-500 bg-gray-50 rounded-xl border border-gray-100">
+                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-1" />
+                    Đang tìm kiếm KTV trực ca này...
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/70">
-              <div className="text-xs text-gray-500">
-                {selectedTechId ? (
-                  <span>
-                    Đang chọn:{' '}
-                    <strong className="text-gray-800">
-                      {(allSlotTechs.find((t) => t.id === Number(selectedTechId)) ||
-                        technicians.find((t) => t.id === Number(selectedTechId)))?.name}
-                    </strong>
-                  </span>
+                ) : slotCandidates.length === 0 ? (
+                  <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                    ⚠️ Không có KTV nào đăng ký lịch trực trong ca {assignModalOrder.scheduled_start} ngày {new Date(assignModalOrder.scheduled_date).toLocaleDateString('vi-VN')}. Bạn có thể chỉ định KTV từ danh mục bên dưới:
+                  </div>
                 ) : (
-                  <span>Vui lòng chọn 1 KTV</span>
+                  <div className="space-y-2">
+                    {slotCandidates.map((cand) => (
+                      <label
+                        key={cand.id}
+                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition ${
+                          selectedTechId === cand.id
+                            ? 'border-primary bg-orange-50/50 shadow-xs ring-1 ring-primary'
+                            : 'border-gray-200 hover:border-gray-300 bg-white'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="candidate"
+                          checked={selectedTechId === cand.id}
+                          onChange={() => setSelectedTechId(cand.id)}
+                          className="text-primary focus:ring-primary"
+                        />
+                        <Avatar name={cand.name} src={cand.avatar_url} size={36} />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-xs text-gray-900 truncate">{cand.name}</div>
+                          <div className="text-[11px] text-gray-500 truncate">{cand.email || cand.bio || 'Kỹ thuật viên IT Supporter'}</div>
+                        </div>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          Rảnh ca
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+
+              {/* All technicians fallback selector */}
+              <div className="pt-2 border-t border-gray-100">
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
+                  Hoặc chọn KTV bất kỳ (Tất cả danh sách)
+                </label>
+                <select
+                  value={selectedTechId}
+                  onChange={(e) => setSelectedTechId(e.target.value ? Number(e.target.value) : '')}
+                  required
+                  className="input text-xs w-full font-medium"
+                >
+                  <option value="">-- Chọn kỹ thuật viên --</option>
+                  {technicians.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} ({t.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setAssignModalOrder(null)}
-                  className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-200/60 rounded-xl transition"
+                  className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition"
                 >
                   Hủy
                 </button>
                 <button
-                  type="button"
+                  type="submit"
                   disabled={assignLoading || !selectedTechId}
-                  onClick={() => handleAssignSubmit()}
-                  className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md transition disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md transition disabled:opacity-50"
                 >
-                  {assignLoading ? 'Đang phân công...' : 'Xác nhận phân công'}
+                  {assignLoading ? 'Đang điều phối...' : 'Xác nhận phân công'}
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       )}
