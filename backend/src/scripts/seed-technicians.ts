@@ -70,7 +70,16 @@ async function seed() {
     }
   }
 
-  console.log('Seeded 4 technicians with profiles and schedules.');
+  // Seed Manager account
+  const managerHash = await argon2.hash('Manager123456!', { type: argon2.argon2id });
+  const existingManager = db.prepare('SELECT id FROM users WHERE email = ?').get('manager@itsupporter.vn');
+  if (existingManager) {
+    db.prepare("UPDATE users SET name = 'Quản lý IT Supporter', role = 'MANAGER', status = 'ACTIVE', password_hash = ? WHERE email = 'manager@itsupporter.vn'").run(managerHash);
+  } else {
+    db.prepare("INSERT INTO users (name, email, password_hash, phone, role, status) VALUES ('Quản lý IT Supporter', 'manager@itsupporter.vn', ?, '0981234560', 'MANAGER', 'ACTIVE')").run(managerHash);
+  }
+
+  console.log('Seeded 4 technicians and 1 manager account.');
   closeDb();
 }
 
