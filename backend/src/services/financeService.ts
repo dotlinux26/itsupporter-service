@@ -128,7 +128,8 @@ export function getTeamBalance(): number {
   const row = getDb()
     .prepare(
       `SELECT COALESCE(SUM(CASE WHEN direction = 'IN' THEN amount ELSE -amount END), 0) AS balance
-       FROM financial_transactions WHERE technician_id IS NULL`
+       FROM financial_transactions 
+       WHERE (technician_id IS NULL OR technician_id = 0) AND type != 'ORDER_REVENUE'`
     )
     .get() as { balance: number };
   return row.balance;

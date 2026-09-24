@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminApi } from '../../api/client';
+import { ZoomableImage } from '../../components/ImageModal';
 import { QrCode, Upload, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export function AdminQR() {
@@ -101,12 +102,17 @@ export function AdminQR() {
         </h2>
         {currentQr ? (
           <div className="text-center py-4">
-            <img
+            <ZoomableImage
               src={currentQr}
               alt="QR thanh toán ngân hàng"
               className="w-64 h-64 mx-auto rounded-xl border border-border shadow-sm object-contain bg-white p-2"
+              title="QR Thanh Toán Ngân Hàng (Đang áp dụng)"
+              caption="Ảnh QR chính thức do Admin tải lên - Quét mã để chuyển khoản thanh toán"
             />
-            <p className="text-sm text-text-secondary mt-3">
+            <p className="text-xs text-text-muted mt-1">
+              (Nhấn vào ảnh để phóng to toàn màn hình)
+            </p>
+            <p className="text-sm text-text-secondary mt-2">
               Khách hàng quét mã này để chuyển khoản thanh toán cho đội IT Supporter
             </p>
           </div>

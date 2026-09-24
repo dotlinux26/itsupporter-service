@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { technicianApi } from '../../api/client';
 
 export function TechnicianOrders() {
@@ -42,7 +43,7 @@ export function TechnicianOrders() {
 
       <div className="space-y-4">
         {orders.map(order => (
-          <a key={order.id} href={`/technician/orders/${order.id}`} className="card p-4 hover:shadow-md transition-shadow block">
+          <Link key={order.id} to={`/technician/orders/${order.id}`} className="card p-4 hover:shadow-md transition-shadow block">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
@@ -69,7 +70,7 @@ export function TechnicianOrders() {
                 <p className="text-text-secondary">{order.scheduled_date} {order.scheduled_start}</p>
               </div>
             </div>
-          </a>
+          </Link>
         ))}
       </div>
     </div>

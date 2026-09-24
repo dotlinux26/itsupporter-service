@@ -10,6 +10,27 @@ import {
   getUnreadCountForOrder,
 } from '../repositories/chatRepository.js';
 
+function checkOrderAccess(
+  order: { id: number; customer_id: number; technician_id: number | null },
+  userId: number
+): void {
+  const db = getDb();
+  const user = db.prepare('SELECT id, role FROM users WHERE id = ?').get(userId) as
+    | { id: number; role: string }
+    | undefined;
+
+  const isAllowed =
+    order.customer_id === userId ||
+    order.technician_id === userId ||
+    user?.role === 'ADMIN' ||
+    user?.role === 'MANAGER' ||
+    (user?.role === 'TECHNICIAN' && !order.technician_id);
+
+  if (!isAllowed) {
+    throw new AppError('FORBIDDEN', 'Bạn không có quyền tham gia khung chat đơn này.', 403);
+  }
+}
+
 export function sendOrderMessage(
   orderId: number,
   userId: number,
@@ -24,11 +45,7 @@ export function sendOrderMessage(
     throw new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404);
   }
 
-  const isParticipant =
-    order.customer_id === userId || order.technician_id === userId;
-  if (!isParticipant) {
-    throw new AppError('FORBIDDEN', 'Bạn không tham gia đơn này.', 403);
-  }
+  checkOrderAccess(order, userId);
 
   return createOrderMessage(orderId, userId, message);
 }
@@ -47,6 +64,8 @@ export function sendOrderVoucherMessage(
   if (!order) {
     throw new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404);
   }
+
+  checkOrderAccess(order, userId);
 
   // Only technician, manager or admin can gift a voucher
   const user = db.prepare('SELECT id, role FROM users WHERE id = ?').get(userId) as { id: number; role: string } | undefined;
@@ -82,11 +101,7 @@ export function listOrderMessages(orderId: number, userId: number): OrderMessage
     throw new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404);
   }
 
-  const isParticipant =
-    order.customer_id === userId || order.technician_id === userId;
-  if (!isParticipant) {
-    throw new AppError('FORBIDDEN', 'Bạn không tham gia đơn này.', 403);
-  }
+  checkOrderAccess(order, userId);
 
   return getOrderMessages(orderId);
 }
@@ -101,11 +116,7 @@ export function markMessagesRead(orderId: number, userId: number): void {
     throw new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404);
   }
 
-  const isParticipant =
-    order.customer_id === userId || order.technician_id === userId;
-  if (!isParticipant) {
-    throw new AppError('FORBIDDEN', 'Bạn không tham gia đơn này.', 403);
-  }
+  checkOrderAccess(order, userId);
 
   markOrderMessagesRead(orderId, userId);
 }
@@ -120,11 +131,7 @@ export function getOrderUnreadCount(orderId: number, userId: number): number {
     throw new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404);
   }
 
-  const isParticipant =
-    order.customer_id === userId || order.technician_id === userId;
-  if (!isParticipant) {
-    throw new AppError('FORBIDDEN', 'Bạn không tham gia đơn này.', 403);
-  }
+  checkOrderAccess(order, userId);
 
   return getUnreadCountForOrder(orderId, userId);
 }

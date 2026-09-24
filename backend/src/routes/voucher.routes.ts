@@ -28,30 +28,18 @@ router.get('/validate', authenticate, (req, res, next) => {
   validateVoucherHandler(req, res, next);
 });
 router.post('/redeem', authenticate, redeemVoucherHandler);
+router.post('/:id/void', authenticate, voidVoucherHandler);
 router.get('/my', authenticate, listMyVouchersHandler);
 router.get('/technician', authenticate, requireRole('TECHNICIAN', 'MANAGER', 'ADMIN'), listTechnicianVouchersHandler);
 
-// Voucher Program Management (Admin/Manager)
-router.get('/programs', authenticate, requireRole('MANAGER', 'ADMIN'), listVoucherProgramsHandler);
+// Voucher Program Management
+router.get('/programs', authenticate, requireRole('TECHNICIAN', 'MANAGER', 'ADMIN'), listVoucherProgramsHandler);
 router.post('/programs', authenticate, requireRole('ADMIN'), createVoucherProgramHandler);
-router.get('/programs/:id', authenticate, requireRole('MANAGER', 'ADMIN'), getVoucherProgramHandler);
+router.get('/programs/:id', authenticate, requireRole('TECHNICIAN', 'MANAGER', 'ADMIN'), getVoucherProgramHandler);
 router.patch('/programs/:id', authenticate, requireRole('ADMIN'), updateVoucherProgramHandler);
 router.delete('/programs/:id', authenticate, requireRole('ADMIN'), deleteVoucherProgramHandler);
-router.post('/programs/:id/generate', authenticate, requireRole('ADMIN'), generateVouchersHandler);
-
-// Voucher operations
-router.post('/redeem', authenticate, redeemVoucherHandler);
-router.post('/:id/void', authenticate, voidVoucherHandler);
-
-// Customer voucher endpoints
-router.get('/my', authenticate, listMyVouchersHandler);
-router.get('/technician', authenticate, requireRole('TECHNICIAN', 'MANAGER', 'ADMIN'), listTechnicianVouchersHandler);
+router.post('/programs/:id/generate', authenticate, requireRole('TECHNICIAN', 'MANAGER', 'ADMIN'), generateVouchersHandler);
 router.get('/programs/:programId/vouchers', authenticate, requireRole('MANAGER', 'ADMIN'), listProgramVouchersHandler);
-router.post('/programs/:programId/generate', authenticate, requireRole('ADMIN'), generateVouchersHandler);
-
-// Voucher validation for customers (used during booking)
-router.get('/validate', authenticate, customerValidateVoucherHandler);
-router.post('/redeem', authenticate, redeemVoucherHandler);
-router.post('/:id/void', authenticate, voidVoucherHandler);
+router.post('/programs/:programId/generate', authenticate, requireRole('TECHNICIAN', 'MANAGER', 'ADMIN'), generateVouchersHandler);
 
 export default router;

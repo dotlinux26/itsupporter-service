@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { technicianApi, publicApi, voucherApi } from '../../api/client';
 import { MarkdownRenderer } from '../../components/MarkdownRenderer';
+import { ZoomableImage } from '../../components/ImageModal';
 import {
   Clock,
   AlertTriangle,
@@ -515,16 +516,21 @@ export function TechnicianOrderDetail() {
         <div className="text-center py-4 bg-slate-50 rounded-xl border border-dashed border-gray-300">
           {bankQrUrl ? (
             <div className="inline-block p-4 bg-white rounded-xl shadow-sm border border-border">
-              <img
+              <ZoomableImage
                 src={bankQrUrl}
                 alt="QR thanh toán ngân hàng"
-                className="w-56 h-56 mx-auto object-contain"
+                className="w-56 h-56 mx-auto object-contain rounded-lg transition-transform"
+                title="QR Chuyển khoản thanh toán ngân hàng"
+                caption={`Quét mã QR để chuyển khoản • Số tiền: ${Number(order.final_amount).toLocaleString('vi-VN')} VNĐ`}
               />
               <p className="text-xs font-semibold text-gray-700 mt-2">
                 Quét mã để chuyển khoản thanh toán
               </p>
               <p className="text-sm font-bold text-orange-600 mt-1">
                 Số tiền: {Number(order.final_amount).toLocaleString('vi-VN')} VNĐ
+              </p>
+              <p className="text-[11px] text-text-muted mt-1">
+                (Click vào ảnh để phóng to toàn màn hình)
               </p>
             </div>
           ) : (

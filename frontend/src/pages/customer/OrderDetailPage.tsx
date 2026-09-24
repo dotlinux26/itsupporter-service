@@ -5,6 +5,7 @@ import { orderApi } from '../../api/client';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { MarkdownRenderer } from '../../components/MarkdownRenderer';
+import { ZoomableImage } from '../../components/ImageModal';
 import { 
   MessageSquare, 
   AlertCircle, 
@@ -225,11 +226,16 @@ export function OrderDetailPage() {
             <h3 className="font-semibold text-text">Mã QR Thanh Toán Ngân Hàng</h3>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-6">
-            <img 
-              src={order.payment_qr_path} 
-              alt="Bank QR" 
-              className="w-48 h-48 object-contain rounded-xl border border-slate-200 shadow-xs bg-white p-2" 
-            />
+            <div className="flex flex-col items-center">
+              <ZoomableImage 
+                src={order.payment_qr_path} 
+                alt="QR Thanh Toán" 
+                className="w-48 h-48 object-contain rounded-xl border border-slate-200 shadow-xs bg-white p-2" 
+                title="Mã QR Thanh Toán Ngân Hàng"
+                caption={`Mã đơn hàng: ${order.code} • Số tiền: ${order.final_amount.toLocaleString('vi-VN')} VNĐ`}
+              />
+              <span className="text-[11px] text-slate-400 mt-1">Nhấn để phóng to ảnh</span>
+            </div>
             <div className="text-sm text-slate-600 space-y-1">
               <p className="font-bold text-slate-800">Quét mã QR bằng ứng dụng Ngân hàng</p>
               <p>Số tiền thanh toán: <strong className="text-orange-600 text-base">{order.final_amount.toLocaleString('vi-VN')} VNĐ</strong></p>

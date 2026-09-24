@@ -117,12 +117,13 @@ function AppRoutes() {
           <Route path="booking" element={<BookingPage />} />
           <Route path="orders" element={<OrdersPage />} />
           <Route path="orders/:id" element={<OrderDetailPage />} />
-          <Route path="orders/:id/chat" element={<ChatPage />} />
           <Route path="my-vouchers" element={<MyVouchersPage />} />
         </Route>
 
-        {/* Common authenticated profile route */}
+        {/* Shared authenticated routes (Chat, Profile) */}
         <Route element={<ProtectedRoute allowedRoles={['GUEST', 'TECHNICIAN', 'MANAGER', 'ADMIN']} />}>
+          <Route path="orders/:id/chat" element={<ChatPage />} />
+          <Route path="technician/orders/:id/chat" element={<ChatPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
 
