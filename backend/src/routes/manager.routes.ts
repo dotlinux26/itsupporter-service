@@ -5,11 +5,131 @@ import { getAuthUser } from '../middleware/auth.js';
 import { getDb } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import type { OrderRow } from '../models/index.js';
-import { listSettlements, createSettlement } from '../services/financeService.js';
+import { listSettlements, createSettlement, getTeamBalance, getRunBalance } from '../services/financeService.js';
 import { getSystemSettings } from '../services/settingsService.js';
 import { getAvailableTechnicians } from '../services/calendarService.js';
 
 const router = Router();
+
+// Manager: GET /analytics?days=7|14|30 (comprehensive financial & operational analytics)
+router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
+  try {
+    const db = getDb();
+    const days = Math.min(Math.max(Number(req.query.days) || 14, 7), 90);
+    const teamFundBalance = getTeamBalance();
+
+    const revRow = db.prepare(`
+      SELECT 
+        COALESCE(SUM(final_amount), 0) AS total_revenue,
+        COUNT(*) AS total_orders,
+        COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS completed_orders,
+        COUNT(CASE WHEN status = 'PENDING' THEN 1 END) AS pending_orders,
+        COUNT(CASE WHEN status IN ('CONFIRMED', 'IN_PROGRESS') THEN 1 END) AS in_progress_orders,
+        COUNT(CASE WHEN status = 'CANCELLED' THEN 1 END) AS cancelled_orders
+      FROM orders
+    `).get() as any;
+
+    const techShareRow = db.prepare(`
+      SELECT COALESCE(SUM(amount), 0) AS total_tech_share
+      FROM financial_transactions
+      WHERE type IN ('TECHNICIAN_SHARE', 'EXTEND_FEE') AND direction = 'IN'
+    `).get() as any;
+
+    const technicians = db.prepare(`
+      SELECT id, name, avatar_url, email
+      FROM users
+      WHERE role = 'TECHNICIAN' AND is_deleted = 0
+    `).all() as any[];
+
+    let pendingSettlementsTotal = 0;
+    const techLeaderboard = technicians.map((tech) => {
+      const balance = getRunBalance(tech.id);
+      if (balance > 0) pendingSettlementsTotal += balance;
+
+      const stats = db.prepare(`
+        SELECT 
+          COUNT(*) AS total_jobs,
+          COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS completed_jobs,
+          COALESCE(SUM(CASE WHEN status = 'COMPLETED' THEN final_amount ELSE 0 END), 0) AS generated_revenue
+        FROM orders
+        WHERE technician_id = ?
+      `).get(tech.id) as any;
+
+      const ratingRow = db.prepare(`
+        SELECT COALESCE(AVG(rating), 5.0) AS avg_rating, COUNT(*) AS review_count
+        FROM reviews
+        WHERE technician_id = ?
+      `).get(tech.id) as any;
+
+      return {
+        id: tech.id,
+        name: tech.name,
+        email: tech.email,
+        avatar_url: tech.avatar_url,
+        current_balance: balance,
+        completed_jobs: stats.completed_jobs || 0,
+        generated_revenue: stats.generated_revenue || 0,
+        avg_rating: Math.round((ratingRow.avg_rating || 5.0) * 10) / 10,
+        review_count: ratingRow.review_count || 0,
+      };
+    }).sort((a, b) => b.completed_jobs - a.completed_jobs || b.generated_revenue - a.generated_revenue);
+
+    const dateSeries: Array<{ date: string; revenue: number; order_count: number; team_share: number; tech_share: number }> = [];
+    const now = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86400000);
+      const dateStr = d.toISOString().slice(0, 10);
+      const row = db.prepare(`
+        SELECT 
+          COALESCE(SUM(final_amount), 0) AS revenue,
+          COUNT(*) AS order_count
+        FROM orders
+        WHERE scheduled_date = ? AND status = 'COMPLETED'
+      `).get(dateStr) as any;
+
+      const rev = Number(row?.revenue || 0);
+      dateSeries.push({
+        date: dateStr,
+        revenue: rev,
+        order_count: Number(row?.order_count || 0),
+        team_share: Math.round(rev * 0.3),
+        tech_share: Math.round(rev * 0.7),
+      });
+    }
+
+    const packageStats = db.prepare(`
+      SELECT 
+        p.id,
+        p.name,
+        p.price,
+        COUNT(o.id) AS order_count,
+        COALESCE(SUM(CASE WHEN o.status = 'COMPLETED' THEN o.final_amount ELSE 0 END), 0) AS total_revenue
+      FROM service_packages p
+      LEFT JOIN orders o ON o.package_id = p.id
+      GROUP BY p.id
+      ORDER BY total_revenue DESC
+    `).all() as any[];
+
+    res.json({
+      data: {
+        summary: {
+          total_revenue: revRow.total_revenue || 0,
+          team_fund_balance: teamFundBalance,
+          total_technician_share: techShareRow.total_tech_share || 0,
+          pending_settlements_total: pendingSettlementsTotal,
+          total_orders: revRow.total_orders || 0,
+          completed_orders: revRow.completed_orders || 0,
+          pending_orders: revRow.pending_orders || 0,
+          in_progress_orders: revRow.in_progress_orders || 0,
+          cancelled_orders: revRow.cancelled_orders || 0,
+        },
+        revenue_by_date: dateSeries,
+        package_stats: packageStats,
+        top_technicians: techLeaderboard,
+      },
+    });
+  } catch (err) { next(err); }
+});
 
 // Manager: GET /orders?status=...&technician_id=...&from=...&to=...
 router.get('/orders', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {

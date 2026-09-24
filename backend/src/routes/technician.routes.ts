@@ -5,8 +5,56 @@ import { getAuthUser } from '../middleware/auth.js';
 import { getDb } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import type { OrderRow } from '../models/index.js';
+import { getRunBalance } from '../services/financeService.js';
 
 const router = Router();
+
+// Technician: GET /finance (real balance, earnings, settlements from ledger)
+router.get('/finance', authenticate, requireRole('TECHNICIAN'), (req, res, next) => {
+  try {
+    const user = getAuthUser(req)!;
+    const db = getDb();
+    const currentBalance = getRunBalance(user.id);
+
+    const earnedRow = db.prepare(`
+      SELECT COALESCE(SUM(amount), 0) AS earned
+      FROM financial_transactions
+      WHERE technician_id = ? AND direction = 'IN'
+    `).get(user.id) as { earned: number };
+
+    const settledRow = db.prepare(`
+      SELECT COALESCE(SUM(amount), 0) AS settled
+      FROM settlements
+      WHERE technician_id = ?
+    `).get(user.id) as { settled: number };
+
+    const settlements = db.prepare(`
+      SELECT s.*, m.name AS manager_name
+      FROM settlements s
+      LEFT JOIN users m ON m.id = s.manager_id
+      WHERE s.technician_id = ?
+      ORDER BY s.created_at DESC LIMIT 20
+    `).all(user.id);
+
+    const transactions = db.prepare(`
+      SELECT ft.*, o.code AS order_code
+      FROM financial_transactions ft
+      LEFT JOIN orders o ON o.id = ft.order_id
+      WHERE ft.technician_id = ?
+      ORDER BY ft.created_at DESC LIMIT 30
+    `).all(user.id);
+
+    res.json({
+      data: {
+        current_balance: currentBalance,
+        total_earned: earnedRow.earned,
+        total_settled: settledRow.settled,
+        settlements,
+        transactions,
+      },
+    });
+  } catch (err) { next(err); }
+});
 
 // Technician: GET /schedule?date=YYYY-MM-DD
 router.get('/schedule', authenticate, requireRole('TECHNICIAN'), (req, res, next) => {

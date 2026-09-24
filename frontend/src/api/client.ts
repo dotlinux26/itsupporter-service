@@ -162,6 +162,7 @@ export const reviewApi = {
 
 export const technicianApi = {
   schedule: (date: string) => api.get('/technician/schedule', { params: { date } }),
+  finance: () => api.get('/technician/finance'),
   getShifts: () => api.get('/technician/shifts'),
   updateShifts: (shifts: Array<{ day_of_week: number; start_time: string; end_time: string; is_active: boolean | number }>) =>
     api.put('/technician/shifts', { shifts }),
@@ -186,6 +187,8 @@ export const technicianApi = {
 export const managerApi = {
   orders: (params?: { status?: string; technician_id?: number; from?: string; to?: string }) =>
     api.get('/manager/orders', { params }),
+  analytics: (params?: { days?: number }) =>
+    api.get('/manager/analytics', { params }),
   orderAvailableTechnicians: (orderId: number) =>
     api.get(`/manager/orders/${orderId}/available-technicians`),
   assignTechnician: (orderId: number, technicianId: number) =>
