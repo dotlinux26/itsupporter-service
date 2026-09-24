@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { notificationApi } from '../api/client';
 import type { NotificationRecord } from '../types';
 import {
@@ -57,6 +58,7 @@ function getNotificationIcon(type: string) {
 
 export function NotificationBell() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -128,7 +130,15 @@ export function NotificationBell() {
 
     // Navigate to related order if order_id is present
     if (notif.order_id) {
-      navigate(`/orders/${notif.order_id}`);
+      if (user?.role === 'TECHNICIAN') {
+        navigate(`/technician/orders/${notif.order_id}`);
+      } else if (user?.role === 'MANAGER') {
+        navigate(`/manager/orders`);
+      } else if (user?.role === 'ADMIN') {
+        navigate(`/admin`);
+      } else {
+        navigate(`/orders/${notif.order_id}`);
+      }
     }
   };
 

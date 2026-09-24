@@ -1,4 +1,4 @@
-import { NavLink, useLocation, Outlet, Link } from 'react-router-dom';
+import { NavLink, Outlet, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
@@ -8,23 +8,54 @@ import { ExternalLink } from 'lucide-react';
 import { ScrollToTopButton } from './ScrollToTopButton';
 import { NotificationBell } from './NotificationBell';
 
-export function PublicHeader() {
+export function AppHeader() {
   const { t } = useTranslation();
-  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isAuthenticated, logout, user } = useAuth();
 
-  const navItems = [
-    { path: '/', label: t('nav.home') },
-    { path: '/services', label: t('nav.services') },
-    { path: '/about', label: t('nav.about') },
-    { path: '/terms', label: t('nav.terms') },
-  ];
+  // Role-based navigation links
+  let navItems: { path: string; label: string }[] = [];
+
+  if (!isAuthenticated || user?.role === 'GUEST') {
+    navItems = [
+      { path: '/', label: t('nav.home') || 'Trang chủ' },
+      { path: '/services', label: t('nav.services') || 'Gói dịch vụ' },
+      { path: '/about', label: t('nav.about') || 'Về chúng tôi' },
+      { path: '/terms', label: t('nav.terms') || 'Quy định' },
+    ];
+  } else if (user?.role === 'TECHNICIAN') {
+    navItems = [
+      { path: '/technician', label: 'Bàn làm việc' },
+      { path: '/technician/schedule', label: 'Lịch trực' },
+      { path: '/technician/orders', label: 'Đơn phụ trách' },
+    ];
+  } else if (user?.role === 'MANAGER') {
+    navItems = [
+      { path: '/manager', label: 'Bảng điều khiển' },
+      { path: '/manager/orders', label: 'Đơn hàng' },
+      { path: '/manager/technicians', label: 'Kỹ thuật viên' },
+      { path: '/manager/packages', label: 'Gói dịch vụ' },
+      { path: '/manager/settlements', label: 'Quyết toán' },
+      { path: '/manager/reviews', label: 'Đánh giá' },
+      { path: '/manager/settings', label: 'Cài đặt' },
+    ];
+  } else if (user?.role === 'ADMIN') {
+    navItems = [
+      { path: '/admin', label: 'Bảng điều khiển' },
+      { path: '/admin/users', label: 'Người dùng' },
+      { path: '/admin/stats', label: 'Thống kê' },
+      { path: '/admin/vouchers', label: 'Mã giảm giá' },
+      { path: '/admin/qr', label: 'Mã QR' },
+      { path: '/admin/settings', label: 'Cài đặt' },
+    ];
+  }
+
+  const isCustomer = !user?.role || user?.role === 'GUEST';
 
   return (
     <header className="border-b border-border bg-white sticky top-0 z-40">
       <div className="container flex items-center justify-between h-16">
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-4 lg:gap-8">
           <button
             className="md:hidden p-2 text-text-secondary hover:text-text"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -40,19 +71,23 @@ export function PublicHeader() {
           </button>
 
           <Link to="/" className="flex items-center gap-2.5">
-            <img src="/logo_bo3goc.png" alt="IT Supporter Service" className="w-10 h-10 object-contain" />
-            <span className="font-bold text-xl text-[#ff6b35] hidden sm:block tracking-tight">IT Supporter Service</span>
+            <img src="/logo_bo3goc.png" alt="IT Supporter Service" className="w-9 h-9 object-contain" />
+            <span className="font-bold text-lg text-[#ff6b35] hidden sm:block tracking-tight">IT Supporter Service</span>
           </Link>
         </div>
 
-        <nav className={`md:flex hidden ${mobileMenuOpen ? 'flex md:hidden' : ''} md:flex-1 md:justify-center`}>
-          <ul className="flex items-center gap-6">
+        {/* DESKTOP NAV */}
+        <nav className="hidden md:flex flex-1 justify-center px-4 overflow-x-auto">
+          <ul className="flex items-center gap-4 lg:gap-6 whitespace-nowrap">
             {navItems.map((item) => (
               <li key={item.path}>
                 <NavLink
                   to={item.path}
+                  end={item.path === '/' || item.path === '/admin' || item.path === '/manager' || item.path === '/technician'}
                   className={({ isActive }) =>
-                    `text-sm font-medium transition-colors ${isActive ? 'text-primary' : 'text-text-secondary hover:text-primary'}`
+                    `text-sm font-medium transition-colors ${
+                      isActive ? 'text-primary font-semibold' : 'text-text-secondary hover:text-primary'
+                    }`
                   }
                 >
                   {item.label}
@@ -62,9 +97,11 @@ export function PublicHeader() {
           </ul>
         </nav>
 
-        <div className="flex items-center gap-4">
+        {/* RIGHT ACTIONS */}
+        <div className="flex items-center gap-3">
           {isAuthenticated ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              {/* Role badge */}
               {user?.role === 'ADMIN' && (
                 <NavLink to="/admin" className="text-xs font-bold px-2.5 py-1 bg-purple-50 text-purple-700 rounded-lg border border-purple-200 hover:bg-purple-100">
                   Admin
@@ -80,25 +117,39 @@ export function PublicHeader() {
                   Kỹ thuật viên
                 </NavLink>
               )}
-              <NavLink
-                to="/my-vouchers"
-                className="text-xs font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-lg border border-orange-200 hover:bg-orange-100 hidden sm:flex items-center gap-1"
-              >
-                🎟️ Vé ưu đãi
-              </NavLink>
-              <NavLink
-                to="/orders"
-                className="text-sm font-medium text-text-secondary hover:text-primary hidden sm:block"
-              >
-                {t('nav.orders')}
-              </NavLink>
+
+              {/* Customer specific navigation */}
+              {isCustomer && (
+                <>
+                  <NavLink
+                    to="/my-vouchers"
+                    className="text-xs font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-lg border border-orange-200 hover:bg-orange-100 hidden sm:flex items-center gap-1"
+                  >
+                    🎟️ Vé ưu đãi
+                  </NavLink>
+                  <NavLink
+                    to="/orders"
+                    className="text-sm font-medium text-text-secondary hover:text-primary hidden sm:block"
+                  >
+                    {t('nav.orders')}
+                  </NavLink>
+                </>
+              )}
+
+              {/* Interactive notification bell */}
               <NotificationBell />
+
+              {/* Profile link */}
               <NavLink to="/profile" className="flex items-center gap-2 hover:opacity-80 transition" title={user?.name}>
-                <Avatar name={user?.name || ''} email={user?.email || ''} size={32} />
+                <Avatar name={user?.name || ''} email={user?.email || ''} src={user?.avatar_url} size={32} />
+                <span className="hidden xl:block text-xs font-semibold text-slate-700 max-w-[100px] truncate">{user?.name}</span>
               </NavLink>
+
+              {/* Logout button */}
               <button
                 onClick={() => logout()}
-                className="btn btn-ghost text-xs text-slate-500 hover:text-red-600"
+                className="btn btn-ghost text-xs text-slate-500 hover:text-red-600 px-2"
+                title={t('nav.logout')}
               >
                 {t('nav.logout')}
               </button>
@@ -123,34 +174,73 @@ export function PublicHeader() {
         </div>
       </div>
 
+      {/* MOBILE MENU */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border py-4">
-          <ul className="flex flex-col gap-2">
+        <div className="md:hidden border-t border-border py-4 bg-white shadow-lg animate-in slide-in-from-top-2 duration-200">
+          <ul className="flex flex-col gap-1 px-4">
             {navItems.map((item) => (
               <li key={item.path}>
                 <NavLink
                   to={item.path}
+                  end={item.path === '/' || item.path === '/admin' || item.path === '/manager' || item.path === '/technician'}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-4 py-2 text-base font-medium ${location.pathname === item.path ? 'text-primary' : 'text-text-secondary'}`}
+                  className={({ isActive }) =>
+                    `block px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      isActive ? 'bg-orange-50 text-primary font-semibold' : 'text-text-secondary hover:bg-gray-50'
+                    }`
+                  }
                 >
                   {item.label}
                 </NavLink>
               </li>
             ))}
             {isAuthenticated ? (
-              <>
-                <NavLink to="/profile" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-base font-medium text-text-secondary">
-                  {t('nav.profile')}
-                </NavLink>
-                <NavLink to="/dashboard" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-base font-medium text-text-secondary">
-                  {t('nav.dashboard')}
-                </NavLink>
-                <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-2 text-base font-medium text-text-secondary">
-                  {t('nav.logout')}
-                </button>
-              </>
+              <div className="pt-3 mt-2 border-t border-gray-100 space-y-1">
+                {isCustomer && (
+                  <>
+                    <li>
+                      <NavLink
+                        to="/orders"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block px-3 py-2 text-sm font-medium text-text-secondary hover:text-primary"
+                      >
+                        📦 {t('nav.orders')}
+                      </NavLink>
+                    </li>
+                    <li>
+                      <NavLink
+                        to="/my-vouchers"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block px-3 py-2 text-sm font-medium text-orange-600 hover:text-orange-700"
+                      >
+                        🎟️ Vé ưu đãi của tôi
+                      </NavLink>
+                    </li>
+                  </>
+                )}
+                <li>
+                  <NavLink
+                    to="/profile"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 text-sm font-medium text-text-secondary hover:text-primary"
+                  >
+                    👤 {t('nav.profile')}
+                  </NavLink>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition"
+                  >
+                    🚪 {t('nav.logout')}
+                  </button>
+                </li>
+              </div>
             ) : (
-              <div className="flex items-center gap-4 px-4 py-2 pt-3 border-t border-border mt-2">
+              <div className="flex items-center gap-4 px-3 py-3 pt-4 border-t border-border mt-2">
                 <NavLink
                   to="/login"
                   onClick={() => setMobileMenuOpen(false)}
@@ -175,61 +265,9 @@ export function PublicHeader() {
   );
 }
 
-export function AuthenticatedHeader() {
-  const { t } = useTranslation();
-  const { user, logout } = useAuth();
-
-  const getDashboardPath = () => {
-    switch (user?.role) {
-      case 'TECHNICIAN': return '/technician';
-      case 'MANAGER': return '/manager';
-      case 'ADMIN': return '/admin';
-      default: return '/orders';
-    }
-  };
-
-  return (
-    <header className="border-b border-border bg-white sticky top-0 z-40">
-      <div className="container flex items-center justify-between h-16">
-        <Link to="/" className="flex items-center gap-2.5">
-          <img src="/logo_bo3goc.png" alt="IT Supporter Service" className="w-8 h-8 object-contain" />
-          <span className="font-bold text-lg text-[#ff6b35] hidden sm:block tracking-tight">IT Supporter Service</span>
-        </Link>
-
-        <nav className="flex-1 flex justify-center">
-          <ul className="flex items-center gap-6">
-            <li>
-              <a href={getDashboardPath()} className="text-sm font-medium text-text-secondary hover:text-primary">
-                {t('nav.dashboard')}
-              </a>
-            </li>
-            <li>
-              <a href="/orders" className="text-sm font-medium text-text-secondary hover:text-primary">
-                {t('nav.orders')}
-              </a>
-            </li>
-          </ul>
-        </nav>
-
-        <div className="flex items-center gap-4">
-          <NotificationBell />
-          <Link to="/profile" className="flex items-center gap-2.5 hover:opacity-80 transition" title={user?.name}>
-            <Avatar
-              src={user?.avatar_url}
-              name={user?.name}
-              email={user?.email}
-              size={32}
-            />
-            <span className="hidden sm:block text-sm font-semibold text-text">{user?.name}</span>
-          </Link>
-          <button onClick={() => logout()} className="btn btn-ghost text-sm">
-            {t('nav.logout')}
-          </button>
-        </div>
-      </div>
-    </header>
-  );
-}
+// Backward compatibility aliases
+export const PublicHeader = AppHeader;
+export const AuthenticatedHeader = AppHeader;
 
 export function Footer() {
   const [info, setInfo] = useState<{
@@ -451,7 +489,7 @@ export function Footer() {
 }
 
 export function MainLayout({ children }: { children?: React.ReactNode }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { loading } = useAuth();
 
   if (loading) {
     return (
@@ -463,7 +501,7 @@ export function MainLayout({ children }: { children?: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {isAuthenticated ? <AuthenticatedHeader /> : <PublicHeader />}
+      <AppHeader />
       <main className="flex-1 w-full">
         {children || <Outlet />}
       </main>

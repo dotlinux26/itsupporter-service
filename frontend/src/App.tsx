@@ -65,7 +65,12 @@ function ProtectedRoute({ allowedRoles = [], children }: { allowedRoles?: string
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role || '')) {
-    return <Navigate to="/orders" replace />;
+    switch (user?.role) {
+      case 'ADMIN': return <Navigate to="/admin" replace />;
+      case 'MANAGER': return <Navigate to="/manager" replace />;
+      case 'TECHNICIAN': return <Navigate to="/technician" replace />;
+      default: return <Navigate to="/orders" replace />;
+    }
   }
 
   return <>{children || <Outlet />}</>;
@@ -108,12 +113,16 @@ function AppRoutes() {
         <Route path="register" element={<PublicOnly><RegisterPage /></PublicOnly>} />
 
         {/* Customer authenticated routes */}
-        <Route element={<ProtectedRoute allowedRoles={['GUEST', 'TECHNICIAN', 'MANAGER', 'ADMIN']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['GUEST']} />}>
           <Route path="booking" element={<BookingPage />} />
           <Route path="orders" element={<OrdersPage />} />
           <Route path="orders/:id" element={<OrderDetailPage />} />
           <Route path="orders/:id/chat" element={<ChatPage />} />
           <Route path="my-vouchers" element={<MyVouchersPage />} />
+        </Route>
+
+        {/* Common authenticated profile route */}
+        <Route element={<ProtectedRoute allowedRoles={['GUEST', 'TECHNICIAN', 'MANAGER', 'ADMIN']} />}>
           <Route path="profile" element={<ProfilePage />} />
         </Route>
 
