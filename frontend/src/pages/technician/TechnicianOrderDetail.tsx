@@ -5,6 +5,7 @@ import { MarkdownRenderer } from '../../components/MarkdownRenderer';
 import { ZoomableImage } from '../../components/ImageModal';
 import { OrderTimeline } from '../../components/OrderTimeline';
 import type { OrderTimelineItem } from '../../types';
+import { parseServerDate, formatVietnamTime } from '../../utils/date';
 import {
   Clock,
   AlertTriangle,
@@ -115,7 +116,7 @@ export function TechnicianOrderDetail() {
   // Handle timer
   useEffect(() => {
     if (order?.status === 'IN_PROGRESS' && order?.started_at) {
-      const startTime = new Date(order.started_at).getTime();
+      const startTime = parseServerDate(order.started_at).getTime();
       const updateTimer = () => {
         const now = Date.now();
         const diff = Math.max(0, Math.floor((now - startTime) / 1000));
@@ -385,7 +386,7 @@ export function TechnicianOrderDetail() {
               )}
             </div>
             <p className="text-xs text-text-muted mt-1">
-              Thời gian tiếp nhận: {new Date(order.created_at).toLocaleDateString('vi-VN')}
+              Thời gian tiếp nhận: {formatVietnamTime(order.created_at, 'dd/MM/yyyy HH:mm:ss')}
             </p>
           </div>
 

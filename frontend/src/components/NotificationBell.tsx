@@ -13,10 +13,11 @@ import {
   Info,
   Check,
 } from 'lucide-react';
+import { parseServerDate, formatVietnamTime } from '../utils/date';
 
 function formatRelativeTime(dateString: string): string {
   try {
-    const date = new Date(dateString);
+    const date = parseServerDate(dateString);
     const now = new Date();
     const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
 
@@ -28,7 +29,7 @@ function formatRelativeTime(dateString: string): string {
     const diffDay = Math.floor(diffHour / 24);
     if (diffDay < 7) return `${diffDay} ngày trước`;
 
-    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    return formatVietnamTime(dateString, 'dd/MM/yyyy HH:mm');
   } catch {
     return dateString;
   }

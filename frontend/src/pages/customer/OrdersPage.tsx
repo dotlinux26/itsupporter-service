@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { orderApi } from '../../api/client';
 import type { OrderRow } from '../../types';
+import { formatVietnamTime } from '../../utils/date';
 
 export function OrdersPage() {
   const { t } = useTranslation();
@@ -116,7 +117,7 @@ export function OrdersPage() {
                   </span>
                   <span className="flex items-center gap-1">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    <span>{new Date(order.updated_at).toLocaleString('vi-VN')}</span>
+                    <span>{formatVietnamTime(order.updated_at, 'dd/MM/yyyy HH:mm')}</span>
                   </span>
                   {order.has_unread && (
                     <span className="badge badge-pending flex items-center gap-1">

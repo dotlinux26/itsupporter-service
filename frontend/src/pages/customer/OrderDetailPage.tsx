@@ -4,6 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import { orderApi, reviewApi } from '../../api/client';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { formatVietnamTime } from '../../utils/date';
 import { MarkdownRenderer } from '../../components/MarkdownRenderer';
 import { ZoomableImage } from '../../components/ImageModal';
 import { OrderTimeline } from '../../components/OrderTimeline';
@@ -181,7 +182,7 @@ export function OrderDetailPage() {
               </span>
             </div>
             <p className="text-xs text-text-muted mt-1">
-              Thời gian tạo đơn: {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
+              Thời gian tạo đơn: {formatVietnamTime(order.created_at, 'dd/MM/yyyy HH:mm:ss')}
             </p>
           </div>
 
@@ -428,7 +429,7 @@ export function OrderDetailPage() {
                   <span className="font-bold text-slate-800 text-sm ml-2">{review.rating} / 5 sao</span>
                 </div>
                 <span className="text-xs text-slate-500 font-mono">
-                  {format(new Date(review.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                  {formatVietnamTime(review.created_at, 'dd/MM/yyyy HH:mm:ss')}
                 </span>
               </div>
               <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{review.content}</p>

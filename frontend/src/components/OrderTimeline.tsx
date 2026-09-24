@@ -1,5 +1,3 @@
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
 import {
   CheckCircle2,
   Clock,
@@ -13,6 +11,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import type { OrderTimelineItem } from '../types';
+import { formatVietnamTime } from '../utils/date';
 
 interface OrderTimelineProps {
   timeline: OrderTimelineItem[];
@@ -21,15 +20,6 @@ interface OrderTimelineProps {
   startedAt?: string | null;
   completedAt?: string | null;
   completionResult?: string | null;
-}
-
-function formatTime(dateStr?: string | null): string {
-  if (!dateStr) return '';
-  try {
-    return format(new Date(dateStr), 'dd/MM/yyyy HH:mm:ss', { locale: vi });
-  } catch {
-    return dateStr;
-  }
 }
 
 interface EventConfig {
@@ -148,7 +138,6 @@ export function OrderTimeline({
   completedAt,
   completionResult,
 }: OrderTimelineProps) {
-  // If timeline data from order_status_history is available, render each real audit log event
   const hasHistory = Array.isArray(timeline) && timeline.length > 0;
 
   return (
@@ -176,7 +165,7 @@ export function OrderTimeline({
                       {config.badgeLabel}
                     </span>
                   </div>
-                  <span className="text-xs text-slate-500 font-mono">{formatTime(item.created_at)}</span>
+                  <span className="text-xs text-slate-500 font-mono">{formatVietnamTime(item.created_at)}</span>
                 </div>
 
                 <div className="text-xs text-slate-600 space-y-1">
@@ -209,7 +198,7 @@ export function OrderTimeline({
             <div className="flex-1 pb-4 border-l-2 border-slate-200 pl-4 -ml-7 mt-8">
               <div className="flex flex-wrap items-center justify-between gap-1 mb-0.5">
                 <span className="font-semibold text-slate-900 text-sm">Đơn hàng được khởi tạo</span>
-                <span className="text-xs text-slate-500 font-mono">{formatTime(createdAt)}</span>
+                <span className="text-xs text-slate-500 font-mono">{formatVietnamTime(createdAt)}</span>
               </div>
               <p className="text-xs text-slate-600">Khách hàng đặt lịch dịch vụ thành công trên hệ thống</p>
             </div>
@@ -238,7 +227,7 @@ export function OrderTimeline({
               <div className={`flex-1 ${orderStatus === 'COMPLETED' ? 'border-l-2 border-slate-200 pb-4' : 'pb-1'} pl-4 -ml-7 mt-8`}>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-900 text-sm">Đang thực hiện dịch vụ</span>
-                  <span className="text-xs text-slate-500 font-mono">{formatTime(startedAt)}</span>
+                  <span className="text-xs text-slate-500 font-mono">{formatVietnamTime(startedAt)}</span>
                 </div>
                 <p className="text-xs text-slate-600">Kỹ thuật viên đang xử lý thiết bị của khách hàng</p>
               </div>
@@ -253,7 +242,7 @@ export function OrderTimeline({
               <div className="flex-1 pb-1 pl-4 -ml-7 mt-8">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-900 text-sm">Hoàn thành & kết toán</span>
-                  <span className="text-xs text-slate-500 font-mono">{formatTime(completedAt)}</span>
+                  <span className="text-xs text-slate-500 font-mono">{formatVietnamTime(completedAt)}</span>
                 </div>
                 <p className="text-xs text-slate-600">
                   {completionResult === 'SUCCESS' ? 'Dịch vụ hoàn tất thành công' : 'Đơn hàng đã kết thúc'}
