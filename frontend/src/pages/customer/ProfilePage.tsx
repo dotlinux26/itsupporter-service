@@ -74,7 +74,25 @@ export function ProfilePage() {
       setPhone(user.phone ?? '');
       setContactInfo(user.contact_info ?? '');
       setBio(user.bio ?? '');
-      setPublicProfile(user.public_profile ?? '');
+
+      if (user.public_profile) {
+        try {
+          const parsed = JSON.parse(user.public_profile);
+          if (parsed && typeof parsed === 'object') {
+            if (Array.isArray(parsed.skills) && parsed.skills.length > 0) {
+              setSelectedTags(parsed.skills);
+            }
+            const md = parsed.article || parsed.markdown || parsed.content || '';
+            setPublicProfile(md);
+          } else {
+            setPublicProfile(String(parsed));
+          }
+        } catch {
+          setPublicProfile(user.public_profile);
+        }
+      } else {
+        setPublicProfile('');
+      }
     }
   }, [user]);
 
@@ -84,12 +102,20 @@ export function ProfilePage() {
     setProfileSuccess('');
     setProfileSaving(true);
     try {
+      let profilePayload: string | null = null;
+      if (isTechnician) {
+        profilePayload = JSON.stringify({
+          skills: selectedTags,
+          article: publicProfile.trim(),
+        });
+      }
+
       await authApi.updateProfile({
         name: name.trim(),
         phone: phone.trim() || null,
         contactInfo: contactInfo.trim() || null,
         bio: isTechnician ? bio.trim() || null : undefined,
-        publicProfile: isTechnician ? publicProfile.trim() || null : undefined,
+        publicProfile: profilePayload,
       });
       setProfileSuccess('Cập nhật hồ sơ thành công!');
       refreshUser();

@@ -13,6 +13,8 @@ import {
   Clock,
   Laptop,
   BookOpen,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import type { TechnicianBrief } from '@/types';
@@ -26,6 +28,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
   const { t } = useTranslation();
   const [startIndex, setStartIndex] = useState(0);
   const [selectedTech, setSelectedTech] = useState<TechnicianBrief | null>(null);
+  const [isArticleExpanded, setIsArticleExpanded] = useState(false);
 
   const CARDS_PER_VIEW = 4;
 
@@ -118,7 +121,10 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
           return (
             <div
               key={tech.id}
-              onClick={() => setSelectedTech(tech)}
+              onClick={() => {
+                setSelectedTech(tech);
+                setIsArticleExpanded(false);
+              }}
               className="bg-white rounded-2xl p-6 text-center border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-orange-400 transition-all group flex flex-col justify-between items-center cursor-pointer relative"
             >
               <div className="w-full flex flex-col items-center">
@@ -190,55 +196,55 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
           onClick={() => setSelectedTech(null)}
         >
           <div
-            className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative overflow-hidden animate-scaleUp"
+            className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200 relative animate-scaleUp max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
             <button
               onClick={() => setSelectedTech(null)}
               aria-label="Đóng"
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition cursor-pointer"
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition cursor-pointer z-10"
             >
               <X className="w-5 h-5" />
             </button>
 
             {/* Modal Header */}
-            <div className="flex items-start gap-4 mb-6">
+            <div className="flex items-start gap-4 mb-4 pr-8 shrink-0">
               <Avatar
                 name={selectedTech.name}
                 src={selectedTech.avatar_url}
-                size={80}
+                size={72}
                 className="shadow-sm border-2 border-orange-100 shrink-0"
               />
-              <div className="pr-6">
+              <div>
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-semibold mb-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   Sẵn sàng tiếp nhận máy
                 </div>
-                <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
                   {selectedTech.name}
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
-                  <Laptop className="w-3.5 h-3.5 text-orange-500" /> Kỹ thuật viên IT Supporter · ĐH Công nghiệp Hà Nội
+                  <Laptop className="w-3.5 h-3.5 text-orange-500 shrink-0" /> Kỹ thuật viên IT Supporter · ĐH Công nghiệp Hà Nội
                 </p>
                 <div className="flex items-center gap-2 mt-2">
                   <div className="flex items-center text-amber-500 text-xs font-bold gap-1 bg-amber-50 px-2 py-0.5 rounded-md">
                     <Star className="w-3.5 h-3.5 fill-current" />
                     <span>{selectedTech.rating ? selectedTech.rating.toFixed(1) : '5.0'} / 5.0</span>
                   </div>
-                  <span className="text-slate-400 text-xs">({selectedTech.rating_count || 12} đánh giá hoàn tất)</span>
+                  <span className="text-slate-400 text-xs">({selectedTech.rating_count || 12} đánh giá)</span>
                 </div>
               </div>
             </div>
 
-            {/* Modal Body */}
-            <div className="space-y-5 text-sm">
+            {/* Modal Body (Scrollable) */}
+            <div className="space-y-4 text-sm overflow-y-auto pr-1 flex-1">
               {/* Bio description */}
               <div>
                 <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                   Giới thiệu & Chuyên môn
                 </h4>
-                <p className="text-slate-700 leading-relaxed text-xs sm:text-sm bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                <p className="text-slate-700 leading-relaxed text-xs sm:text-sm bg-slate-50 p-3 rounded-xl border border-slate-100">
                   {selectedTech.bio || 'Kỹ thuật viên sinh viên khoa CNTT - Đại học Công nghiệp Hà Nội. Đã qua đào tạo bài bản quy trình 9 bước vệ sinh phần cứng an toàn, tra keo tản nhiệt và stress-test hiệu năng.'}
                 </p>
               </div>
@@ -248,7 +254,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                 <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                   Kỹ năng thao tác thực tế
                 </h4>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {(() => {
                     let skills: string[] = [];
                     try {
@@ -305,13 +311,40 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
 - **Chuyên môn nổi bật**: Tháo lắp an toàn chống tĩnh điện ESD, tra keo tản nhiệt hiệu năng cao, tối ưu luồng gió tản nhiệt cho máy tính bàn & laptop.`;
                 }
 
+                const isLongContent = markdownContent.length > 220;
+
                 return (
                   <div>
-                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <BookOpen className="w-3.5 h-3.5 text-orange-500" />
-                      Bài viết giới thiệu chi tiết
-                    </h4>
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 max-h-48 overflow-y-auto text-xs text-slate-700 leading-relaxed">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <BookOpen className="w-3.5 h-3.5 text-orange-500" />
+                        Bài viết giới thiệu chi tiết
+                      </h4>
+                      {isLongContent && (
+                        <button
+                          type="button"
+                          onClick={() => setIsArticleExpanded(!isArticleExpanded)}
+                          className="text-[11px] font-bold text-orange-600 hover:text-orange-700 inline-flex items-center gap-1 px-2 py-0.5 rounded-md hover:bg-orange-50 transition cursor-pointer"
+                        >
+                          {isArticleExpanded ? (
+                            <>
+                              <span>Thu gọn</span>
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </>
+                          ) : (
+                            <>
+                              <span>...Xem thêm</span>
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                    <div 
+                      className={`bg-slate-50/90 p-3.5 rounded-xl border border-slate-200/80 overflow-y-auto text-xs text-slate-700 leading-relaxed transition-all duration-200 ${
+                        isArticleExpanded ? 'max-h-72 shadow-inner' : 'max-h-36'
+                      }`}
+                    >
                       <MarkdownRenderer content={markdownContent} />
                     </div>
                   </div>
@@ -319,7 +352,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
               })()}
 
               {/* Shift info */}
-              <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-100 text-xs text-slate-600 flex items-center justify-between">
+              <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 text-xs text-slate-600 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-slate-500" />
                   <span>Ca tiếp nhận: 07:00 - 19:00 (Thứ 2 - Thứ 7)</span>
@@ -332,7 +365,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
             </div>
 
             {/* Modal Actions */}
-            <div className="mt-7 pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setSelectedTech(null)}
