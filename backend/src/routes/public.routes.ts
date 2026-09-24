@@ -81,7 +81,7 @@ router.get('/packages', (_req, res, next) => {
     const db = getDb();
     const packages = db
       .prepare(`
-        SELECT id, name, description, price, duration_minutes, features, display_order, image
+        SELECT id, name, description, price, duration_minutes, features, display_order, is_active, image
         FROM service_packages
         WHERE is_active = 1
         ORDER BY display_order ASC, id ASC

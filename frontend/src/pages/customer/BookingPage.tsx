@@ -79,7 +79,7 @@ export function BookingPage() {
         : Array.isArray(res.data)
         ? res.data
         : [];
-      const activePkgs = pkgList.filter((p: any) => p.is_active === 1);
+      const activePkgs = pkgList.filter((p: any) => p.is_active === undefined || p.is_active === 1);
       setPackages(activePkgs);
       if (!selectedPackageId && activePkgs.length > 0) {
         setSelectedPackageId(activePkgs[0].id);

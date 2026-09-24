@@ -40,7 +40,7 @@ export function findVouchersByCustomer(customerId: number): Voucher[] {
     JOIN voucher_programs vp ON vp.id = v.program_id
     WHERE v.customer_id = ?
     ORDER BY v.created_at DESC
-  `).all() as Voucher[];
+  `).all(customerId) as Voucher[];
 }
 
 export function findVouchersByTechnician(technicianId: number): Voucher[] {
@@ -50,7 +50,7 @@ export function findVouchersByTechnician(technicianId: number): Voucher[] {
     JOIN voucher_programs vp ON vp.id = v.program_id
     WHERE v.technician_id = ?
     ORDER BY v.created_at DESC
-  `).all() as Voucher[];
+  `).all(technicianId) as Voucher[];
 }
 
 export function findVouchersByProgram(programId: number): Voucher[] {

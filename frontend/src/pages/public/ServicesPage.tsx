@@ -18,7 +18,7 @@ export function ServicesPage() {
       try {
         const response = await publicApi.packages();
         const list = Array.isArray(response.data?.data) ? response.data.data : response.data || [];
-        setPackages(list.filter((p: any) => p.is_active === 1));
+        setPackages(list.filter((p: any) => p.is_active === undefined || p.is_active === 1));
       } catch (error) {
         console.error('Failed to load packages:', error);
       } finally {

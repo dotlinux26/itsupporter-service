@@ -64,7 +64,7 @@ export function HomePage() {
           : Array.isArray(techsRes.data)
           ? techsRes.data
           : [];
-        setPackages(pkgsList.filter((p: any) => p.is_active === 1));
+        setPackages(pkgsList.filter((p: any) => p.is_active === undefined || p.is_active === 1));
         setTechnicians(techsList);
         if (infoRes?.data?.data) {
           const d = infoRes.data.data;
