@@ -16,14 +16,15 @@ const server = app.listen(config.port, () => {
   logger.info(`API listening on http://localhost:${config.port} (${config.env})`);
 });
 
-async function shutdown(signal: string): Promise<void> {
-  logger.info({ signal }, 'Shutting down');
-  server.close(() => {
+function shutdown(signal: string): void {
+  try {
     closeDb();
+  } catch {}
+  server.close(() => {
     process.exit(0);
   });
-  setTimeout(() => process.exit(1), 10000).unref();
+  setTimeout(() => process.exit(0), 1000).unref();
 }
 
-process.on('SIGTERM', () => void shutdown('SIGTERM'));
-process.on('SIGINT', () => void shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

@@ -56,12 +56,14 @@ export interface Order {
   note: string | null;
   price: number;
   penalty: number;
+  penalty_percent: number;
   discount: number;
   extend_fee: number;
   final_amount: number;
   status: OrderStatus;
   completion_result: CompletionResult | null;
   payment_status: PaymentStatus;
+  payment_qr_path?: string | null;
   unpaid_reason: string | null;
   started_at: string | null;
   completed_at: string | null;
@@ -98,8 +100,18 @@ export interface OrderMessage {
   order_id: number;
   sender_id: number;
   message: string;
+  message_type?: 'text' | 'voucher';
+  voucher_id?: number | null;
   read_at: string | null;
   created_at: string;
+  sender_name?: string;
+  sender_avatar?: string | null;
+  voucher_code?: string | null;
+  voucher_status?: string | null;
+  voucher_name?: string | null;
+  voucher_discount_type?: string | null;
+  voucher_discount_value?: number | null;
+  voucher_valid_to?: string | null;
 }
 
 export interface NotificationRecord {
@@ -207,4 +219,39 @@ export interface Payment {
   qr_config_id: number | null;
   recorded_by: number;
   created_at: string;
+}
+
+export type VoucherStatus = 'active' | 'used' | 'expired' | 'voided';
+
+export interface Voucher {
+  id: number;
+  program_id: number;
+  code: string;
+  customer_id: number | null;
+  technician_id: number | null;
+  order_id: number | null;
+  status: VoucherStatus;
+  assigned_at: string | null;
+  used_at: string | null;
+  expired_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type DiscountType = 'percent' | 'fixed';
+
+export interface VoucherProgram {
+  id: number;
+  code: string;
+  name: string;
+  description: string | null;
+  discount_type: DiscountType;
+  discount_value: number;
+  max_usage: number;
+  valid_from: string | null;
+  valid_to: string | null;
+  is_active: number;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
 }

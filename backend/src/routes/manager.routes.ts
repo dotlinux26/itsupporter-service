@@ -93,4 +93,32 @@ router.get('/settings', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res
   } catch (err) { next(err); }
 });
 
+// Manager: GET /export?type=orders|settlements|financial&format=xlsx|csv
+router.get('/export', authenticate, requireRole('MANAGER', 'ADMIN'), async (req, res, next) => {
+  try {
+    const type = (req.query.type as 'orders' | 'settlements' | 'financial') || 'orders';
+    const format = (req.query.format as 'xlsx' | 'csv') || 'xlsx';
+    const from = req.query.from ? String(req.query.from) : undefined;
+    const to = req.query.to ? String(req.query.to) : undefined;
+    const status = req.query.status ? String(req.query.status) : undefined;
+    const technicianId = req.query.technician_id ? Number(req.query.technician_id) : undefined;
+
+    const { generateExportData } = await import('../services/exportService.js');
+    const { buffer, mimeType, filename } = generateExportData({
+      type,
+      format,
+      from,
+      to,
+      status,
+      technicianId,
+    });
+
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

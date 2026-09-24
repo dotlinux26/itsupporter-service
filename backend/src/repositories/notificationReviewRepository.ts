@@ -97,7 +97,7 @@ export function getReviewsByCustomer(customerId: number): Array<{
        WHERE r.customer_id = ?
        ORDER BY r.created_at DESC`
     )
-    .all() as Array<{
+    .all(customerId) as Array<{
     id: number;
     order_id: number;
     rating: number;
@@ -145,4 +145,40 @@ export function getReviewByOrder(orderId: number): Review | undefined {
   return getDb()
     .prepare('SELECT * FROM reviews WHERE order_id = ?')
     .get(orderId) as Review | undefined;
+}
+
+export function getPublicRecentReviews(limit = 10, offset = 0): Array<{
+  id: number;
+  order_id: number;
+  rating: number;
+  content: string;
+  created_at: string;
+  order_code: string;
+  package_name: string;
+  customer_name: string;
+  technician_name: string | null;
+}> {
+  return getDb()
+    .prepare(
+      `SELECT r.*, o.code AS order_code, p.name AS package_name,
+              c.name AS customer_name, t.name AS technician_name
+       FROM reviews r
+       JOIN orders o ON o.id = r.order_id
+       JOIN service_packages p ON p.id = o.package_id
+       LEFT JOIN users c ON c.id = r.customer_id
+       LEFT JOIN users t ON t.id = r.technician_id
+       ORDER BY r.created_at DESC
+       LIMIT ? OFFSET ?`
+    )
+    .all(limit, offset) as Array<{
+    id: number;
+    order_id: number;
+    rating: number;
+    content: string;
+    created_at: string;
+    order_code: string;
+    package_name: string;
+    customer_name: string;
+    technician_name: string | null;
+  }>;
 }

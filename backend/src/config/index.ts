@@ -31,7 +31,7 @@ const config = {
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
   },
 
-  corsOrigin: (process.env.CORS_ORIGIN ?? 'http://localhost:5172').split(',').map((s) => s.trim()),
+  corsOrigin: (process.env.CORS_ORIGIN ?? 'http://localhost:5172,http://127.0.0.1:5172,http://localhost:5173,http://127.0.0.1:5173').split(',').map((s) => s.trim()),
   publicBaseUrl: process.env.PUBLIC_BASE_URL ?? 'http://localhost:5172',
   apiBaseUrl: process.env.API_BASE_URL ?? 'http://localhost:4000',
 

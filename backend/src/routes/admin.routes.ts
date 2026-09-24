@@ -4,6 +4,8 @@ import { requireRole } from '../middleware/auth.js';
 import { getAuthUser } from '../middleware/auth.js';
 import { getDb } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
+import { imageUpload } from '../utils/upload.js';
+import { getSystemSettings } from '../services/settingsService.js';
 
 const router = Router();
 
@@ -82,14 +84,109 @@ router.get('/settings', authenticate, requireRole('ADMIN'), (req, res, next) => 
 router.patch('/settings', authenticate, requireRole('ADMIN'), (req, res, next) => {
   try {
     const db = getDb();
-    const allowed = ['late_penalty_minutes', 'late_penalty_percent', 'free_service_after_minutes', 'working_start', 'working_end', 'slot_duration_minutes', 'timezone', 'technician_share_percent', 'team_share_percent'];
+    const keyMap: Record<string, string> = {
+      late_penalty_minutes: 'late_penalty_minutes',
+      latePenaltyMinutes: 'late_penalty_minutes',
+      late_penalty_percent: 'late_penalty_percent',
+      latePenaltyPercent: 'late_penalty_percent',
+      free_service_after_minutes: 'free_service_after_minutes',
+      freeServiceAfterMinutes: 'free_service_after_minutes',
+      working_start: 'working_start',
+      workingStart: 'working_start',
+      working_end: 'working_end',
+      workingEnd: 'working_end',
+      slot_duration_minutes: 'slot_duration_minutes',
+      slotDurationMinutes: 'slot_duration_minutes',
+      timezone: 'timezone',
+      technician_share_percent: 'technician_share_percent',
+      technicianSharePercent: 'technician_share_percent',
+      team_share_percent: 'team_share_percent',
+      teamSharePercent: 'team_share_percent',
+      team_name: 'team_name',
+      teamName: 'team_name',
+      university: 'university',
+      workshop_address: 'workshop_address',
+      workshopAddress: 'workshop_address',
+      contact_phone: 'contact_phone',
+      contactPhone: 'contact_phone',
+      contact_email: 'contact_email',
+      contactEmail: 'contact_email',
+      facebook_page: 'facebook_page',
+      facebookPage: 'facebook_page',
+      distributor_name: 'distributor_name',
+      distributorName: 'distributor_name',
+      distributor_url: 'distributor_url',
+      distributorUrl: 'distributor_url',
+      google_map_embed_url: 'google_map_embed_url',
+      googleMapEmbedUrl: 'google_map_embed_url',
+      google_map_direct_url: 'google_map_direct_url',
+      googleMapDirectUrl: 'google_map_direct_url',
+      working_hours_display: 'working_hours_display',
+      workingHoursDisplay: 'working_hours_display',
+      booking_notice: 'booking_notice',
+      bookingNotice: 'booking_notice',
+      warranty_policy_enabled: 'warranty_policy_enabled',
+      warrantyPolicyEnabled: 'warranty_policy_enabled',
+      warranty_policy_days: 'warranty_policy_days',
+      warrantyPolicyDays: 'warranty_policy_days',
+      warranty_policy_title: 'warranty_policy_title',
+      warrantyPolicyTitle: 'warranty_policy_title',
+      warranty_policy_content: 'warranty_policy_content',
+      warrantyPolicyContent: 'warranty_policy_content',
+    };
     for (const [key, value] of Object.entries(req.body)) {
-      if (allowed.includes(key)) {
-        db.prepare('INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES (?, ?, datetime(\'now\'))').run(key, String(value));
+      const canonical = keyMap[key];
+      if (canonical && value !== undefined && value !== null) {
+        db.prepare('INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES (?, ?, datetime(\'now\'))').run(canonical, String(value));
       }
     }
-    const { getSystemSettings } = require('../services/settingsService.js');
     res.json({ data: getSystemSettings() });
+  } catch (err) { next(err); }
+});
+
+// Admin/Manager: GET /qr
+router.get('/qr', authenticate, requireRole('ADMIN', 'MANAGER'), (req, res, next) => {
+  try {
+    const db = getDb();
+    const qrs = db.prepare('SELECT * FROM qr_configs ORDER BY is_active DESC, created_at DESC').all();
+    res.json({ data: qrs });
+  } catch (err) { next(err); }
+});
+
+// All authenticated: GET /qr/active
+router.get('/qr/active', authenticate, (req, res, next) => {
+  try {
+    const db = getDb();
+    const active = db.prepare('SELECT * FROM qr_configs WHERE is_active = 1 ORDER BY id DESC LIMIT 1').get() as { path: string } | undefined;
+    res.json({ data: active ? { path: active.path } : null });
+  } catch (err) { next(err); }
+});
+
+// Admin: POST /qr (Upload bank payment QR image)
+router.post('/qr', authenticate, requireRole('ADMIN'), imageUpload.single('qr'), (req, res, next) => {
+  try {
+    const user = getAuthUser(req)!;
+    if (!req.file) {
+      throw new AppError('VALIDATION_ERROR', 'Vui lòng chọn file ảnh QR.', 400);
+    }
+    const publicPath = `/uploads/${req.file.filename}`;
+    const db = getDb();
+    db.prepare('UPDATE qr_configs SET is_active = 0').run();
+    const result = db
+      .prepare('INSERT INTO qr_configs (path, uploaded_by, description, is_active) VALUES (?, ?, ?, 1)')
+      .run(publicPath, user.id, req.body.description || 'QR thanh toán ngân hàng chính thức');
+    const qr = db.prepare('SELECT * FROM qr_configs WHERE id = ?').get(result.lastInsertRowid);
+    res.status(201).json({ data: qr });
+  } catch (err) { next(err); }
+});
+
+// Admin: DELETE /qr/:id
+router.delete('/qr/:id', authenticate, requireRole('ADMIN'), (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const db = getDb();
+    db.prepare('DELETE FROM qr_configs WHERE id = ?').run(id);
+    res.json({ success: true });
   } catch (err) { next(err); }
 });
 

@@ -132,10 +132,10 @@ export function createOrderRow(input: Omit<Order, 'id' | 'code' | 'created_at' |
     .prepare(
       `INSERT INTO orders (
          code, customer_id, technician_id, package_id, scheduled_date, scheduled_start, scheduled_end,
-         location, note, price, penalty, discount, extend_fee, final_amount, status, payment_status
+         location, note, price, penalty, penalty_percent, discount, extend_fee, final_amount, status, payment_status, payment_qr_path
        ) VALUES (
          @code, @customer_id, @technician_id, @package_id, @scheduled_date, @scheduled_start, @scheduled_end,
-         @location, @note, @price, @penalty, @discount, @extend_fee, @final_amount, @status, @payment_status
+         @location, @note, @price, @penalty, @penalty_percent, @discount, @extend_fee, @final_amount, @status, @payment_status, @payment_qr_path
        )`
     )
     .run({
@@ -150,18 +150,20 @@ export function createOrderRow(input: Omit<Order, 'id' | 'code' | 'created_at' |
       note: input.note,
       price: input.price,
       penalty: input.penalty,
+      penalty_percent: input.penalty_percent ?? 0,
       discount: input.discount,
       extend_fee: input.extend_fee,
       final_amount: input.final_amount,
       status: input.status,
       payment_status: input.payment_status,
+      payment_qr_path: input.payment_qr_path ?? null,
     });
   return Number(result.lastInsertRowid);
 }
 
 export function updateOrder(
   id: number,
-  patch: Partial<Pick<Order, 'status' | 'completion_result' | 'payment_status' | 'unpaid_reason' | 'started_at' | 'completed_at' | 'penalty' | 'extend_fee' | 'final_amount' | 'scheduled_date' | 'scheduled_start' | 'scheduled_end' | 'technician_id'>>
+  patch: Partial<Pick<Order, 'status' | 'completion_result' | 'payment_status' | 'unpaid_reason' | 'started_at' | 'completed_at' | 'penalty' | 'penalty_percent' | 'extend_fee' | 'discount' | 'final_amount' | 'scheduled_date' | 'scheduled_start' | 'scheduled_end' | 'technician_id' | 'payment_qr_path'>>
 ): void {
   const db = getDb();
   const cur = findOrderById(id) as Order | undefined;
@@ -170,8 +172,8 @@ export function updateOrder(
   db.prepare(
     `UPDATE orders SET
        status = ?, completion_result = ?, payment_status = ?, unpaid_reason = ?,
-       started_at = ?, completed_at = ?, penalty = ?, extend_fee = ?, final_amount = ?,
-       scheduled_date = ?, scheduled_start = ?, scheduled_end = ?, technician_id = ?,
+       started_at = ?, completed_at = ?, penalty = ?, penalty_percent = ?, extend_fee = ?, discount = ?, final_amount = ?,
+       scheduled_date = ?, scheduled_start = ?, scheduled_end = ?, technician_id = ?, payment_qr_path = ?,
        updated_at = datetime('now')
      WHERE id = ?`
   ).run(
@@ -182,12 +184,15 @@ export function updateOrder(
     merged.started_at,
     merged.completed_at,
     merged.penalty,
+    merged.penalty_percent,
     merged.extend_fee,
+    merged.discount,
     merged.final_amount,
     merged.scheduled_date,
     merged.scheduled_start,
     merged.scheduled_end,
     merged.technician_id,
+    merged.payment_qr_path ?? null,
     id
   );
 }

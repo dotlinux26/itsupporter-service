@@ -16,6 +16,8 @@ import reviewRoutes from './routes/review.routes.js';
 import technicianRoutes from './routes/technician.routes.js';
 import managerRoutes from './routes/manager.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import voucherRoutes from './routes/voucher.routes.js';
+import publicRoutes from './routes/public.routes.js';
 
 const app = express();
 
@@ -30,7 +32,11 @@ app.use(
     origin(origin, callback) {
       if (!origin) return callback(null, true);
       if (config.corsOrigin.includes(origin)) return callback(null, true);
-      return callback(new Error('Not allowed by CORS'));
+      // In development, allow localhost & 127.0.0.1 on any port (5172, 5173, etc.)
+      if (!config.isProd && (/^https?:\/\/localhost(:\d+)?$/.test(origin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin))) {
+        return callback(null, true);
+      }
+      return callback(null, false);
     },
     credentials: true,
   })
@@ -47,8 +53,21 @@ app.use(
   })
 );
 
+app.use('/uploads', express.static(config.uploadDir));
+
 app.get('/api/health', (_req, res) => {
   res.json({ success: true, data: { status: 'ok', time: new Date().toISOString() } });
+});
+
+app.get('/api/avatar', async (req, res) => {
+  const name = typeof req.query.name === 'string' ? req.query.name : null;
+  const email = typeof req.query.email === 'string' ? req.query.email : null;
+  const size = Number(req.query.size) || 100;
+  const { generateAvatarSvg } = await import('./utils/avatar.js');
+  const svg = generateAvatarSvg(name, email, size);
+  res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(svg);
 });
 
 app.use('/api', apiRateLimiter);
@@ -60,6 +79,8 @@ app.use('/api', reviewRoutes);
 app.use('/api/technician', technicianRoutes);
 app.use('/api/manager', managerRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/vouchers', voucherRoutes);
+app.use('/api/public', publicRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

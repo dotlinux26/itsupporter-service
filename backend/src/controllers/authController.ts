@@ -4,7 +4,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ok } from '../utils/response.js';
 import * as authService from '../services/authService.js';
 import { validate } from '../utils/validate.js';
-import { loginSchema, registerSchema } from '../validators/auth.js';
+import { changePasswordSchema, loginSchema, profileUpdateSchema, registerSchema } from '../validators/auth.js';
 import {
   ACCESS_TOKEN_NAME,
   REFRESH_TOKEN_NAME,
@@ -12,6 +12,9 @@ import {
 } from '../middleware/auth.js';
 import { writeAuditLog } from '../services/auditService.js';
 import type { LocaleRequest } from '../middleware/locale.js';
+import { updateUserProfile, findUserById, updateUserPassword } from '../repositories/userRepository.js';
+import { hashPassword, verifyPassword } from '../utils/password.js';
+import { BadRequestError, NotFoundError } from '../utils/AppError.js';
 
 const isProd = config.isProd;
 
@@ -97,4 +100,36 @@ export const logoutController = asyncHandler(async (req, res) => {
 export const meController = asyncHandler(async (req, res) => {
   const user = (req as AuthRequest).user!;
   ok(res, authService.toPublicUser(user));
+});
+
+export const updateProfileController = asyncHandler(async (req, res) => {
+  const user = (req as AuthRequest).user!;
+  const body = validate(profileUpdateSchema, req.body);
+
+  updateUserProfile(user.id, {
+    name: body.name,
+    phone: body.phone,
+    contactInfo: body.contactInfo,
+    avatarUrl: body.avatarUrl,
+  });
+
+  const updated = findUserById(user.id);
+  ok(res, authService.toPublicUser(updated!), 'Cập nhật hồ sơ thành công.');
+});
+
+export const changePasswordController = asyncHandler(async (req, res) => {
+  const user = (req as AuthRequest).user!;
+  const body = validate(changePasswordSchema, req.body);
+
+  const fullUser = findUserById(user.id);
+  if (!fullUser) throw new NotFoundError('Không tìm thấy tài khoản.');
+
+  const valid = await verifyPassword(fullUser.password_hash, body.currentPassword);
+  if (!valid) throw new BadRequestError('Mật khẩu hiện tại không đúng.');
+
+  const newHash = await hashPassword(body.newPassword);
+  updateUserPassword(user.id, newHash);
+
+  writeAuditLog({ actorId: user.id, actorEmail: user.email, action: 'CHANGE_PASSWORD', ip: req.ip });
+  ok(res, null, 'Đổi mật khẩu thành công.');
 });

@@ -4,33 +4,60 @@ import type { OrderMessage } from '../models/index.js';
 export function createOrderMessage(
   orderId: number,
   senderId: number,
-  message: string
+  message: string,
+  messageType: 'text' | 'voucher' = 'text',
+  voucherId: number | null = null
 ): OrderMessage {
   const db = getDb();
   const result = db
     .prepare(
-      `INSERT INTO order_messages (order_id, sender_id, message, read_at, created_at)
-       VALUES (?, ?, ?, NULL, datetime('now'))`
+      `INSERT INTO order_messages (order_id, sender_id, message, message_type, voucher_id, read_at, created_at)
+       VALUES (?, ?, ?, ?, ?, NULL, datetime('now'))`
     )
-    .run(orderId, senderId, message);
+    .run(orderId, senderId, message, messageType, voucherId);
   const row = db
-    .prepare('SELECT * FROM order_messages WHERE id = ?')
+    .prepare(`
+      SELECT om.*,
+             u.name AS sender_name,
+             u.avatar_url AS sender_avatar,
+             v.code AS voucher_code,
+             v.status AS voucher_status,
+             vp.name AS voucher_name,
+             vp.discount_type AS voucher_discount_type,
+             vp.discount_value AS voucher_discount_value,
+             vp.valid_to AS voucher_valid_to
+      FROM order_messages om
+      LEFT JOIN users u ON u.id = om.sender_id
+      LEFT JOIN vouchers v ON v.id = om.voucher_id
+      LEFT JOIN voucher_programs vp ON vp.id = v.program_id
+      WHERE om.id = ?
+    `)
     .get(result.lastInsertRowid) as OrderMessage;
   return row;
 }
 
 export function getOrderMessages(
   orderId: number
-): Array<OrderMessage & { sender_name: string }> {
+): OrderMessage[] {
   return getDb()
     .prepare(
-      `SELECT om.*, u.name AS sender_name
+      `SELECT om.*,
+              u.name AS sender_name,
+              u.avatar_url AS sender_avatar,
+              v.code AS voucher_code,
+              v.status AS voucher_status,
+              vp.name AS voucher_name,
+              vp.discount_type AS voucher_discount_type,
+              vp.discount_value AS voucher_discount_value,
+              vp.valid_to AS voucher_valid_to
        FROM order_messages om
        LEFT JOIN users u ON u.id = om.sender_id
+       LEFT JOIN vouchers v ON v.id = om.voucher_id
+       LEFT JOIN voucher_programs vp ON vp.id = v.program_id
        WHERE om.order_id = ?
        ORDER BY om.created_at ASC`
     )
-    .all(orderId) as Array<OrderMessage & { sender_name: string }>;
+    .all(orderId) as OrderMessage[];
 }
 
 export function markOrderMessagesRead(orderId: number, userId: number): void {

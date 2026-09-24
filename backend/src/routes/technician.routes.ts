@@ -71,6 +71,25 @@ router.get('/orders/:id', authenticate, requireRole('TECHNICIAN'), (req, res, ne
   } catch (err) { next(err); }
 });
 
-// Technician: POST /orders/:id/confirm|start|complete (đã có trong order.routes)
+import {
+  technicianConfirmHandler,
+  technicianStartHandler,
+  technicianPenaltyHandler,
+  technicianExtendHandler,
+  technicianSaleProgramHandler,
+  technicianRedeemVoucherHandler,
+  technicianPaymentHandler,
+  technicianCompleteHandler,
+} from '../controllers/orderController.js';
+
+// Technician Order Actions
+router.post('/orders/:id/confirm', authenticate, requireRole('TECHNICIAN'), technicianConfirmHandler);
+router.post('/orders/:id/start', authenticate, requireRole('TECHNICIAN'), technicianStartHandler);
+router.post('/orders/:id/penalty', authenticate, requireRole('TECHNICIAN', 'MANAGER', 'ADMIN'), technicianPenaltyHandler);
+router.post('/orders/:id/extend', authenticate, requireRole('TECHNICIAN'), technicianExtendHandler);
+router.post('/orders/:id/sale-program', authenticate, requireRole('TECHNICIAN'), technicianSaleProgramHandler);
+router.post('/orders/:id/redeem-voucher', authenticate, requireRole('TECHNICIAN'), technicianRedeemVoucherHandler);
+router.post('/orders/:id/payment', authenticate, requireRole('TECHNICIAN'), technicianPaymentHandler);
+router.post('/orders/:id/complete', authenticate, requireRole('TECHNICIAN'), technicianCompleteHandler);
 
 export default router;
