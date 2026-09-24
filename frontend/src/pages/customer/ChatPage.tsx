@@ -180,7 +180,8 @@ export function ChatPage() {
     setGifting(true);
     try {
       const genRes = await voucherApi.generateCodes(selectedProgramId, 1, order?.customer_id);
-      const generatedVouchers = genRes.data.data || [];
+      const rawData = genRes.data.data;
+      const generatedVouchers = Array.isArray(rawData) ? rawData : (genRes.data?.vouchers || []);
       const voucher = generatedVouchers[0];
 
       if (voucher && voucher.id) {
@@ -193,10 +194,12 @@ export function ChatPage() {
         setShowGiftModal(false);
         setGiftNote('');
         inputRef.current?.focus();
+      } else {
+        throw new Error('Không tìm thấy thông tin voucher vừa tạo.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to gift voucher:', err);
-      alert('Không thể gửi voucher. Vui lòng thử lại.');
+      alert(err.response?.data?.error?.message || 'Không thể gửi voucher. Vui lòng thử lại.');
     } finally {
       setGifting(false);
     }

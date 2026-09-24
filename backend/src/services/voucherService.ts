@@ -212,7 +212,11 @@ export function generateVouchersForProgram(programId: number, count: number, opt
   customer_id?: number;
   technician_id?: number;
   expired_at?: string | null;
-}): { count: number; codes: string[] } {
+}): {
+  count: number;
+  codes: string[];
+  vouchers: Array<{ id: number; code: string; program_id: number; customer_id?: number | null; technician_id?: number | null }>;
+} {
   const program = findVoucherProgramById(programId);
   if (!program) {
     throw new AppError('NOT_FOUND', 'Chương trình voucher không tồn tại', 404);
@@ -229,15 +233,23 @@ export function generateVouchersForProgram(programId: number, count: number, opt
     VALUES (?, ?, ?, ?, 'active', ?)
   `);
   
+  const vouchers: Array<{ id: number; code: string; program_id: number; customer_id?: number | null; technician_id?: number | null }> = [];
   const insertMany = db.transaction((codes: string[]) => {
     for (const code of codes) {
-      stmt.run(
+      const res = stmt.run(
         programId, 
         code, 
         options?.customer_id ?? null, 
         options?.technician_id ?? null, 
         options?.expired_at ?? null
       );
+      vouchers.push({
+        id: Number(res.lastInsertRowid),
+        code,
+        program_id: programId,
+        customer_id: options?.customer_id ?? null,
+        technician_id: options?.technician_id ?? null,
+      });
     }
   });
   
@@ -255,5 +267,5 @@ export function generateVouchersForProgram(programId: number, count: number, opt
   
   insertMany(codes);
   
-  return { count: codes.length, codes };
+  return { count: codes.length, codes, vouchers };
 }

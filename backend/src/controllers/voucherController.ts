@@ -168,19 +168,32 @@ export function generateVouchersHandler(req: Request, res: Response, next: NextF
     if (!user) {
       throw new AppError('UNAUTHORIZED', 'Vui lòng đăng nhập', 401);
     }
-    const { programId } = req.params;
-    const { count, customer_id, technician_id, expired_at } = req.body;
+    const programId = Number(req.params.programId || req.params.id);
+    if (!Number.isInteger(programId)) {
+      throw new AppError('VALIDATION_ERROR', 'Mã chương trình voucher không hợp lệ', 400);
+    }
     
-    if (!count || count < 1) {
+    const count = Number(req.body.count || 1);
+    const customerId = req.body.customer_id ?? req.body.customerId ?? null;
+    const technicianId = req.body.technician_id ?? req.body.technicianId ?? (user.role === 'TECHNICIAN' ? user.id : null);
+    const expiredAt = req.body.expired_at ?? req.body.expiredAt ?? null;
+    
+    if (count < 1) {
       throw new AppError('VALIDATION_ERROR', 'Số lượng voucher phải lớn hơn 0', 400);
     }
     
-    const result = generateVouchersForProgram(Number(programId), count, {
-      customer_id: req.body.customer_id,
-      technician_id: req.body.technician_id,
-      expired_at: req.body.expired_at,
+    const result = generateVouchersForProgram(programId, count, {
+      customer_id: customerId ? Number(customerId) : undefined,
+      technician_id: technicianId ? Number(technicianId) : undefined,
+      expired_at: expiredAt ? String(expiredAt) : undefined,
     });
-    res.status(201).json({ data: result });
+
+    res.status(201).json({
+      data: result.vouchers,
+      vouchers: result.vouchers,
+      count: result.count,
+      codes: result.codes,
+    });
   } catch (err) {
     next(err);
   }

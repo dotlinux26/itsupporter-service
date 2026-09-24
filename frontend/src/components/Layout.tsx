@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useState, useEffect, useMemo } from 'react';
 import { Avatar } from './Avatar';
 import { publicApi } from '../api/client';
-import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ExternalLink, ChevronLeft, ChevronRight, Ticket } from 'lucide-react';
 import { ScrollToTopButton } from './ScrollToTopButton';
 import { NotificationBell } from './NotificationBell';
 
@@ -190,9 +190,10 @@ export function AppHeader() {
                 <>
                   <NavLink
                     to="/my-vouchers"
-                    className="text-xs font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-lg border border-orange-200 hover:bg-orange-100 hidden sm:flex items-center gap-1"
+                    className="text-xs font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-lg border border-orange-200 hover:bg-orange-100 hidden sm:flex items-center gap-1.5"
                   >
-                    🎟️ Vé ưu đãi
+                    <Ticket className="w-3.5 h-3.5" />
+                    <span>Vé ưu đãi</span>
                   </NavLink>
                   <NavLink
                     to="/orders"
@@ -278,9 +279,10 @@ export function AppHeader() {
                       <NavLink
                         to="/my-vouchers"
                         onClick={() => setMobileMenuOpen(false)}
-                        className="block px-3 py-2 text-sm font-medium text-orange-600 hover:text-orange-700"
+                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-orange-600 hover:text-orange-700"
                       >
-                        🎟️ Vé ưu đãi của tôi
+                        <Ticket className="w-4 h-4" />
+                        <span>Vé ưu đãi của tôi</span>
                       </NavLink>
                     </li>
                   </>
