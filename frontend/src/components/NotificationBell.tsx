@@ -90,7 +90,7 @@ export function NotificationBell() {
 
   useEffect(() => {
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000); // 30s polling
+    const interval = setInterval(fetchUnreadCount, 10000); // 10s polling
     return () => clearInterval(interval);
   }, []);
 
@@ -128,8 +128,15 @@ export function NotificationBell() {
 
     setIsOpen(false);
 
-    // Navigate to related order if order_id is present
+    // If chat or message, directly go to the chat room
     if (notif.order_id) {
+      const typeUpper = (notif.type || '').toUpperCase();
+      if (typeUpper === 'CHAT' || typeUpper === 'MESSAGE') {
+        navigate(`/orders/${notif.order_id}/chat`);
+        return;
+      }
+
+      // Navigate to related order view based on role
       if (user?.role === 'TECHNICIAN') {
         navigate(`/technician/orders/${notif.order_id}`);
       } else if (user?.role === 'MANAGER') {

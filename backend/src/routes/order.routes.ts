@@ -5,6 +5,7 @@ import {
   createBookingHandler,
   getOrderDetailHandler,
   listMyOrdersHandler,
+  getOrderTimelineHandler,
   technicianConfirmHandler,
   technicianStartHandler,
   technicianCompleteHandler,
@@ -15,6 +16,7 @@ const router = Router();
 router.post('/', authenticate, createBookingHandler);
 router.get('/', authenticate, listMyOrdersHandler);
 router.get('/:id', authenticate, getOrderDetailHandler);
+router.get('/:id/timeline', authenticate, getOrderTimelineHandler);
 
 router.post('/:id/confirm', authenticate, requireRole('TECHNICIAN'), technicianConfirmHandler);
 router.post('/:id/start', authenticate, requireRole('TECHNICIAN'), technicianStartHandler);

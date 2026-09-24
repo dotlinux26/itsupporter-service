@@ -75,11 +75,18 @@ export interface OrderRow extends Order {
   customer_name?: string;
   customer_phone?: string | null;
   customer_email?: string;
+  customer_avatar_url?: string | null;
   customer_contact_info?: string | null;
   package_name?: string;
+  package_price?: number;
+  package_description?: string | null;
+  package_features?: string | null;
   technician_name?: string | null;
+  technician_phone?: string | null;
   technician_email?: string | null;
   technician_avatar?: string | null;
+  technician_avatar_url?: string | null;
+  technician_bio?: string | null;
   actor_name?: string | null;
   has_unread?: number;
   last_message_at?: string | null;

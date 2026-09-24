@@ -6,6 +6,7 @@ import { getDb } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import type { OrderRow } from '../models/index.js';
 import { getRunBalance } from '../services/financeService.js';
+import { findOrderById } from '../repositories/orderRepository.js';
 
 const router = Router();
 
@@ -196,21 +197,15 @@ router.get('/orders', authenticate, requireRole('TECHNICIAN'), (req, res, next) 
 });
 
 // Technician: GET /orders/:id/detail
-router.get('/orders/:id', authenticate, requireRole('TECHNICIAN'), (req, res, next) => {
+router.get('/orders/:id', authenticate, requireRole('TECHNICIAN', 'MANAGER', 'ADMIN'), (req, res, next) => {
   try {
     const user = getAuthUser(req)!;
     const id = Number(req.params.id);
-    const order = getDb()
-      .prepare(
-        `SELECT o.*, c.name AS customer_name, c.phone AS customer_phone, c.email AS customer_email,
-                p.name AS package_name, p.duration_minutes
-           FROM orders o
-           JOIN users c ON c.id = o.customer_id
-           JOIN service_packages p ON p.id = o.package_id
-          WHERE o.id = ? AND o.technician_id = ?`
-      )
-      .get(id, user.id) as (OrderRow & { customer_name: string; customer_phone: string; customer_email: string; package_name: string; duration_minutes: number }) | undefined;
-    if (!order) throw new AppError('NOT_FOUND', 'Không tìm thấy đơn hoặc bạn không được phân công.', 404);
+    const order = findOrderById(id);
+    if (!order) throw new AppError('NOT_FOUND', 'Không tìm thấy đơn hàng.', 404);
+    if (order.technician_id && order.technician_id !== user.id && !['MANAGER', 'ADMIN'].includes(user.role)) {
+      throw new AppError('FORBIDDEN', 'Bạn không được phân công đơn này.', 403);
+    }
     res.json({ data: order });
   } catch (err) { next(err); }
 });
@@ -224,9 +219,11 @@ import {
   technicianRedeemVoucherHandler,
   technicianPaymentHandler,
   technicianCompleteHandler,
+  getOrderTimelineHandler,
 } from '../controllers/orderController.js';
 
 // Technician Order Actions
+router.get('/orders/:id/timeline', authenticate, requireRole('TECHNICIAN', 'MANAGER', 'ADMIN'), getOrderTimelineHandler);
 router.post('/orders/:id/confirm', authenticate, requireRole('TECHNICIAN'), technicianConfirmHandler);
 router.post('/orders/:id/start', authenticate, requireRole('TECHNICIAN'), technicianStartHandler);
 router.post('/orders/:id/penalty', authenticate, requireRole('TECHNICIAN', 'MANAGER', 'ADMIN'), technicianPenaltyHandler);

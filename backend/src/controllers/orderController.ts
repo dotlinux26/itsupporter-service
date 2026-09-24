@@ -3,9 +3,10 @@ import { getDb, withTransaction } from '../config/database.js';
 import type { OrderRow } from '../models/index.js';
 import { AppError } from '../utils/AppError.js';
 import { getAuthUser } from '../middleware/auth.js';
-import { logStatusChange } from '../repositories/orderRepository.js';
+import { logStatusChange, findOrderById, listOrders, getOrderTimeline } from '../repositories/orderRepository.js';
 import { settleOrderLedger } from '../services/financeService.js';
 import { bookOrder } from '../services/bookingService.js';
+import { sendOrderNotification } from '../services/notificationService.js';
 
 export function createBookingHandler(req: Request, res: Response, next: NextFunction): void {
   try {
@@ -39,16 +40,8 @@ export function listMyOrdersHandler(_req: Request, res: Response, next: NextFunc
       next(new AppError('UNAUTHORIZED', 'Vui lòng đăng nhập.', 401));
       return;
     }
-    const rows = getDb()
-      .prepare(
-        `SELECT o.*, u.name AS customer_name
-           FROM orders o
-           JOIN users u ON u.id = o.customer_id
-          WHERE o.customer_id = ?
-          ORDER BY o.id DESC`
-      )
-      .all(user.id) as (OrderRow & { customer_name: string })[];
-    res.json({ data: rows, total: rows.length });
+    const { data: rows, total } = listOrders({ customerId: user.id, limit: 100, includeUnreadFor: user.id });
+    res.json({ data: rows, total });
   } catch (err) {
     next(err);
   }
@@ -66,14 +59,7 @@ export function getOrderDetailHandler(req: Request, res: Response, next: NextFun
       next(new AppError('VALIDATION_ERROR', 'Mã đơn không hợp lệ.', 400));
       return;
     }
-    const order = getDb()
-      .prepare(
-        `SELECT o.*, u.name AS customer_name
-           FROM orders o
-           JOIN users u ON u.id = o.customer_id
-          WHERE o.id = ?`
-      )
-      .get(id) as (OrderRow & { customer_name: string }) | undefined;
+    const order = findOrderById(id);
     if (!order) {
       next(new AppError('NOT_FOUND', 'Không tìm thấy đơn hàng.', 404));
       return;
@@ -99,7 +85,16 @@ export function technicianConfirmHandler(req: Request, res: Response, next: Next
     if (order.status !== 'PENDING') { next(new AppError('CONFLICT', 'Chỉ duyệt được đơn PENDING.', 409)); return; }
     getDb().prepare('UPDATE orders SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').run('CONFIRMED', id);
     logStatusChange(id, 'PENDING', 'CONFIRMED', user.id, 'Kỹ thuật viên nhận đơn');
-    const updated = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow;
+    try {
+      sendOrderNotification(
+        order.customer_id,
+        id,
+        'ORDER_CONFIRMED',
+        'Đơn đặt lịch đã được xác nhận!',
+        `Kỹ thuật viên ${user.name} đã tiếp nhận đơn ${order.code}. Hãy liên hệ trực tiếp nếu cần hỗ trợ.`
+      );
+    } catch {}
+    const updated = findOrderById(id) as OrderRow;
     res.json({ data: updated });
   } catch (err) { next(err); }
 }
@@ -152,7 +147,16 @@ export function technicianStartHandler(req: Request, res: Response, next: NextFu
     `).run(nowIso, penaltyAmount, penaltyPercent, finalAmount, id);
 
     logStatusChange(id, 'CONFIRMED', 'IN_PROGRESS', user.id, `Kỹ thuật viên bắt đầu thực hiện (Phạt: ${penaltyPercent}%)`);
-    const updated = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow;
+    try {
+      sendOrderNotification(
+        order.customer_id,
+        id,
+        'ORDER_CONFIRMED',
+        'Kỹ thuật viên đã bắt đầu bảo dưỡng',
+        `Kỹ thuật viên đã bắt đầu quy trình bảo dưỡng cho đơn ${order.code}.`
+      );
+    } catch {}
+    const updated = findOrderById(id) as OrderRow;
     res.json({ data: updated });
   } catch (err) { next(err); }
 }
@@ -364,12 +368,62 @@ export function technicianCompleteHandler(req: Request, res: Response, next: Nex
     if (!['SUCCESS', 'FAILED', 'CANCELLED'].includes(completion_result)) {
       next(new AppError('VALIDATION_ERROR', 'Kết quả không hợp lệ.', 400)); return;
     }
+
+    const paymentStatus = req.body.payment_status === 'UNPAID' ? 'UNPAID' : 'PAID';
+    const unpaidReason = req.body.unpaid_reason ? String(req.body.unpaid_reason).trim() : null;
+    const note = req.body.note ? String(req.body.note).trim() : `Hoàn thành dịch vụ: ${completion_result}`;
     const now = new Date().toISOString();
-    getDb().prepare('UPDATE orders SET status = ?, completion_result = ?, completed_at = ?, updated_at = datetime(\'now\') WHERE id = ?').run('COMPLETED', completion_result, now, id);
-    logStatusChange(id, 'IN_PROGRESS', 'COMPLETED', user.id, `Hoàn thành: ${completion_result}`);
-    const completedOrder = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow;
+
+    getDb().prepare(`
+      UPDATE orders SET 
+        status = 'COMPLETED', 
+        completion_result = ?, 
+        payment_status = ?,
+        unpaid_reason = ?,
+        completed_at = ?, 
+        updated_at = datetime('now') 
+      WHERE id = ?
+    `).run(completion_result, paymentStatus, unpaidReason, now, id);
+
+    logStatusChange(
+      id,
+      'IN_PROGRESS',
+      'COMPLETED',
+      user.id,
+      `${note} - Thanh toán: ${paymentStatus === 'PAID' ? 'Đã thu tiền' : 'Chưa thu tiền' + (unpaidReason ? ` (${unpaidReason})` : '')}`
+    );
+
+    const completedOrder = findOrderById(id) as OrderRow;
     // settle ledger
     settleOrderLedger(completedOrder, user.id);
+
+    try {
+      sendOrderNotification(
+        order.customer_id,
+        id,
+        'ORDER_COMPLETED',
+        'Đơn dịch vụ đã hoàn thành!',
+        `Kỹ thuật viên ${user.name} đã hoàn tất bảo dưỡng đơn ${order.code}. Hãy vào đánh giá dịch vụ nhé!`
+      );
+    } catch {}
+
     res.json({ data: completedOrder });
+  } catch (err) { next(err); }
+}
+
+export function getOrderTimelineHandler(req: Request, res: Response, next: NextFunction): void {
+  try {
+    const user = getAuthUser(req);
+    if (!user) { next(new AppError('UNAUTHORIZED', 'Vui lòng đăng nhập.', 401)); return; }
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) { next(new AppError('VALIDATION_ERROR', 'Mã đơn không hợp lệ.', 400)); return; }
+    const order = findOrderById(id);
+    if (!order) { next(new AppError('NOT_FOUND', 'Không tìm thấy đơn hàng.', 404)); return; }
+    if (order.customer_id !== user.id && !['TECHNICIAN', 'MANAGER', 'ADMIN'].includes(user.role)) {
+      next(new AppError('FORBIDDEN', 'Bạn không có quyền xem đơn này.', 403));
+      return;
+    }
+    const timeline = getOrderTimeline(id);
+    res.json({ data: timeline });
   } catch (err) { next(err); }
 }

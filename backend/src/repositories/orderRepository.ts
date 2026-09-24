@@ -21,14 +21,22 @@ const BASE_SELECT = `
          c.name AS customer_name,
          c.phone AS customer_phone,
          c.email AS customer_email,
+         c.avatar_url AS customer_avatar_url,
          c.contact_info AS customer_contact_info,
          p.name AS package_name,
+         p.price AS package_price,
+         p.description AS package_description,
+         p.features AS package_features,
          t.name AS technician_name,
+         t.phone AS technician_phone,
          t.email AS technician_email,
-         t.avatar_url AS technician_avatar
+         t.avatar_url AS technician_avatar_url,
+         t.avatar_url AS technician_avatar,
+         tp.bio AS technician_bio
   FROM orders o
   LEFT JOIN users c ON c.id = o.customer_id
   LEFT JOIN users t ON t.id = o.technician_id
+  LEFT JOIN technician_profiles tp ON tp.user_id = t.id
   LEFT JOIN service_packages p ON p.id = o.package_id
 `;
 
@@ -107,15 +115,23 @@ export function listOrders(opts: ListOrdersOptions): { data: OrderRow[]; total: 
                       c.name AS customer_name,
                       c.phone AS customer_phone,
                       c.email AS customer_email,
+                      c.avatar_url AS customer_avatar_url,
                       c.contact_info AS customer_contact_info,
                       p.name AS package_name,
+                      p.price AS package_price,
+                      p.description AS package_description,
+                      p.features AS package_features,
                       t.name AS technician_name,
+                      t.phone AS technician_phone,
                       t.email AS technician_email,
+                      t.avatar_url AS technician_avatar_url,
                       t.avatar_url AS technician_avatar,
+                      tp.bio AS technician_bio,
                       ${unreadSub}
                FROM orders o
                LEFT JOIN users c ON c.id = o.customer_id
                LEFT JOIN users t ON t.id = o.technician_id
+               LEFT JOIN technician_profiles tp ON tp.user_id = t.id
                LEFT JOIN service_packages p ON p.id = o.package_id
                ${whereSql}
                ORDER BY o.scheduled_date DESC, o.scheduled_start DESC, o.id DESC

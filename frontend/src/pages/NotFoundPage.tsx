@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 
 export function NotFoundPage() {
   return (
@@ -9,8 +10,8 @@ export function NotFoundPage() {
         <p className="text-text-secondary mb-8">
           Trang bạn đang tìm kiếm không tồn tại hoặc đã được di chuyển.
         </p>
-        <Link to="/" className="btn btn-primary inline-block">
-          ← Về trang chủ
+        <Link to="/" className="btn btn-primary inline-flex items-center gap-2">
+          <ArrowLeft className="w-4 h-4" /> Về trang chủ
         </Link>
       </div>
     </div>

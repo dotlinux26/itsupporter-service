@@ -14,6 +14,7 @@ import {
   logStatusChange,
   updateOrder,
 } from '../repositories/orderRepository.js';
+import { sendOrderNotification } from './notificationService.js';
 
 export type SlotFormat = { start: string; end: string };
 
@@ -120,6 +121,28 @@ export function bookOrder(input: BookingInput): OrderRow {
     const realCode = generateOrderCode(orderId);
     db.prepare('UPDATE orders SET code = ? WHERE id = ?').run(realCode, orderId);
     logStatusChange(orderId, null, 'PENDING', input.customerId, 'Khách đặt lịch');
+
+    try {
+      sendOrderNotification(
+        input.customerId,
+        orderId,
+        'ORDER_CREATED',
+        'Đặt lịch dịch vụ thành công!',
+        `Đơn hàng ${realCode} đã được tạo và đang chờ Kỹ thuật viên tiếp nhận.`
+      );
+      if (input.requestedTechnicianId) {
+        sendOrderNotification(
+          input.requestedTechnicianId,
+          orderId,
+          'ORDER_CREATED',
+          'Có lịch đặt mới được chỉ định!',
+          `Khách hàng vừa đặt lịch đơn ${realCode} vào lúc ${input.scheduledStart} ngày ${input.scheduledDate}.`
+        );
+      }
+    } catch (e) {
+      console.error('Failed to notify booking:', e);
+    }
+
     return db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as OrderRow;
   });
 }

@@ -9,6 +9,7 @@ import {
   markOrderMessagesRead,
   getUnreadCountForOrder,
 } from '../repositories/chatRepository.js';
+import { sendOrderNotification } from './notificationService.js';
 
 function checkOrderAccess(
   order: { id: number; customer_id: number; technician_id: number | null },
@@ -38,7 +39,7 @@ export function sendOrderMessage(
 ): OrderMessage {
   const db = getDb();
   const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as
-    | { id: number; customer_id: number; technician_id: number | null }
+    | { id: number; code: string; customer_id: number; technician_id: number | null }
     | undefined;
 
   if (!order) {
@@ -47,7 +48,49 @@ export function sendOrderMessage(
 
   checkOrderAccess(order, userId);
 
-  return createOrderMessage(orderId, userId, message);
+  const msg = createOrderMessage(orderId, userId, message);
+
+  // Dispatch notification to recipient
+  try {
+    const sender = db.prepare('SELECT id, name, role FROM users WHERE id = ?').get(userId) as { id: number; name: string; role: string } | undefined;
+    const senderName = sender?.name || 'Người dùng';
+    const preview = message.length > 70 ? message.slice(0, 70) + '...' : message;
+
+    if (userId === order.customer_id) {
+      if (order.technician_id) {
+        sendOrderNotification(
+          order.technician_id,
+          orderId,
+          'CHAT',
+          `Tin nhắn mới từ ${senderName}`,
+          preview
+        );
+      } else {
+        const managers = db.prepare("SELECT id FROM users WHERE role IN ('MANAGER', 'ADMIN') AND is_deleted = 0").all() as { id: number }[];
+        for (const m of managers) {
+          sendOrderNotification(
+            m.id,
+            orderId,
+            'CHAT',
+            `Tin nhắn từ khách ${senderName} (${order.code})`,
+            preview
+          );
+        }
+      }
+    } else {
+      sendOrderNotification(
+        order.customer_id,
+        orderId,
+        'CHAT',
+        `${sender?.role === 'TECHNICIAN' ? 'Kỹ thuật viên' : 'Bộ phận hỗ trợ'} ${senderName} đã nhắn tin`,
+        preview
+      );
+    }
+  } catch (err) {
+    console.error('Failed to send chat notification:', err);
+  }
+
+  return msg;
 }
 
 export function sendOrderVoucherMessage(
@@ -58,7 +101,7 @@ export function sendOrderVoucherMessage(
 ): OrderMessage {
   const db = getDb();
   const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as
-    | { id: number; customer_id: number; technician_id: number | null }
+    | { id: number; code: string; customer_id: number; technician_id: number | null }
     | undefined;
 
   if (!order) {
@@ -88,7 +131,23 @@ export function sendOrderVoucherMessage(
   }
 
   const messageText = note ? note.trim() : `🎁 Đã gửi tặng bạn voucher ưu đãi: ${voucher.code}`;
-  return createOrderMessage(orderId, userId, messageText, 'voucher', voucherId);
+  const msg = createOrderMessage(orderId, userId, messageText, 'voucher', voucherId);
+
+  try {
+    const sender = db.prepare('SELECT id, name FROM users WHERE id = ?').get(userId) as { id: number; name: string } | undefined;
+    const senderName = sender?.name || 'Kỹ thuật viên';
+    sendOrderNotification(
+      order.customer_id,
+      orderId,
+      'VOUCHER',
+      '🎁 Bạn nhận được Voucher ưu đãi mới!',
+      `${senderName} đã gửi tặng bạn mã ${voucher.code} trong đơn ${order.code}.`
+    );
+  } catch (err) {
+    console.error('Failed to send voucher notification:', err);
+  }
+
+  return msg;
 }
 
 export function listOrderMessages(orderId: number, userId: number): OrderMessage[] {

@@ -61,14 +61,30 @@ export interface OrderRow extends Order {
   customer_name?: string;
   customer_phone?: string | null;
   customer_email?: string;
+  customer_avatar_url?: string | null;
   customer_contact_info?: string | null;
   package_name?: string;
+  package_price?: number;
+  package_description?: string | null;
+  package_features?: string | null;
   technician_name?: string | null;
+  technician_phone?: string | null;
   technician_email?: string | null;
   technician_avatar?: string | null;
+  technician_avatar_url?: string | null;
+  technician_bio?: string | null;
   actor_name?: string | null;
   has_unread?: number;
   last_message_at?: string | null;
+}
+
+export interface OrderTimelineItem {
+  from_status: string | null;
+  to_status: string;
+  actor_id: number | null;
+  actor_name: string | null;
+  note: string | null;
+  created_at: string;
 }
 
 export interface OrderMessage {
@@ -193,4 +209,15 @@ export interface ApiError {
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
+}
+
+export interface OrderTimelineItem {
+  id: number;
+  order_id: number;
+  from_status: string | null;
+  to_status: string;
+  reason: string | null;
+  changed_by: number | null;
+  changed_by_name?: string | null;
+  created_at: string;
 }

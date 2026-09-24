@@ -128,8 +128,13 @@ export const orderApi = {
   get: (id: number) => api.get(`/orders/${id}`),
   confirm: (id: number) => api.post(`/orders/${id}/confirm`),
   start: (id: number) => api.post(`/orders/${id}/start`),
-  complete: (id: number, data: { completion_result: 'SUCCESS' | 'FAILED' | 'CANCELLED' }) =>
-    api.post(`/orders/${id}/complete`, data),
+  complete: (id: number, data: {
+    completion_result: 'SUCCESS' | 'FAILED' | 'CANCELLED';
+    payment_status?: 'PAID' | 'UNPAID';
+    unpaid_reason?: string | null;
+    note?: string | null;
+  }) => api.post(`/orders/${id}/complete`, data),
+  timeline: (id: number) => api.get(`/orders/${id}/timeline`),
   getMessages: (id: number) => api.get(`/orders/${id}/messages`),
   sendMessage: (id: number, message: string) => api.post(`/orders/${id}/messages`, { message }),
   markRead: (id: number) => api.patch(`/orders/${id}/messages/read`),
@@ -180,8 +185,13 @@ export const technicianApi = {
     api.post(`/technician/orders/${id}/redeem-voucher`, { code }),
   payment: (id: number, data: { payment_status: 'PAID' | 'UNPAID'; unpaid_reason?: string | null; payment_qr_path?: string | null }) =>
     api.post(`/technician/orders/${id}/payment`, data),
-  complete: (id: number, data: { completion_result: 'SUCCESS' | 'FAILED' | 'CANCELLED' }) =>
-    api.post(`/technician/orders/${id}/complete`, data),
+  complete: (id: number, data: {
+    completion_result: 'SUCCESS' | 'FAILED' | 'CANCELLED';
+    payment_status?: 'PAID' | 'UNPAID';
+    unpaid_reason?: string | null;
+    note?: string | null;
+  }) => api.post(`/technician/orders/${id}/complete`, data),
+  timeline: (id: number) => api.get(`/technician/orders/${id}/timeline`),
 };
 
 export const managerApi = {
