@@ -186,6 +186,8 @@ export const technicianApi = {
 export const managerApi = {
   orders: (params?: { status?: string; technician_id?: number; from?: string; to?: string }) =>
     api.get('/manager/orders', { params }),
+  getAvailableTechniciansForOrder: (orderId: number) =>
+    api.get(`/manager/orders/${orderId}/available-technicians`),
   assignTechnician: (orderId: number, technicianId: number) =>
     api.post(`/manager/orders/${orderId}/assign`, { technician_id: technicianId }),
   updateOrderStatus: (orderId: number, status: string) =>

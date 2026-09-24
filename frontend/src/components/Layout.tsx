@@ -1,7 +1,7 @@
 import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Avatar } from './Avatar';
 import { publicApi } from '../api/client';
 import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -14,41 +14,42 @@ export function AppHeader() {
   const { isAuthenticated, logout, user } = useAuth();
 
   // Role-based navigation links
-  let navItems: { path: string; label: string }[] = [];
-
-  if (!isAuthenticated || user?.role === 'GUEST') {
-    navItems = [
-      { path: '/', label: t('nav.home') || 'Trang chủ' },
-      { path: '/services', label: t('nav.services') || 'Gói dịch vụ' },
-      { path: '/about', label: t('nav.about') || 'Về chúng tôi' },
-      { path: '/terms', label: t('nav.terms') || 'Quy định' },
-    ];
-  } else if (user?.role === 'TECHNICIAN') {
-    navItems = [
-      { path: '/technician', label: 'Bàn làm việc' },
-      { path: '/technician/schedule', label: 'Lịch trực' },
-      { path: '/technician/orders', label: 'Đơn phụ trách' },
-    ];
-  } else if (user?.role === 'MANAGER') {
-    navItems = [
-      { path: '/manager', label: 'Bảng điều khiển' },
-      { path: '/manager/orders', label: 'Đơn hàng' },
-      { path: '/manager/technicians', label: 'Kỹ thuật viên' },
-      { path: '/manager/packages', label: 'Gói dịch vụ' },
-      { path: '/manager/settlements', label: 'Quyết toán' },
-      { path: '/manager/reviews', label: 'Đánh giá' },
-      { path: '/manager/settings', label: 'Cài đặt' },
-    ];
-  } else if (user?.role === 'ADMIN') {
-    navItems = [
-      { path: '/admin', label: 'Bảng điều khiển' },
-      { path: '/admin/users', label: 'Người dùng' },
-      { path: '/admin/stats', label: 'Thống kê' },
-      { path: '/admin/vouchers', label: 'Mã giảm giá' },
-      { path: '/admin/qr', label: 'Mã QR' },
-      { path: '/admin/settings', label: 'Cài đặt' },
-    ];
-  }
+  const navItems = useMemo<{ path: string; label: string }[]>(() => {
+    if (!isAuthenticated || user?.role === 'GUEST') {
+      return [
+        { path: '/', label: t('nav.home') || 'Trang chủ' },
+        { path: '/services', label: t('nav.services') || 'Gói dịch vụ' },
+        { path: '/about', label: t('nav.about') || 'Về chúng tôi' },
+        { path: '/terms', label: t('nav.terms') || 'Quy định' },
+      ];
+    } else if (user?.role === 'TECHNICIAN') {
+      return [
+        { path: '/technician', label: 'Bàn làm việc' },
+        { path: '/technician/schedule', label: 'Lịch trực' },
+        { path: '/technician/orders', label: 'Đơn phụ trách' },
+      ];
+    } else if (user?.role === 'MANAGER') {
+      return [
+        { path: '/manager', label: 'Bảng điều khiển' },
+        { path: '/manager/orders', label: 'Đơn hàng' },
+        { path: '/manager/technicians', label: 'Kỹ thuật viên' },
+        { path: '/manager/packages', label: 'Gói dịch vụ' },
+        { path: '/manager/settlements', label: 'Quyết toán' },
+        { path: '/manager/reviews', label: 'Đánh giá' },
+        { path: '/manager/settings', label: 'Cài đặt' },
+      ];
+    } else if (user?.role === 'ADMIN') {
+      return [
+        { path: '/admin', label: 'Bảng điều khiển' },
+        { path: '/admin/users', label: 'Người dùng' },
+        { path: '/admin/stats', label: 'Thống kê' },
+        { path: '/admin/vouchers', label: 'Mã giảm giá' },
+        { path: '/admin/qr', label: 'Mã QR' },
+        { path: '/admin/settings', label: 'Cài đặt' },
+      ];
+    }
+    return [];
+  }, [isAuthenticated, user?.role, t]);
 
   const isCustomer = !user?.role || user?.role === 'GUEST';
   const location = useLocation();
@@ -57,7 +58,7 @@ export function AppHeader() {
 
   const totalNavPages = Math.ceil(navItems.length / PAGE_SIZE);
 
-  // Auto-focus the nav page containing the currently active route
+  // Auto-focus the nav page containing the currently active route only when location.pathname changes
   useEffect(() => {
     const activeIndex = navItems.findIndex((item) =>
       item.path === '/' || item.path === '/admin' || item.path === '/manager' || item.path === '/technician'
@@ -68,7 +69,7 @@ export function AppHeader() {
       const targetPage = Math.floor(activeIndex / PAGE_SIZE);
       setNavPage(targetPage);
     }
-  }, [location.pathname, navItems]);
+  }, [location.pathname]);
 
   const displayedNavItems = navItems.length > PAGE_SIZE
     ? navItems.slice(navPage * PAGE_SIZE, (navPage + 1) * PAGE_SIZE)

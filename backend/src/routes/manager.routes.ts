@@ -7,6 +7,7 @@ import { AppError } from '../utils/AppError.js';
 import type { OrderRow } from '../models/index.js';
 import { listSettlements, createSettlement } from '../services/financeService.js';
 import { getSystemSettings } from '../services/settingsService.js';
+import { getAvailableTechnicians } from '../services/calendarService.js';
 
 const router = Router();
 
@@ -89,6 +90,57 @@ router.get('/settings', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res
   try {
     const settings = getSystemSettings();
     res.json({ data: settings });
+  } catch (err) { next(err); }
+});
+
+// Manager: GET /orders/:id/available-technicians
+router.get('/orders/:id/available-technicians', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
+  try {
+    const orderId = Number(req.params.id);
+    const db = getDb();
+    const order = db.prepare('SELECT id, code, scheduled_date, scheduled_start, technician_id FROM orders WHERE id = ?').get(orderId) as OrderRow | undefined;
+    if (!order) throw new AppError('NOT_FOUND', 'Không tìm thấy đơn hàng.', 404);
+
+    // Get candidate technicians who are on shift and available in this slot
+    const availableTechs = getAvailableTechnicians(order.scheduled_date, order.scheduled_start);
+
+    // Also get all active technicians in system for manager fallback / manual override
+    const allTechs = db.prepare(`
+      SELECT u.id, u.name, u.email, u.phone, u.avatar_url, tp.bio
+      FROM users u
+      LEFT JOIN technician_profiles tp ON tp.user_id = u.id
+      WHERE u.role = 'TECHNICIAN' AND u.status = 'ACTIVE' AND u.is_deleted = 0
+      ORDER BY u.name ASC
+    `).all() as any[];
+
+    const annotated = allTechs.map((t) => {
+      const isCandidate = availableTechs.some((at) => at.id === t.id);
+      return {
+        ...t,
+        is_available_in_slot: isCandidate,
+        is_current: order.technician_id === t.id,
+      };
+    });
+
+    const candidateIds = availableTechs.map((t) => t.id);
+    const autoRecommendedId = candidateIds.length > 0
+      ? candidateIds[Math.floor(Math.random() * candidateIds.length)]
+      : (allTechs.length > 0 ? allTechs[0].id : null);
+
+    res.json({
+      data: {
+        order: {
+          id: order.id,
+          code: order.code,
+          scheduled_date: order.scheduled_date,
+          scheduled_start: order.scheduled_start,
+          current_technician_id: order.technician_id,
+        },
+        available_technicians: availableTechs,
+        all_technicians: annotated,
+        auto_recommended_id: autoRecommendedId,
+      },
+    });
   } catch (err) { next(err); }
 });
 
