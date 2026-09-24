@@ -112,7 +112,8 @@ export function ManagerSettlements() {
     }
   };
 
-  const totalSettled = settlements.reduce((acc, s) => acc + (s.amount || 0), 0);
+  const safeSettlements = Array.isArray(settlements) ? settlements : [];
+  const totalSettled = safeSettlements.reduce((acc, s) => acc + (s?.amount || 0), 0);
 
   return (
     <div className="container py-10 md:py-12 max-w-6xl mx-auto space-y-8">
@@ -189,7 +190,7 @@ export function ManagerSettlements() {
           </p>
         </div>
         <div className="text-xs text-slate-400 text-center sm:text-right">
-          <p>Số lần giải ngân: <strong className="text-white">{settlements.length}</strong> đợt</p>
+          <p>Số lần giải ngân: <strong className="text-white">{safeSettlements.length}</strong> đợt</p>
           <p>Tất cả giao dịch được ghi nhận tự động vào Sổ cái Ledger</p>
         </div>
       </div>
@@ -201,7 +202,7 @@ export function ManagerSettlements() {
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
             <p className="text-sm text-gray-500">Đang tải lịch sử quyết toán...</p>
           </div>
-        ) : settlements.length === 0 ? (
+        ) : safeSettlements.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <Receipt className="w-12 h-12 text-gray-300 mx-auto" />
             <p className="text-base font-semibold text-gray-700">Chưa có phiếu quyết toán nào</p>
@@ -223,7 +224,7 @@ export function ManagerSettlements() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs">
-                {settlements.map((s) => (
+                {safeSettlements.map((s) => (
                   <tr key={s.id} className="hover:bg-orange-50/20 transition-colors">
                     <td className="py-3.5 px-4 font-mono font-bold text-primary">
                       {s.settlement_code || `SETTLE-${s.id}`}

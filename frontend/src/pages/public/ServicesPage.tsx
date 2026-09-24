@@ -80,16 +80,33 @@ export function ServicesPage() {
                     <MarkdownRenderer content={pkg.description || ''} />
                   </div>
 
-                  {pkg.features && (
-                    <ul className="space-y-2.5 mb-6 pt-4 border-t border-slate-100">
-                      {pkg.features.split('\n').filter(Boolean).map((feature: string, i: number) => (
-                        <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                  {(() => {
+                    let featureList: string[] = [];
+                    if (pkg.features) {
+                      if (Array.isArray(pkg.features)) {
+                        featureList = pkg.features;
+                      } else {
+                        try {
+                          const parsed = JSON.parse(pkg.features);
+                          if (Array.isArray(parsed)) featureList = parsed;
+                          else featureList = String(pkg.features).split('\n').filter(Boolean);
+                        } catch {
+                          featureList = String(pkg.features).split('\n').filter(Boolean);
+                        }
+                      }
+                    }
+                    if (featureList.length === 0) return null;
+                    return (
+                      <ul className="space-y-2.5 mb-6 pt-4 border-t border-slate-100">
+                        {featureList.map((feature: string, i: number) => (
+                          <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  })()}
                 </div>
 
                 <div className="px-6 md:px-8 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">

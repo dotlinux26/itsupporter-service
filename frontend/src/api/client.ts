@@ -162,6 +162,9 @@ export const reviewApi = {
 
 export const technicianApi = {
   schedule: (date: string) => api.get('/technician/schedule', { params: { date } }),
+  getShifts: () => api.get('/technician/shifts'),
+  updateShifts: (shifts: Array<{ day_of_week: number; start_time: string; end_time: string; is_active: boolean | number }>) =>
+    api.put('/technician/shifts', { shifts }),
   orders: (params?: { status?: string }) => api.get('/technician/orders', { params }),
   orderDetail: (id: number) => api.get(`/technician/orders/${id}`),
   confirm: (id: number) => api.post(`/technician/orders/${id}/confirm`),

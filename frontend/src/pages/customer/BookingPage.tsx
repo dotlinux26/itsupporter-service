@@ -12,7 +12,7 @@ import {
   ShieldCheck, 
   Sparkles,
   ArrowRight,
-  UserCheck
+  CheckCircle2,
 } from 'lucide-react';
 import type { ServicePackage, TechnicianBrief } from '../../types';
 
@@ -104,9 +104,33 @@ export function BookingPage() {
         ? res.data
         : [];
       setTechnicians(techList);
+      if (techList.length === 1) {
+        setSelectedTechId(techList[0].id);
+      } else if (techList.length > 1) {
+        // If current selected tech is not in this slot's techList, randomly select one
+        setSelectedTechId((prev) => {
+          if (prev && techList.some((t: any) => t.id === prev)) return prev;
+          const randomIndex = Math.floor(Math.random() * techList.length);
+          return techList[randomIndex].id;
+        });
+      } else {
+        setSelectedTechId(null);
+      }
     } catch (err) {
       console.error('Failed to load slot technicians:', err);
       setTechnicians([]);
+      setSelectedTechId(null);
+    }
+  };
+
+  const handlePickRandomTech = () => {
+    if (technicians.length === 0) return;
+    const others = technicians.filter((t) => t.id !== selectedTechId);
+    if (others.length > 0) {
+      const randomTech = others[Math.floor(Math.random() * others.length)];
+      setSelectedTechId(randomTech.id);
+    } else {
+      setSelectedTechId(technicians[0].id);
     }
   };
 
@@ -300,62 +324,88 @@ export function BookingPage() {
             )}
           </div>
 
-          {/* Step 3: Technician Preference */}
+          {/* Step 3: Technician Selection */}
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="w-6 h-6 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center">3</span>
-              <h2 className="text-lg font-bold text-slate-800">Kỹ thuật viên phụ trách</h2>
-            </div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center">3</span>
+                <h2 className="text-lg font-bold text-slate-800">Kỹ thuật viên phụ trách ca trực</h2>
+              </div>
 
-            <div className="space-y-3">
-              <label
-                className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
-                  selectedTechId === null
-                    ? 'border-orange-500 bg-orange-50/30'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="technician"
-                  checked={selectedTechId === null}
-                  onChange={() => setSelectedTechId(null)}
-                  className="text-orange-600 focus:ring-orange-500"
-                />
-                <div className="flex-1">
-                  <div className="font-semibold text-sm text-slate-800 flex items-center gap-1.5">
-                    <UserCheck className="w-4 h-4 text-emerald-600" /> Hệ thống tự động điều phối Kỹ thuật viên gần nhất
-                  </div>
-                  <div className="text-xs text-slate-500 mt-0.5">
-                    Tối ưu thời gian di chuyển, đảm bảo kỹ thuật viên có mặt đúng giờ nhất
-                  </div>
-                </div>
-              </label>
-
-              {technicians.map((tech) => (
-                <label
-                  key={tech.id}
-                  className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
-                    selectedTechId === tech.id
-                      ? 'border-orange-500 bg-orange-50/30'
-                      : 'border-slate-200 hover:border-slate-300'
-                  }`}
+              {technicians.length > 1 && (
+                <button
+                  type="button"
+                  onClick={handlePickRandomTech}
+                  className="px-3 py-1.5 text-xs font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-xl transition flex items-center gap-1.5"
+                  title="Chọn ngẫu nhiên một kỹ thuật viên khác trong ca này"
                 >
-                  <input
-                    type="radio"
-                    name="technician"
-                    checked={selectedTechId === tech.id}
-                    onChange={() => setSelectedTechId(tech.id)}
-                    className="text-orange-600 focus:ring-orange-500"
-                  />
-                  <Avatar name={tech.name} src={tech.avatar_url} size={36} />
-                  <div className="flex-1">
-                    <div className="font-semibold text-sm text-slate-800">{tech.name}</div>
-                    <div className="text-xs text-slate-500">⭐ {tech.rating?.toFixed(1) || '5.0'} · Kỹ thuật viên IT Supporter</div>
-                  </div>
-                </label>
-              ))}
+                  <span>🎲 Chọn ngẫu nhiên KTV</span>
+                </button>
+              )}
             </div>
+
+            {technicians.length === 0 ? (
+              <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2.5">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-600" />
+                <span>
+                  Chưa có Kỹ thuật viên nào đăng ký trực vào khung giờ <strong>{selectedTime} ngày {selectedDate}</strong>. Quý khách vui lòng chọn một khung giờ hoặc ngày khác để tiếp tục.
+                </span>
+              </div>
+            ) : technicians.length === 1 ? (
+              <div className="space-y-3">
+                <div className="text-xs text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 flex items-center gap-1.5 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Ca trực này do kỹ thuật viên sau trực tiếp phụ trách tiếp nhận:</span>
+                </div>
+
+                <div className="flex items-center gap-3 p-3.5 rounded-xl border border-orange-500 bg-orange-50/40">
+                  <Avatar name={technicians[0].name} src={technicians[0].avatar_url} size={40} />
+                  <div className="flex-1">
+                    <div className="font-bold text-sm text-slate-900">{technicians[0].name}</div>
+                    <div className="text-xs text-slate-500 mt-0.5">
+                      {technicians[0].bio || 'Kỹ thuật viên IT Supporter HaUI · Nhiệt huyết & tận tâm'}
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
+                    Đang trực ca
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-slate-500">
+                  Có <strong>{technicians.length}</strong> Kỹ thuật viên sẵn sàng trong ca này. Bạn có thể chọn người bạn tin tưởng hoặc để hệ thống chọn ngẫu nhiên:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {technicians.map((tech) => (
+                    <label
+                      key={tech.id}
+                      className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                        selectedTechId === tech.id
+                          ? 'border-orange-500 bg-orange-50/50 shadow-xs ring-1 ring-orange-500'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="technician"
+                        checked={selectedTechId === tech.id}
+                        onChange={() => setSelectedTechId(tech.id)}
+                        className="text-orange-600 focus:ring-orange-500"
+                      />
+                      <Avatar name={tech.name} src={tech.avatar_url} size={36} />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-sm text-slate-800 truncate">{tech.name}</div>
+                        <div className="text-xs text-slate-500 truncate">
+                          {tech.bio || 'Kỹ thuật viên IT Supporter HaUI'}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Step 4: Workshop Address & Device Notes */}

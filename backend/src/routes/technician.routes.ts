@@ -27,6 +27,72 @@ router.get('/schedule', authenticate, requireRole('TECHNICIAN'), (req, res, next
   } catch (err) { next(err); }
 });
 
+// Technician: GET /shifts (weekly shift schedule)
+router.get('/shifts', authenticate, requireRole('TECHNICIAN'), (req, res, next) => {
+  try {
+    const user = getAuthUser(req)!;
+    const db = getDb();
+    const rows = db
+      .prepare(
+        `SELECT day_of_week, start_time, end_time, is_active
+         FROM technician_schedules
+         WHERE technician_id = ?
+         ORDER BY day_of_week ASC`
+      )
+      .all(user.id) as Array<{ day_of_week: number; start_time: string; end_time: string; is_active: number }>;
+
+    // Map 1..7 (Monday to Sunday)
+    const days = [1, 2, 3, 4, 5, 6, 7].map((dow) => {
+      const existing = rows.find((r) => r.day_of_week === dow);
+      return {
+        day_of_week: dow,
+        start_time: existing ? existing.start_time : '07:00',
+        end_time: existing ? existing.end_time : '19:00',
+        is_active: existing ? existing.is_active : (dow <= 6 ? 1 : 0),
+      };
+    });
+
+    res.json({ data: days });
+  } catch (err) { next(err); }
+});
+
+// Technician: PUT /shifts (publish & update weekly shifts)
+router.put('/shifts', authenticate, requireRole('TECHNICIAN'), (req, res, next) => {
+  try {
+    const user = getAuthUser(req)!;
+    const shifts = req.body.shifts as Array<{ day_of_week: number; start_time: string; end_time: string; is_active: boolean | number }>;
+    if (!Array.isArray(shifts)) {
+      throw new AppError('VALIDATION_ERROR', 'Dữ liệu lịch trực không hợp lệ.', 400);
+    }
+
+    const db = getDb();
+    const insertOrReplace = db.prepare(`
+      INSERT INTO technician_schedules (technician_id, day_of_week, start_time, end_time, is_active)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(technician_id, day_of_week) DO UPDATE SET
+        start_time = excluded.start_time,
+        end_time = excluded.end_time,
+        is_active = excluded.is_active
+    `);
+
+    const updateMany = db.transaction((items) => {
+      for (const item of items) {
+        insertOrReplace.run(
+          user.id,
+          Number(item.day_of_week),
+          String(item.start_time || '07:00'),
+          String(item.end_time || '19:00'),
+          item.is_active ? 1 : 0
+        );
+      }
+    });
+
+    updateMany(shifts);
+
+    res.json({ success: true, message: 'Đã xuất bản lịch trực thành công.' });
+  } catch (err) { next(err); }
+});
+
 // Technician: GET /orders (my orders with filters)
 router.get('/orders', authenticate, requireRole('TECHNICIAN'), (req, res, next) => {
   try {
