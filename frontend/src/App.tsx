@@ -72,7 +72,7 @@ function ProtectedRoute({ allowedRoles = [], children }: { allowedRoles?: string
 }
 
 function PublicOnly({ children }: { children?: React.ReactNode }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -83,7 +83,12 @@ function PublicOnly({ children }: { children?: React.ReactNode }) {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/orders" replace />;
+    switch (user?.role) {
+      case 'ADMIN': return <Navigate to="/admin" replace />;
+      case 'MANAGER': return <Navigate to="/manager" replace />;
+      case 'TECHNICIAN': return <Navigate to="/technician" replace />;
+      default: return <Navigate to="/orders" replace />;
+    }
   }
 
   return <>{children || <Outlet />}</>;

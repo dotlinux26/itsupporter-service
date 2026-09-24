@@ -16,7 +16,14 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const redirect = searchParams.get('redirect') || '/orders';
+  const getRoleDefaultPath = (role?: string) => {
+    switch (role) {
+      case 'ADMIN': return '/admin';
+      case 'MANAGER': return '/manager';
+      case 'TECHNICIAN': return '/technician';
+      default: return '/orders';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,8 +31,9 @@ export function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email, password, rememberMe);
-      navigate(redirect, { replace: true });
+      const loggedUser = await login(email, password, rememberMe);
+      const targetUrl = searchParams.get('redirect') || getRoleDefaultPath(loggedUser?.role);
+      navigate(targetUrl, { replace: true });
     } catch (err: any) {
       setError(err.response?.data?.error?.message || t('auth.invalidCredentials'));
     } finally {

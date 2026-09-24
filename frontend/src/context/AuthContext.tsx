@@ -5,8 +5,8 @@ import type { User } from '../types';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<User>;
+  register: (name: string, email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
@@ -34,14 +34,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser();
   }, [refreshUser]);
 
-  const login = async (email: string, password: string, rememberMe?: boolean) => {
+  const login = async (email: string, password: string, rememberMe?: boolean): Promise<User> => {
     const response = await authApi.login(email, password, rememberMe);
-    setUser(response.data.data);
+    const userData = response.data.data;
+    setUser(userData);
+    return userData;
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (name: string, email: string, password: string): Promise<User> => {
     const response = await authApi.register(name, email, password);
-    setUser(response.data.data);
+    const userData = response.data.data;
+    setUser(userData);
+    return userData;
   };
 
   const logout = async () => {
