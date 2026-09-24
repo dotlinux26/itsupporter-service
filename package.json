@@ -1,0 +1,36 @@
+{
+  "name": "itsupporter-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "IT Supporter Service - service booking + order management + technician operation + financial settlement platform",
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev --workspace backend\" \"npm run dev --workspace frontend\"",
+    "dev:backend": "npm run dev --workspace backend",
+    "dev:frontend": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace backend && npm run build --workspace frontend",
+    "build:backend": "npm run build --workspace backend",
+    "build:frontend": "npm run build --workspace frontend",
+    "start": "npm run start --workspace backend",
+    "db:init": "npm run db:init --workspace backend",
+    "migrate": "npm run migrate --workspace backend",
+    "create-admin": "npm run create-admin --workspace backend",
+    "lint": "npm run lint --workspace backend && npm run lint --workspace frontend",
+    "typecheck": "npm run typecheck --workspace backend && npm run typecheck --workspace frontend"
+  },
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "allowScripts": {
+    "argon2@0.41.1": true,
+    "better-sqlite3@11.10.0": true,
+    "esbuild@0.28.2": true,
+    "sqlite3@5.1.6": true
+  }
+}
