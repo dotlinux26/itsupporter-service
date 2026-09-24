@@ -171,8 +171,8 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                     </span>
                   )}
                   {skills.length === 0 && (
-                    <span className="px-2 py-0.5 bg-slate-50 text-slate-400 rounded-md text-[10px]">
-                      KTV HaUI
+                    <span className="text-[11px] text-slate-400 italic">
+                      Chưa cập nhật kỹ năng
                     </span>
                   )}
                 </div>

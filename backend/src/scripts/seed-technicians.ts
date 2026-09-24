@@ -13,7 +13,7 @@ async function seed() {
       avatar_url: null,
       bio: 'Trưởng ban Kỹ thuật IT Supporter HaUI. Chuyên sâu về sửa chữa, tối ưu phần cứng PC/Laptop và tản nhiệt cao cấp.',
       public_profile: JSON.stringify({
-        skills: ['Tra keo gốm/kim loại lỏng', 'Ép xung/Undervolt', 'Vệ sinh linh kiện chuẩn ESD', 'Xử lý kẹt quạt & tra dầu', 'Nâng cấp RAM & SSD NVMe'],
+        skills: [],
         article: '### Giới thiệu Kỹ thuật viên Nguyễn Đức Cảnh\n- **Đơn vị công tác**: Đội Hỗ trợ Kỹ thuật IT Supporter - Trường Đại học Công nghiệp Hà Nội (HaUI).\n- **Cam kết chất lượng**: Thực hiện đúng quy trình 9 bước vệ sinh & bảo dưỡng máy tính trực tiếp trước sự quan sát của khách hàng.\n- **Chuyên môn nổi bật**: Tháo lắp an toàn chống tĩnh điện ESD, tra keo tản nhiệt hiệu năng cao (Thermal Grizzly / MX-4 / Honeywell PTM7950), tối ưu luồng gió tản nhiệt cho máy tính bàn & laptop gaming.\n- **Kinh nghiệm thực tế**: Đã bảo dưỡng thành công hơn 300+ máy tính cho sinh viên & cán bộ giảng viên tại cơ sở Nhổn & Hà Nam.\n\n*Rất sẵn lòng hỗ trợ các bạn tại Phòng 1603 Tòa A1!*'
       }),
     },
@@ -24,7 +24,7 @@ async function seed() {
       avatar_url: null,
       bio: 'Kỹ thuật viên phần cứng giàu kinh nghiệm. Thao tác tỉ mỉ, cẩn thận trên các dòng Laptop Gaming & Workstation.',
       public_profile: JSON.stringify({
-        skills: ['Tháo lắp Laptop Gaming', 'Vệ sinh quạt tản nhiệt', 'Nâng cấp RAM & SSD', 'Thay màn hình & bàn phím', 'Tối ưu Windows & Driver'],
+        skills: [],
         article: '### Giới thiệu Kỹ thuật viên Trần Văn Vũ\n- **Đơn vị công tác**: Đội Kỹ thuật IT Supporter HaUI.\n- **Chuyên môn**: Xử lý chuyên sâu các dòng máy Gaming (Asus TUF/ROG, Acer Nitro/Predator, Lenovo Legion, Dell G-Series) và Workstation.\n- **Nguyên tắc làm việc**: Cẩn thận từng ngàm vỏ, ốc vít; vệ sinh sạch sẽ bụi bẩn vi mạch và bôi trơn quạt tản nhiệt không gây tiếng ồn.\n- **Bảo hành trách nhiệm**: Cam kết hỗ trợ kiểm tra lại máy miễn phí nếu nhiệt độ chưa đạt mức tối ưu.'
       }),
     },
@@ -35,7 +35,7 @@ async function seed() {
       avatar_url: null,
       bio: 'Kỹ thuật viên tối ưu phần mềm và hệ thống. Chuyên chẩn đoán nhiệt độ, lỗi xung đột driver và vệ sinh vi mạch.',
       public_profile: JSON.stringify({
-        skills: ['Chẩn đoán nhiệt độ stress-test', 'Cài đặt hệ điều hành bản quyền', 'Tối ưu BIOS', 'Vệ sinh vi mạch chuyên sâu', 'Cứu dữ liệu ổ cứng'],
+        skills: [],
         article: '### Giới thiệu Kỹ thuật viên Lê Thị Hồng\n- **Đơn vị công tác**: Ban Hỗ trợ Kỹ thuật IT Supporter - ĐH Công nghiệp Hà Nội.\n- **Thế mạnh**: Chẩn đoán lỗi phần cứng & phần mềm, tối ưu hóa hệ thống máy tính học tập và văn phòng, giải quyết triệt để lỗi Full Disk và giật lag.\n- **Quy trình chuẩn hóa**: Chụp ảnh tình trạng máy trước/sau khi vệ sinh, đo đạc nhiệt độ Stress Test bằng phần mềm chuyên dụng (FurMark, Cinebench, HWMonitor).'
       }),
     },
@@ -46,7 +46,7 @@ async function seed() {
       avatar_url: null,
       bio: 'Kỹ thuật viên bảo trì phần cứng. Nhiệt tình, chu đáo và kiểm tra toàn diện máy tính trước khi bàn giao.',
       public_profile: JSON.stringify({
-        skills: ['Bảo dưỡng Laptop mỏng nhẹ', 'Vệ sinh bàn phím & màn hình', 'Kiểm tra pin & nguồn', 'Xử lý máy nóng & tụt pin', 'Tra keo tản nhiệt PTM7950'],
+        skills: [],
         article: '### Giới thiệu Kỹ thuật viên Phạm Minh Hoàng\n- **Đơn vị công tác**: Đội IT Supporter HaUI.\n- **Chuyên môn**: Bảo dưỡng, vệ sinh chi tiết các dòng Ultrabook & Macbook mỏng nhẹ (Dell XPS, HP Envy/Spectre, ThinkPad, Macbook Air/Pro).\n- **Thao tác chuẩn xác**: Sử dụng bộ dụng cụ cách điện chuyên dụng iFixit, bảo vệ tối đa bề mặt nhôm unibody và các cáp kết nối mỏng.'
       }),
     },

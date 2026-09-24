@@ -14,6 +14,8 @@ import {
   Tag,
   Award,
   AlertCircle,
+  X,
+  Trash2,
 } from 'lucide-react';
 import { Avatar } from '../../components/Avatar';
 import { AvatarUploadModal } from '../../components/AvatarUploadModal';
@@ -78,18 +80,23 @@ export function ProfilePage() {
         try {
           const parsed = JSON.parse(user.public_profile);
           if (parsed && typeof parsed === 'object') {
-            if (Array.isArray(parsed.skills) && parsed.skills.length > 0) {
+            if (Array.isArray(parsed.skills)) {
               setSelectedTags(parsed.skills);
+            } else {
+              setSelectedTags([]);
             }
             const md = parsed.article || parsed.markdown || parsed.content || '';
             setPublicProfile(md);
           } else {
+            setSelectedTags([]);
             setPublicProfile(String(parsed));
           }
         } catch {
+          setSelectedTags([]);
           setPublicProfile(user.public_profile);
         }
       } else {
+        setSelectedTags([]);
         setPublicProfile('');
       }
     }
@@ -444,33 +451,80 @@ export function ProfilePage() {
             </div>
 
             {/* Gợi ý thẻ kỹ năng / tags */}
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Tag className="w-3.5 h-3.5 text-primary" />
-                Thẻ chuyên môn & Kỹ năng nổi bật
-              </label>
-              
-              <div className="flex flex-wrap gap-2 mb-3">
-                {PRESET_SKILLS.map((skill) => {
-                  const isSelected = selectedTags.includes(skill);
-                  return (
-                    <button
-                      type="button"
-                      key={skill}
-                      onClick={() => (isSelected ? handleRemoveTag(skill) : handleAddTag(skill))}
-                      className={`text-xs px-3 py-1.5 rounded-lg border transition font-medium ${
-                        isSelected
-                          ? 'bg-primary text-white border-primary shadow-sm'
-                          : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                      }`}
-                    >
-                      {isSelected ? `✓ ${skill}` : `+ ${skill}`}
-                    </button>
-                  );
-                })}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <Tag className="w-3.5 h-3.5 text-primary" />
+                  Thẻ chuyên môn & Kỹ năng nổi bật ({selectedTags.length}/8)
+                </label>
+                {selectedTags.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTags([])}
+                    className="text-[11px] font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 px-2 py-0.5 rounded hover:bg-red-50 transition cursor-pointer"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Xóa tất cả thẻ</span>
+                  </button>
+                )}
               </div>
 
-              <div className="flex gap-2">
+              {/* Danh sách thẻ đang chọn */}
+              <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-200 min-h-[48px] flex items-center">
+                {selectedTags.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 w-full">
+                    {selectedTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-600 text-white rounded-lg text-xs font-semibold shadow-xs"
+                      >
+                        <span>{tag}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="hover:bg-orange-700 rounded-full p-0.5 transition cursor-pointer"
+                          title={`Xóa thẻ ${tag}`}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400 italic">
+                    Chưa chọn thẻ nào. Khi lưu, trên danh sách ngoài trang chủ sẽ hiển thị: &quot;Chưa cập nhật kỹ năng&quot;.
+                  </p>
+                )}
+              </div>
+
+              {/* Gợi ý mẫu */}
+              <div>
+                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block mb-2">
+                  Gợi ý chọn nhanh thẻ phổ biến:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {PRESET_SKILLS.map((skill) => {
+                    const isSelected = selectedTags.includes(skill);
+                    return (
+                      <button
+                        type="button"
+                        key={skill}
+                        onClick={() => (isSelected ? handleRemoveTag(skill) : handleAddTag(skill))}
+                        className={`text-xs px-3 py-1.5 rounded-lg border transition font-medium cursor-pointer ${
+                          isSelected
+                            ? 'bg-orange-100 text-orange-800 border-orange-300 font-semibold'
+                            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        {isSelected ? `✓ ${skill}` : `+ ${skill}`}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Thêm thẻ tùy chỉnh */}
+              <div className="flex gap-2 pt-1">
                 <input
                   type="text"
                   value={customTagInput}
@@ -481,13 +535,13 @@ export function ProfilePage() {
                       handleAddTag(customTagInput);
                     }
                   }}
-                  placeholder="Nhập kỹ năng khác rồi bấm Thêm..."
+                  placeholder="Nhập kỹ năng tùy chỉnh khác rồi bấm Thêm..."
                   className="input text-xs flex-1"
                 />
                 <button
                   type="button"
                   onClick={() => handleAddTag(customTagInput)}
-                  className="btn btn-outline text-xs px-4"
+                  className="btn btn-outline text-xs px-4 cursor-pointer"
                 >
                   Thêm thẻ
                 </button>
