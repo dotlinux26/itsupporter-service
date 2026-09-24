@@ -10,6 +10,22 @@ const router = Router();
 router.get('/info', (_req, res, next) => {
   try {
     const settings = getSystemSettings();
+    const db = getDb();
+    const completedCountRow = db.prepare("SELECT COUNT(*) AS c FROM orders WHERE status = 'COMPLETED'").get() as { c: number };
+    const totalOrdersRow = db.prepare("SELECT COUNT(*) AS c FROM orders").get() as { c: number };
+    const reviewStatsRow = db.prepare(`
+      SELECT 
+        COUNT(*) AS total_reviews,
+        COALESCE(AVG(rating), 5.0) AS avg_rating,
+        COUNT(CASE WHEN rating >= 4 THEN 1 END) AS positive_reviews
+      FROM reviews
+    `).get() as { total_reviews: number; avg_rating: number; positive_reviews: number };
+    const activeTechsRow = db.prepare("SELECT COUNT(*) AS c FROM users WHERE role = 'TECHNICIAN' AND is_deleted = 0 AND status = 'ACTIVE'").get() as { c: number };
+
+    const satisfactionPercent = reviewStatsRow.total_reviews > 0
+      ? Math.round((reviewStatsRow.positive_reviews / reviewStatsRow.total_reviews) * 1000) / 10
+      : 100;
+
     res.json({
       data: {
         team_name: settings.teamName,
@@ -28,6 +44,14 @@ router.get('/info', (_req, res, next) => {
         warranty_policy_days: settings.warrantyPolicyDays,
         warranty_policy_title: settings.warrantyPolicyTitle,
         warranty_policy_content: settings.warrantyPolicyContent,
+        stats: {
+          completed_orders_count: completedCountRow.c,
+          total_orders_count: totalOrdersRow.c,
+          total_reviews: reviewStatsRow.total_reviews,
+          avg_rating: Math.round(reviewStatsRow.avg_rating * 10) / 10,
+          satisfaction_percent: satisfactionPercent,
+          active_technicians_count: activeTechsRow.c,
+        },
         // CamelCase properties for convenience in frontend
         teamName: settings.teamName,
         workshopAddress: settings.workshopAddress,

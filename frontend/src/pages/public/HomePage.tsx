@@ -28,6 +28,14 @@ export function HomePage() {
     warranty_policy_enabled?: boolean | string;
     warranty_policy_days?: string;
     warranty_policy_title?: string;
+    stats?: {
+      completed_orders_count?: number;
+      total_orders_count?: number;
+      total_reviews?: number;
+      avg_rating?: number;
+      satisfaction_percent?: number;
+      active_technicians_count?: number;
+    };
   }>({
     workshop_address: 'Phòng 1603, Tòa A1, Cơ sở 1 - Đại học Công nghiệp Hà Nội',
     team_name: 'IT Supporter HaUI',
@@ -184,25 +192,33 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 2. STATS & PROOF SECTION (Clean balanced columns; warranty shown dynamically if enabled by Admin) */}
+      {/* 2. STATS & PROOF SECTION (Dynamic real stats from database; warranty shown dynamically if enabled by Admin) */}
       <section className="py-12 bg-white border-y border-slate-200">
         <div className="container">
           <div className={`grid gap-8 text-center ${isWarrantyActive ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
             <div>
-              <div className="text-3xl sm:text-4xl font-black text-slate-900">15,000+</div>
+              <div className="text-3xl sm:text-4xl font-black text-slate-900 font-mono">
+                {siteInfo.stats?.completed_orders_count !== undefined && siteInfo.stats.completed_orders_count > 0
+                  ? `${siteInfo.stats.completed_orders_count}+`
+                  : `${siteInfo.stats?.total_orders_count || 10}+`}
+              </div>
               <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">Máy tính đã vệ sinh an toàn</div>
             </div>
             <div>
-              <div className="text-3xl sm:text-4xl font-black text-orange-600">99.4%</div>
-              <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">Khách hàng hài lòng 5 sao</div>
+              <div className="text-3xl sm:text-4xl font-black text-orange-600 font-mono">
+                {siteInfo.stats?.satisfaction_percent ? `${siteInfo.stats.satisfaction_percent}%` : '100%'}
+              </div>
+              <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+                Khách hàng hài lòng 5 sao ({siteInfo.stats?.total_reviews || 0} đánh giá)
+              </div>
             </div>
             <div>
-              <div className="text-3xl sm:text-4xl font-black text-slate-900">&lt; 30p</div>
+              <div className="text-3xl sm:text-4xl font-black text-slate-900 font-mono">&lt; 30p</div>
               <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">Cam kết đúng hẹn tuyệt đối</div>
             </div>
             {isWarrantyActive && (
               <div>
-                <div className="text-3xl sm:text-4xl font-black text-emerald-600">{siteInfo.warranty_policy_days || '30 Ngày'}</div>
+                <div className="text-3xl sm:text-4xl font-black text-emerald-600 font-mono">{siteInfo.warranty_policy_days || '30 Ngày'}</div>
                 <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">{siteInfo.warranty_policy_title || 'Bảo hành hỗ trợ kỹ thuật'}</div>
               </div>
             )}
