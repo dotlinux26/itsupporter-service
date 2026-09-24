@@ -6,6 +6,7 @@ import {
   getActiveTechIds,
   getAvailableTechnicians,
   isTechnicianAvailable,
+  generateOrderCode,
 } from './calendarService.js';
 import { getSystemSettings } from './settingsService.js';
 import {
@@ -91,8 +92,9 @@ export function bookOrder(input: BookingInput): OrderRow {
     if (!pkg) {
       throw new AppError('NOT_FOUND', 'Gói dịch vụ không tồn tại hoặc đã bị tắt.', 404);
     }
+    const tempCode = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const orderId = createOrderRow({
-      code: '',
+      code: tempCode,
       customer_id: input.customerId,
       technician_id: input.requestedTechnicianId ?? null,
       package_id: input.packageId,
@@ -115,7 +117,8 @@ export function bookOrder(input: BookingInput): OrderRow {
       completed_at: null,
     });
 
-    updateOrder(orderId, { status: 'PENDING', payment_status: 'UNPAID' });
+    const realCode = generateOrderCode(orderId);
+    db.prepare('UPDATE orders SET code = ? WHERE id = ?').run(realCode, orderId);
     logStatusChange(orderId, null, 'PENDING', input.customerId, 'Khách đặt lịch');
     return db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as OrderRow;
   });

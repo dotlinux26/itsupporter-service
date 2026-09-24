@@ -25,8 +25,7 @@ const BASE_SELECT = `
          p.name AS package_name,
          t.name AS technician_name,
          t.email AS technician_email,
-         t.avatar_url AS technician_avatar,
-         u.name AS actor_name
+         t.avatar_url AS technician_avatar
   FROM orders o
   LEFT JOIN users c ON c.id = o.customer_id
   LEFT JOIN users t ON t.id = o.technician_id
