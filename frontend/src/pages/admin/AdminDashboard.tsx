@@ -17,7 +17,13 @@ export function AdminDashboard() {
   const loadStats = async () => {
     try {
       const response = await adminApi.stats();
-      setStats(response.data.data);
+      const d = response.data?.data || {};
+      setStats({
+        totalUsers: d.totalUsers ?? 0,
+        totalTechnicians: d.totalTechnicians ?? 0,
+        totalOrders: d.totalOrders ?? 0,
+        totalRevenue: d.totalRevenue ?? d.revenue ?? 0,
+      });
     } catch (error) {
       console.error('Failed to load stats:', error);
     } finally {
@@ -45,19 +51,19 @@ export function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="card p-6">
           <h3 className="text-text-secondary text-sm font-medium">Tổng người dùng</h3>
-          <p className="text-3xl font-bold text-text mt-2">{stats.totalUsers}</p>
+          <p className="text-3xl font-bold text-text mt-2">{stats.totalUsers ?? 0}</p>
         </div>
         <div className="card p-6">
           <h3 className="text-text-secondary text-sm font-medium">Tổng kỹ thuật viên</h3>
-          <p className="text-3xl font-bold text-primary mt-2">{stats.totalTechnicians}</p>
+          <p className="text-3xl font-bold text-primary mt-2">{stats.totalTechnicians ?? 0}</p>
         </div>
         <div className="card p-6">
           <h3 className="text-text-secondary text-sm font-medium">Tổng đơn hàng</h3>
-          <p className="text-3xl font-bold text-info mt-2">{stats.totalOrders}</p>
+          <p className="text-3xl font-bold text-info mt-2">{stats.totalOrders ?? 0}</p>
         </div>
         <div className="card p-6">
           <h3 className="text-text-secondary text-sm font-medium">Tổng doanh thu</h3>
-          <p className="text-3xl font-bold text-success mt-2">{stats.totalRevenue.toLocaleString('vi-VN')} VNĐ</p>
+          <p className="text-3xl font-bold text-success mt-2">{(stats.totalRevenue ?? 0).toLocaleString('vi-VN')} VNĐ</p>
         </div>
       </div>
 

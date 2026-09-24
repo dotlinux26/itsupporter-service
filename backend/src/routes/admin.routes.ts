@@ -61,11 +61,13 @@ router.patch('/users/:id/role', authenticate, requireRole('ADMIN'), (req, res, n
 router.get('/stats', authenticate, requireRole('ADMIN'), (req, res, next) => {
   try {
     const db = getDb();
+    const rev = (db.prepare('SELECT COALESCE(SUM(final_amount), 0) AS c FROM orders WHERE payment_status = \'PAID\'').get() as { c: number }).c;
     const stats = {
       totalUsers: (db.prepare('SELECT COUNT(*) AS c FROM users WHERE is_deleted = 0').get() as { c: number }).c,
       totalTechnicians: (db.prepare('SELECT COUNT(*) AS c FROM users WHERE role = \'TECHNICIAN\'').get() as { c: number }).c,
       totalOrders: (db.prepare('SELECT COUNT(*) AS c FROM orders').get() as { c: number }).c,
-      revenue: (db.prepare('SELECT COALESCE(SUM(final_amount), 0) AS c FROM orders WHERE payment_status = \'PAID\'').get() as { c: number }).c,
+      totalRevenue: rev,
+      revenue: rev,
     };
     res.json({ data: stats });
   } catch (err) { next(err); }
