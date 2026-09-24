@@ -12,17 +12,21 @@ import {
   Send,
   Sun,
   Sunset,
-  Zap,
   Info,
   ChevronRight,
   ClipboardList,
+  CheckSquare,
+  Square,
+  Sparkles,
+  Trash2,
 } from 'lucide-react';
 
-interface ShiftItem {
+export interface ShiftItem {
   day_of_week: number;
   start_time: string;
   end_time: string;
   is_active: boolean | number;
+  slots: string[];
 }
 
 const DAY_NAMES: Record<number, string> = {
@@ -35,9 +39,19 @@ const DAY_NAMES: Record<number, string> = {
   7: 'Chủ Nhật',
 };
 
-const TIME_OPTIONS = [
-  '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
-  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'
+const ALL_12_SLOTS = [
+  { start: '07:00', end: '08:00', label: '07:00 - 08:00', shift: 'morning' },
+  { start: '08:00', end: '09:00', label: '08:00 - 09:00', shift: 'morning' },
+  { start: '09:00', end: '10:00', label: '09:00 - 10:00', shift: 'morning' },
+  { start: '10:00', end: '11:00', label: '10:00 - 11:00', shift: 'morning' },
+  { start: '11:00', end: '12:00', label: '11:00 - 12:00', shift: 'morning' },
+  { start: '12:00', end: '13:00', label: '12:00 - 13:00', shift: 'afternoon' },
+  { start: '13:00', end: '14:00', label: '13:00 - 14:00', shift: 'afternoon' },
+  { start: '14:00', end: '15:00', label: '14:00 - 15:00', shift: 'afternoon' },
+  { start: '15:00', end: '16:00', label: '15:00 - 16:00', shift: 'afternoon' },
+  { start: '16:00', end: '17:00', label: '16:00 - 17:00', shift: 'afternoon' },
+  { start: '17:00', end: '18:00', label: '17:00 - 18:00', shift: 'afternoon' },
+  { start: '18:00', end: '19:00', label: '18:00 - 19:00', shift: 'afternoon' },
 ];
 
 export function TechnicianSchedule() {
@@ -70,15 +84,22 @@ export function TechnicianSchedule() {
       const res = await technicianApi.getShifts();
       const list = Array.isArray(res.data?.data) ? res.data.data : [];
       if (list.length > 0) {
-        setShifts(list.map((s: any) => ({ ...s, is_active: !!s.is_active })));
+        setShifts(
+          list.map((s: any) => ({
+            ...s,
+            is_active: !!s.is_active,
+            slots: Array.isArray(s.slots) ? s.slots : ALL_12_SLOTS.map((slot) => slot.start),
+          }))
+        );
       } else {
-        // Default template: Mon-Sat active 07:00-19:00, Sun off
+        // Default template: Mon-Sat active all 12 slots, Sun off
         setShifts(
           [1, 2, 3, 4, 5, 6, 7].map((dow) => ({
             day_of_week: dow,
             start_time: '07:00',
             end_time: '19:00',
             is_active: dow <= 6,
+            slots: dow <= 6 ? ALL_12_SLOTS.map((s) => s.start) : [],
           }))
         );
       }
@@ -109,23 +130,58 @@ export function TechnicianSchedule() {
 
   const handleToggleDay = (dow: number) => {
     setShifts((prev) =>
-      prev.map((s) => (s.day_of_week === dow ? { ...s, is_active: !s.is_active } : s))
+      prev.map((s) => {
+        if (s.day_of_week !== dow) return s;
+        const willBeActive = !s.is_active;
+        return {
+          ...s,
+          is_active: willBeActive,
+          // If turning on and no slots selected, default to all 12 slots
+          slots: willBeActive && s.slots.length === 0 ? ALL_12_SLOTS.map((slot) => slot.start) : s.slots,
+        };
+      })
     );
   };
 
-  const handleTimeChange = (dow: number, field: 'start_time' | 'end_time', value: string) => {
-    setShifts((prev) =>
-      prev.map((s) => (s.day_of_week === dow ? { ...s, [field]: value } : s))
-    );
-  };
-
-  const applyPreset = (dow: number, preset: 'morning' | 'afternoon' | 'fullday') => {
+  const handleToggleSlot = (dow: number, slotStart: string) => {
     setShifts((prev) =>
       prev.map((s) => {
         if (s.day_of_week !== dow) return s;
-        if (preset === 'morning') return { ...s, is_active: true, start_time: '07:00', end_time: '12:00' };
-        if (preset === 'afternoon') return { ...s, is_active: true, start_time: '13:00', end_time: '19:00' };
-        return { ...s, is_active: true, start_time: '07:00', end_time: '19:00' };
+        const currentSlots = s.slots || [];
+        const isTicked = currentSlots.includes(slotStart);
+        const nextSlots = isTicked
+          ? currentSlots.filter((st) => st !== slotStart)
+          : [...currentSlots, slotStart].sort();
+
+        return {
+          ...s,
+          is_active: nextSlots.length > 0,
+          slots: nextSlots,
+        };
+      })
+    );
+  };
+
+  const applyPreset = (dow: number, preset: 'all' | 'morning' | 'afternoon' | 'none') => {
+    setShifts((prev) =>
+      prev.map((s) => {
+        if (s.day_of_week !== dow) return s;
+        let newSlots: string[] = [];
+        if (preset === 'all') {
+          newSlots = ALL_12_SLOTS.map((slot) => slot.start);
+        } else if (preset === 'morning') {
+          newSlots = ['07:00', '08:00', '09:00', '10:00', '11:00'];
+        } else if (preset === 'afternoon') {
+          newSlots = ['12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+        } else if (preset === 'none') {
+          newSlots = [];
+        }
+
+        return {
+          ...s,
+          is_active: newSlots.length > 0,
+          slots: newSlots,
+        };
       })
     );
   };
@@ -137,7 +193,7 @@ export function TechnicianSchedule() {
       await technicianApi.updateShifts(shifts);
       showFeedback(
         'success',
-        'Đã xuất bản lịch trực thành công! Khách hàng đặt lịch trên Trang chủ sẽ thấy ca trực mới của bạn.'
+        'Đã xuất bản lịch trực thành công! Khách hàng đặt lịch trên Trang chủ sẽ chỉ thấy các ca bạn đã tích chọn.'
       );
     } catch (err: any) {
       console.error('Failed to publish shifts:', err);
@@ -157,7 +213,7 @@ export function TechnicianSchedule() {
             Quản lý Lịch trực & Đăng ký Ca làm việc
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Thiết lập các khung giờ bạn rảnh trong tuần để xuất bản lên hệ thống đặt lịch công khai.
+            Chủ động tích chọn bất kỳ ca nào bạn rảnh trong 12 ca hàng ngày để xuất bản lên hệ thống đặt lịch.
           </p>
         </div>
 
@@ -208,7 +264,7 @@ export function TechnicianSchedule() {
           }`}
         >
           <Clock className="w-4 h-4" />
-          <span>Lịch trực hàng tuần (Publish ca rảnh)</span>
+          <span>Lịch trực hàng tuần (Tích chọn 12 ca)</span>
         </button>
 
         <button
@@ -225,7 +281,7 @@ export function TechnicianSchedule() {
         </button>
       </div>
 
-      {/* TAB 1: WEEKLY SHIFT REGISTRATION */}
+      {/* TAB 1: WEEKLY SHIFT REGISTRATION WITH 12-SLOT TICKING */}
       {activeTab === 'weekly' && (
         <div className="space-y-6">
           {/* EXPLANATION BANNER */}
@@ -235,21 +291,21 @@ export function TechnicianSchedule() {
             </div>
             <div className="text-xs text-gray-700 space-y-1">
               <p className="font-bold text-gray-900 text-sm">
-                Lịch trực hoạt động như thế nào?
+                Quyền lợi tự do lựa chọn ca trực của Kỹ thuật viên:
               </p>
               <p>
-                1. <strong>Đăng ký ca trực</strong>: Bật/Tắt những ngày trong tuần bạn có thể nhận bảo dưỡng máy tính tại Phòng 1603 A1 (ĐH Công nghiệp Hà Nội).
+                1. <strong>Tự do tích ca</strong>: Mỗi ngày gồm 12 ca từ 07:00 đến 19:00. Bạn rảnh khung giờ nào chỉ cần bấm tích vào khung giờ đó (không nhất thiết phải trực liên tục).
               </p>
               <p>
-                2. <strong>Đồng bộ tức thì với Trang chủ</strong>: Khi bạn bấm <em>"Xuất bản Lịch trực"</em>, hệ thống sẽ mở các khung giờ tương ứng trên Lịch Đặt chỗ công khai. Khách hàng chọn khung giờ đó sẽ thấy bạn trong danh sách KTV sẵn sàng hỗ trợ.
+                2. <strong>Đồng bộ tức thì</strong>: Khi bạn bấm <em>"Xuất bản Lịch trực"</em>, khách hàng đặt lịch trên hệ thống chỉ thấy bạn trong các khung giờ bạn đã tích chọn.
               </p>
             </div>
           </div>
 
           {/* 7 DAYS SHIFTS CONFIGURATION */}
-          <div className="card bg-white border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-100">
+          <div className="space-y-4">
             {shiftsLoading ? (
-              <div className="p-8 text-center space-y-3">
+              <div className="p-8 text-center space-y-3 card bg-white">
                 <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
                 <p className="text-sm text-gray-500">Đang tải lịch trực tuần...</p>
               </div>
@@ -257,102 +313,122 @@ export function TechnicianSchedule() {
               shifts.map((shift) => {
                 const dayName = DAY_NAMES[shift.day_of_week] || `Thứ ${shift.day_of_week}`;
                 const isActive = !!shift.is_active;
+                const tickedSlots = shift.slots || [];
 
                 return (
                   <div
                     key={shift.day_of_week}
-                    className={`p-5 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4 ${
-                      isActive ? 'bg-white' : 'bg-gray-50/60 opacity-80'
+                    className={`card p-5 border transition-all duration-200 ${
+                      isActive
+                        ? 'bg-white border-orange-200 shadow-sm'
+                        : 'bg-gray-50/70 border-gray-200 opacity-80'
                     }`}
                   >
-                    {/* Day name & toggle */}
-                    <div className="flex items-center gap-4 min-w-[200px]">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleDay(shift.day_of_week)}
-                        className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
-                          isActive ? 'bg-orange-600' : 'bg-gray-300'
-                        }`}
-                        title={isActive ? 'Đang bật ca trực' : 'Đang tắt ca trực'}
-                      >
-                        <div
-                          className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                            isActive ? 'translate-x-6' : 'translate-x-0'
+                    {/* Day Header with Master Switch & Presets */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-gray-100">
+                      {/* Master Day Toggle */}
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleDay(shift.day_of_week)}
+                          className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
+                            isActive ? 'bg-orange-600' : 'bg-gray-300'
                           }`}
-                        />
-                      </button>
+                          title={isActive ? 'Đang bật ngày này' : 'Đang tắt ngày này'}
+                        >
+                          <div
+                            className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                              isActive ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
 
-                      <div>
-                        <span className={`text-sm font-bold block ${isActive ? 'text-gray-900' : 'text-gray-400'}`}>
-                          {dayName}
-                        </span>
-                        <span className="text-[11px] text-gray-500">
-                          {isActive ? '🟢 Đăng ký trực' : '⚪ Nghỉ trực'}
-                        </span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-base font-extrabold ${isActive ? 'text-gray-900' : 'text-gray-400'}`}>
+                              {dayName}
+                            </span>
+                            <span
+                              className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                                isActive
+                                  ? 'bg-orange-100 text-orange-800'
+                                  : 'bg-gray-200 text-gray-500'
+                              }`}
+                            >
+                              {isActive ? `Đã chọn ${tickedSlots.length}/12 ca` : 'Nghỉ trực'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Time selection */}
-                    {isActive ? (
-                      <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <label className="text-xs text-gray-500 font-medium">Từ:</label>
-                          <select
-                            value={shift.start_time}
-                            onChange={(e) => handleTimeChange(shift.day_of_week, 'start_time', e.target.value)}
-                            className="input text-xs font-semibold py-1.5 px-2.5 w-24 bg-gray-50 border-gray-200"
+                      {/* Quick Presets Toolbar */}
+                      {isActive && (
+                        <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
+                          <button
+                            type="button"
+                            onClick={() => applyPreset(shift.day_of_week, 'all')}
+                            className="px-2.5 py-1 text-[11px] font-semibold text-primary bg-orange-50 hover:bg-orange-100 rounded-lg border border-orange-200 transition flex items-center gap-1"
                           >
-                            {TIME_OPTIONS.map((t) => (
-                              <option key={t} value={t}>{t}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <label className="text-xs text-gray-500 font-medium">Đến:</label>
-                          <select
-                            value={shift.end_time}
-                            onChange={(e) => handleTimeChange(shift.day_of_week, 'end_time', e.target.value)}
-                            className="input text-xs font-semibold py-1.5 px-2.5 w-24 bg-gray-50 border-gray-200"
-                          >
-                            {TIME_OPTIONS.filter((t) => t > shift.start_time).map((t) => (
-                              <option key={t} value={t}>{t}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* Quick Presets */}
-                        <div className="flex items-center gap-1.5 pl-2 border-l border-gray-200">
+                            <Sparkles className="w-3 h-3" /> Tất cả 12 ca
+                          </button>
                           <button
                             type="button"
                             onClick={() => applyPreset(shift.day_of_week, 'morning')}
-                            className="px-2 py-1 text-[11px] font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 flex items-center gap-1"
-                            title="07:00 - 12:00"
+                            className="px-2.5 py-1 text-[11px] font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 transition flex items-center gap-1"
                           >
-                            <Sun className="w-3 h-3" /> Ca Sáng
+                            <Sun className="w-3 h-3" /> Sáng (07h-12h)
                           </button>
                           <button
                             type="button"
                             onClick={() => applyPreset(shift.day_of_week, 'afternoon')}
-                            className="px-2 py-1 text-[11px] font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 flex items-center gap-1"
-                            title="13:00 - 19:00"
+                            className="px-2.5 py-1 text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition flex items-center gap-1"
                           >
-                            <Sunset className="w-3 h-3" /> Ca Chiều
+                            <Sunset className="w-3 h-3" /> Chiều (12h-19h)
                           </button>
                           <button
                             type="button"
-                            onClick={() => applyPreset(shift.day_of_week, 'fullday')}
-                            className="px-2 py-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 flex items-center gap-1"
-                            title="07:00 - 19:00"
+                            onClick={() => applyPreset(shift.day_of_week, 'none')}
+                            className="px-2 py-1 text-[11px] font-medium text-gray-500 hover:text-rose-600 bg-gray-100 hover:bg-rose-50 rounded-lg border border-gray-200 transition flex items-center gap-1"
+                            title="Xóa trắng các ca"
                           >
-                            <Zap className="w-3 h-3" /> Cả ngày
+                            <Trash2 className="w-3 h-3" /> Xóa hết
                           </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 12 Slot Interactive Ticking Grid */}
+                    {isActive ? (
+                      <div className="pt-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+                          {ALL_12_SLOTS.map((slot) => {
+                            const isTicked = tickedSlots.includes(slot.start);
+                            return (
+                              <button
+                                key={slot.start}
+                                type="button"
+                                onClick={() => handleToggleSlot(shift.day_of_week, slot.start)}
+                                className={`py-2 px-2.5 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between gap-1.5 cursor-pointer select-none ${
+                                  isTicked
+                                    ? 'bg-primary text-white border-primary shadow-xs ring-2 ring-orange-500/20 active:scale-95'
+                                    : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300 hover:bg-orange-50/40 active:scale-95'
+                                }`}
+                              >
+                                <span className="font-mono text-xs">{slot.label}</span>
+                                {isTicked ? (
+                                  <CheckSquare className="w-4 h-4 text-white flex-shrink-0" />
+                                ) : (
+                                  <Square className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                                )}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     ) : (
-                      <span className="text-xs italic text-gray-400">
-                        Không nhận lịch đặt trong ngày này.
-                      </span>
+                      <div className="pt-3 text-xs italic text-gray-400">
+                        Ngày này đang được tắt — Khách hàng sẽ không thấy bạn trong các lịch đặt của {dayName}.
+                      </div>
                     )}
                   </div>
                 );

@@ -11,8 +11,10 @@ import {
   Calendar, 
   ArrowRight,
   Clock,
-  Laptop
+  Laptop,
+  BookOpen,
 } from 'lucide-react';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import type { TechnicianBrief } from '@/types';
 
 interface TechnicianGridProps {
@@ -277,6 +279,44 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                   })()}
                 </div>
               </div>
+
+              {/* Detailed Markdown Article */}
+              {(() => {
+                let markdownContent = '';
+                try {
+                  if (selectedTech.public_profile) {
+                    const parsed = typeof selectedTech.public_profile === 'string'
+                      ? JSON.parse(selectedTech.public_profile)
+                      : selectedTech.public_profile;
+                    if (typeof parsed === 'string') {
+                      markdownContent = parsed;
+                    } else if (parsed && typeof parsed === 'object') {
+                      markdownContent = parsed.article || parsed.markdown || parsed.content || parsed.story || parsed.bio_detail || '';
+                    }
+                  }
+                } catch {
+                  markdownContent = selectedTech.public_profile || '';
+                }
+
+                if (!markdownContent) {
+                  markdownContent = `### Giới thiệu Kỹ thuật viên ${selectedTech.name}
+- **Đơn vị công tác**: Đội Hỗ trợ Kỹ thuật IT Supporter - Trường Đại học Công nghiệp Hà Nội.
+- **Cam kết chất lượng**: Thực hiện đúng quy trình 9 bước vệ sinh & bảo dưỡng máy tính trực tiếp trước sự quan sát của khách hàng.
+- **Chuyên môn nổi bật**: Tháo lắp an toàn chống tĩnh điện ESD, tra keo tản nhiệt hiệu năng cao, tối ưu luồng gió tản nhiệt cho máy tính bàn & laptop.`;
+                }
+
+                return (
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <BookOpen className="w-3.5 h-3.5 text-orange-500" />
+                      Bài viết giới thiệu chi tiết
+                    </h4>
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 max-h-48 overflow-y-auto text-xs text-slate-700 leading-relaxed">
+                      <MarkdownRenderer content={markdownContent} />
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Shift info */}
               <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-100 text-xs text-slate-600 flex items-center justify-between">

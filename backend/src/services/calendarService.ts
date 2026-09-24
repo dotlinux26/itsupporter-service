@@ -54,13 +54,33 @@ export function isTechnicianAvailable(techId: number, date: string, start: strin
 
   const schedule = db
     .prepare(
-      `SELECT start_time, end_time FROM technician_schedules
+      `SELECT start_time, end_time, slots FROM technician_schedules
        WHERE technician_id = ? AND day_of_week = ? AND is_active = 1`
     )
-    .get(techId, dow) as { start_time: string; end_time: string } | undefined;
+    .get(techId, dow) as { start_time: string; end_time: string; slots?: string | null } | undefined;
 
-  if (!schedule || start < schedule.start_time || start >= schedule.end_time) {
+  if (!schedule) {
     return false;
+  }
+
+  // If specific slots JSON array is configured, check if 'start' is in the ticked slots
+  if (schedule.slots) {
+    try {
+      const parsedSlots = JSON.parse(schedule.slots);
+      if (Array.isArray(parsedSlots)) {
+        if (!parsedSlots.includes(start)) {
+          return false;
+        }
+      }
+    } catch {
+      if (start < schedule.start_time || start >= schedule.end_time) {
+        return false;
+      }
+    }
+  } else {
+    if (start < schedule.start_time || start >= schedule.end_time) {
+      return false;
+    }
   }
 
   // Override theo ngày
@@ -95,7 +115,7 @@ export function getAvailableTechnicians(date: string, start: string): Technician
   const placeholders = ids.map(() => '?').join(',');
   return getDb()
     .prepare(
-      `SELECT u.id, u.name, u.avatar_url, tp.bio
+      `SELECT u.id, u.name, u.avatar_url, tp.bio, tp.public_profile
        FROM users u
        LEFT JOIN technician_profiles tp ON tp.user_id = u.id
        WHERE u.id IN (${placeholders})`

@@ -75,28 +75,50 @@ router.get('/schedule', authenticate, requireRole('TECHNICIAN'), (req, res, next
   } catch (err) { next(err); }
 });
 
-// Technician: GET /shifts (weekly shift schedule)
+const ALL_SLOTS = [
+  '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
+  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
+];
+
+// Technician: GET /shifts (weekly shift schedule with ticked slots)
 router.get('/shifts', authenticate, requireRole('TECHNICIAN'), (req, res, next) => {
   try {
     const user = getAuthUser(req)!;
     const db = getDb();
     const rows = db
       .prepare(
-        `SELECT day_of_week, start_time, end_time, is_active
+        `SELECT day_of_week, start_time, end_time, is_active, slots
          FROM technician_schedules
          WHERE technician_id = ?
          ORDER BY day_of_week ASC`
       )
-      .all(user.id) as Array<{ day_of_week: number; start_time: string; end_time: string; is_active: number }>;
+      .all(user.id) as Array<{ day_of_week: number; start_time: string; end_time: string; is_active: number; slots: string | null }>;
 
     // Map 1..7 (Monday to Sunday)
     const days = [1, 2, 3, 4, 5, 6, 7].map((dow) => {
       const existing = rows.find((r) => r.day_of_week === dow);
+      let slots: string[] = [];
+      if (existing) {
+        if (existing.slots) {
+          try {
+            const parsed = JSON.parse(existing.slots);
+            if (Array.isArray(parsed)) slots = parsed;
+          } catch {
+            slots = ALL_SLOTS.filter((s) => s >= existing.start_time && s < existing.end_time);
+          }
+        } else if (existing.is_active) {
+          slots = ALL_SLOTS.filter((s) => s >= existing.start_time && s < existing.end_time);
+        }
+      } else if (dow <= 6) {
+        slots = [...ALL_SLOTS];
+      }
+
       return {
         day_of_week: dow,
         start_time: existing ? existing.start_time : '07:00',
         end_time: existing ? existing.end_time : '19:00',
         is_active: existing ? existing.is_active : (dow <= 6 ? 1 : 0),
+        slots,
       };
     });
 
@@ -104,33 +126,41 @@ router.get('/shifts', authenticate, requireRole('TECHNICIAN'), (req, res, next) 
   } catch (err) { next(err); }
 });
 
-// Technician: PUT /shifts (publish & update weekly shifts)
+// Technician: PUT /shifts (publish & update weekly shifts with flexible ticked slots)
 router.put('/shifts', authenticate, requireRole('TECHNICIAN'), (req, res, next) => {
   try {
     const user = getAuthUser(req)!;
-    const shifts = req.body.shifts as Array<{ day_of_week: number; start_time: string; end_time: string; is_active: boolean | number }>;
+    const shifts = req.body.shifts as Array<{ day_of_week: number; start_time?: string; end_time?: string; is_active: boolean | number; slots?: string[] }>;
     if (!Array.isArray(shifts)) {
       throw new AppError('VALIDATION_ERROR', 'Dữ liệu lịch trực không hợp lệ.', 400);
     }
 
     const db = getDb();
     const insertOrReplace = db.prepare(`
-      INSERT INTO technician_schedules (technician_id, day_of_week, start_time, end_time, is_active)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO technician_schedules (technician_id, day_of_week, start_time, end_time, is_active, slots)
+      VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(technician_id, day_of_week) DO UPDATE SET
         start_time = excluded.start_time,
         end_time = excluded.end_time,
-        is_active = excluded.is_active
+        is_active = excluded.is_active,
+        slots = excluded.slots
     `);
 
     const updateMany = db.transaction((items) => {
       for (const item of items) {
+        const slotsArray = Array.isArray(item.slots) ? item.slots : [];
+        const isActive = item.is_active ? (slotsArray.length > 0 ? 1 : 0) : 0;
+        const sortedSlots = [...slotsArray].sort();
+        const earliest = sortedSlots[0] || '07:00';
+        const latest = sortedSlots[sortedSlots.length - 1] || '19:00';
+
         insertOrReplace.run(
           user.id,
           Number(item.day_of_week),
-          String(item.start_time || '07:00'),
-          String(item.end_time || '19:00'),
-          item.is_active ? 1 : 0
+          earliest,
+          latest,
+          isActive,
+          JSON.stringify(slotsArray)
         );
       }
     });
