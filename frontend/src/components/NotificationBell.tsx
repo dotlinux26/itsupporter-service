@@ -64,6 +64,8 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [hasMore, setHasMore] = useState<boolean>(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchUnreadCount = async () => {
@@ -76,16 +78,28 @@ export function NotificationBell() {
     }
   };
 
-  const fetchNotifications = async () => {
-    setLoading(true);
+  const fetchNotifications = async (reset = true) => {
+    if (reset) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+
     try {
-      const res = await notificationApi.list({ limit: 15 });
+      const offset = reset ? 0 : notifications.length;
+      const res = await notificationApi.list({ limit: 15, offset });
       const list = Array.isArray(res.data?.data) ? res.data.data : [];
-      setNotifications(list);
+      if (reset) {
+        setNotifications(list);
+      } else {
+        setNotifications((prev) => [...prev, ...list]);
+      }
+      setHasMore(list.length === 15);
     } catch (err) {
       console.error('Failed to load notifications:', err);
     } finally {
-      setLoading(false);
+      if (reset) setLoading(false);
+      else setLoadingMore(false);
     }
   };
 
@@ -254,6 +268,22 @@ export function NotificationBell() {
                   )}
                 </div>
               ))
+            )}
+
+            {hasMore && notifications.length >= 15 && (
+              <div className="p-2.5 text-center border-t border-slate-100 bg-slate-50/60 sticky bottom-0">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fetchNotifications(false);
+                  }}
+                  disabled={loadingMore}
+                  className="text-xs font-semibold text-orange-600 hover:text-orange-700 py-1 px-3 rounded-lg hover:bg-orange-100/50 transition-colors disabled:opacity-50"
+                >
+                  {loadingMore ? 'Đang tải thêm...' : 'Tải thêm thông báo cũ hơn'}
+                </button>
+              </div>
             )}
           </div>
         </div>
