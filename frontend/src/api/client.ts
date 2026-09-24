@@ -95,8 +95,21 @@ export const authApi = {
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
   refresh: () => api.post('/auth/refresh'),
-  updateProfile: (data: { name?: string; phone?: string | null; contactInfo?: string | null; avatarUrl?: string | null }) =>
-    api.patch('/auth/profile', data),
+  updateProfile: (data: {
+    name?: string;
+    phone?: string | null;
+    contactInfo?: string | null;
+    avatarUrl?: string | null;
+    bio?: string | null;
+    publicProfile?: string | null;
+  }) => api.patch('/auth/profile', data),
+  uploadAvatar: (file: File) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return api.post('/auth/upload-avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   changePassword: (currentPassword: string, newPassword: string) =>
     api.post('/auth/change-password', { currentPassword, newPassword }),
 };
@@ -170,10 +183,34 @@ export const technicianApi = {
 export const managerApi = {
   orders: (params?: { status?: string; technician_id?: number; from?: string; to?: string }) =>
     api.get('/manager/orders', { params }),
+  assignTechnician: (orderId: number, technicianId: number) =>
+    api.post(`/manager/orders/${orderId}/assign`, { technician_id: technicianId }),
+  updateOrderStatus: (orderId: number, status: string) =>
+    api.patch(`/manager/orders/${orderId}/status`, { status }),
   technicians: () => api.get('/manager/technicians'),
   packages: () => api.get('/manager/packages'),
+  createPackage: (data: {
+    name: string;
+    description?: string;
+    price: number;
+    duration_minutes?: number;
+    features?: string;
+    is_active?: boolean | number;
+  }) => api.post('/manager/packages', data),
+  updatePackage: (id: number, data: Partial<{
+    name: string;
+    description: string;
+    price: number;
+    duration_minutes: number;
+    features: string;
+    is_active: boolean | number;
+  }>) => api.patch(`/manager/packages/${id}`, data),
+  deletePackage: (id: number) => api.delete(`/manager/packages/${id}`),
   settlements: (params?: { limit?: number; offset?: number }) => api.get('/manager/settlements', { params }),
+  createSettlement: (technicianId: number, notes?: string) =>
+    api.post('/manager/settlements', { technician_id: technicianId, notes }),
   reviews: () => api.get('/manager/reviews'),
+  deleteReview: (id: number) => api.delete(`/manager/reviews/${id}`),
   settings: () => api.get('/manager/settings'),
   exportReport: (params: { type: 'orders' | 'settlements' | 'financial'; format: 'xlsx' | 'csv'; from?: string; to?: string; status?: string; technician_id?: number }) =>
     api.get('/manager/export', { params, responseType: 'blob' }),
@@ -209,11 +246,14 @@ export const voucherApi = {
 };
 
 export const adminApi = {
-  users: (params?: { role?: string; status?: string }) => api.get('/admin/users', { params }),
+  users: (params?: { role?: string; status?: string; q?: string }) => api.get('/admin/users', { params }),
   updateUserStatus: (id: number, status: 'ACTIVE' | 'DISABLED') =>
     api.patch(`/admin/users/${id}/status`, { status }),
   updateUserRole: (id: number, role: 'GUEST' | 'TECHNICIAN' | 'MANAGER' | 'ADMIN') =>
     api.patch(`/admin/users/${id}/role`, { role }),
+  resetPassword: (id: number, newPassword?: string) =>
+    api.post(`/admin/users/${id}/reset-password`, { newPassword }),
+  deleteUser: (id: number) => api.delete(`/admin/users/${id}`),
   stats: () => api.get('/admin/stats'),
   settings: () => api.get('/admin/settings'),
   updateSettings: (data: Record<string, string | number>) => api.patch('/admin/settings', data),

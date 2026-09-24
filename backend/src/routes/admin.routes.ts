@@ -9,16 +9,23 @@ import { getSystemSettings } from '../services/settingsService.js';
 
 const router = Router();
 
-// Admin: GET /users?role=...&status=...
+import { hashPassword } from '../utils/password.js';
+
+// Admin: GET /users?role=...&status=...&q=...
 router.get('/users', authenticate, requireRole('ADMIN'), (req, res, next) => {
   try {
-    let where = `WHERE 1=1`;
+    let where = `WHERE is_deleted = 0`;
     const params: (string | number)[] = [];
     if (req.query.role) { where += ` AND role = ?`; params.push(String(req.query.role)); }
     if (req.query.status) { where += ` AND status = ?`; params.push(String(req.query.status)); }
-    const sql = `SELECT id, name, email, phone, role, status, avatar_url, created_at, updated_at
+    if (req.query.q) {
+      where += ` AND (name LIKE ? OR email LIKE ? OR phone LIKE ?)`;
+      const q = `%${String(req.query.q).trim()}%`;
+      params.push(q, q, q);
+    }
+    const sql = `SELECT id, name, email, phone, role, status, avatar_url, contact_info, created_at, updated_at
                  FROM users ${where} ORDER BY id DESC LIMIT 200`;
-    const users = getDb().prepare(sql).all(...params) as Array<{ id: number; name: string; email: string; phone: string; role: string; status: string; avatar_url: string | null; created_at: string; updated_at: string }>;
+    const users = getDb().prepare(sql).all(...params) as Array<{ id: number; name: string; email: string; phone: string; role: string; status: string; avatar_url: string | null; contact_info: string | null; created_at: string; updated_at: string }>;
     res.json({ data: users });
   } catch (err) { next(err); }
 });
@@ -32,7 +39,7 @@ router.patch('/users/:id/status', authenticate, requireRole('ADMIN'), (req, res,
       throw new AppError('VALIDATION_ERROR', 'Trạng thái phải là ACTIVE hoặc DISABLED.', 400);
     }
     const db = getDb();
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as { id: number; status: string } | undefined;
+    const user = db.prepare('SELECT * FROM users WHERE id = ? AND is_deleted = 0').get(id) as { id: number; status: string } | undefined;
     if (!user) throw new AppError('NOT_FOUND', 'Không tìm thấy người dùng.', 404);
     db.prepare('UPDATE users SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').run(status, id);
     const updated = db.prepare('SELECT id, name, email, role, status, updated_at FROM users WHERE id = ?').get(id);
@@ -49,11 +56,50 @@ router.patch('/users/:id/role', authenticate, requireRole('ADMIN'), (req, res, n
       throw new AppError('VALIDATION_ERROR', 'Vai trò không hợp lệ.', 400);
     }
     const db = getDb();
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as { id: number; role: string } | undefined;
+    const user = db.prepare('SELECT * FROM users WHERE id = ? AND is_deleted = 0').get(id) as { id: number; role: string } | undefined;
     if (!user) throw new AppError('NOT_FOUND', 'Không tìm thấy người dùng.', 404);
     db.prepare('UPDATE users SET role = ?, updated_at = datetime(\'now\') WHERE id = ?').run(role, id);
+    
+    // If upgraded to technician, ensure technician_profile exists
+    if (role === 'TECHNICIAN') {
+      db.prepare('INSERT OR IGNORE INTO technician_profiles (user_id) VALUES (?)').run(id);
+    }
+
     const updated = db.prepare('SELECT id, name, email, role, status, updated_at FROM users WHERE id = ?').get(id);
     res.json({ data: updated });
+  } catch (err) { next(err); }
+});
+
+// Admin: POST /users/:id/reset-password
+router.post('/users/:id/reset-password', authenticate, requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const newPassword = String(req.body.newPassword || req.body.password || '').trim();
+    if (newPassword.length < 8) {
+      throw new AppError('VALIDATION_ERROR', 'Mật khẩu mới phải có ít nhất 8 ký tự.', 400);
+    }
+    const db = getDb();
+    const user = db.prepare('SELECT * FROM users WHERE id = ? AND is_deleted = 0').get(id) as { id: number } | undefined;
+    if (!user) throw new AppError('NOT_FOUND', 'Không tìm thấy người dùng.', 404);
+    
+    const hash = await hashPassword(newPassword);
+    db.prepare('UPDATE users SET password_hash = ?, updated_at = datetime(\'now\') WHERE id = ?').run(hash, id);
+    res.json({ message: 'Đặt lại mật khẩu thành công.' });
+  } catch (err) { next(err); }
+});
+
+// Admin: DELETE /users/:id
+router.delete('/users/:id', authenticate, requireRole('ADMIN'), (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const db = getDb();
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as { id: number; role: string } | undefined;
+    if (!user) throw new AppError('NOT_FOUND', 'Không tìm thấy người dùng.', 404);
+    if (user.role === 'ADMIN') {
+      throw new AppError('FORBIDDEN', 'Không thể xóa tài khoản Admin.', 403);
+    }
+    db.prepare('UPDATE users SET is_deleted = 1, status = \'DISABLED\', updated_at = datetime(\'now\') WHERE id = ?').run(id);
+    res.json({ message: 'Đã xóa người dùng thành công.' });
   } catch (err) { next(err); }
 });
 

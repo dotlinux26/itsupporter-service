@@ -4,7 +4,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ok } from '../utils/response.js';
 import * as authService from '../services/authService.js';
 import { validate } from '../utils/validate.js';
-import { changePasswordSchema, loginSchema, profileUpdateSchema, registerSchema } from '../validators/auth.js';
+import { changePasswordSchema, loginSchema, profileUpdateSchema, registerSchema, technicianProfileUpdateSchema } from '../validators/auth.js';
 import {
   ACCESS_TOKEN_NAME,
   REFRESH_TOKEN_NAME,
@@ -12,9 +12,10 @@ import {
 } from '../middleware/auth.js';
 import { writeAuditLog } from '../services/auditService.js';
 import type { LocaleRequest } from '../middleware/locale.js';
-import { updateUserProfile, findUserById, updateUserPassword } from '../repositories/userRepository.js';
+import { updateUserProfile, findUserById, updateUserPassword, updateTechnicianProfile } from '../repositories/userRepository.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
 import { BadRequestError, NotFoundError } from '../utils/AppError.js';
+import { publicFilePath } from '../utils/upload.js';
 
 const isProd = config.isProd;
 
@@ -104,17 +105,52 @@ export const meController = asyncHandler(async (req, res) => {
 
 export const updateProfileController = asyncHandler(async (req, res) => {
   const user = (req as AuthRequest).user!;
-  const body = validate(profileUpdateSchema, req.body);
-
-  updateUserProfile(user.id, {
-    name: body.name,
-    phone: body.phone,
-    contactInfo: body.contactInfo,
-    avatarUrl: body.avatarUrl,
-  });
+  
+  if (user.role === 'TECHNICIAN') {
+    const body = validate(technicianProfileUpdateSchema, req.body);
+    updateUserProfile(user.id, {
+      name: body.name,
+      phone: body.phone,
+      contactInfo: body.contactInfo,
+      avatarUrl: body.avatarUrl,
+    });
+    updateTechnicianProfile(user.id, {
+      bio: body.bio,
+      publicProfile: body.publicProfile,
+    });
+  } else {
+    const body = validate(profileUpdateSchema, req.body);
+    updateUserProfile(user.id, {
+      name: body.name,
+      phone: body.phone,
+      contactInfo: body.contactInfo,
+      avatarUrl: body.avatarUrl,
+    });
+  }
 
   const updated = findUserById(user.id);
   ok(res, authService.toPublicUser(updated!), 'Cập nhật hồ sơ thành công.');
+});
+
+export const uploadAvatarController = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    throw new BadRequestError('Vui lòng chọn file ảnh hợp lệ (PNG, JPG, WEBP).');
+  }
+  const user = (req as AuthRequest).user!;
+  const avatarUrl = publicFilePath(req.file.path);
+
+  updateUserProfile(user.id, { avatarUrl });
+  const updated = findUserById(user.id);
+
+  writeAuditLog({
+    actorId: user.id,
+    actorEmail: user.email,
+    action: 'UPLOAD_AVATAR',
+    ip: req.ip,
+    metadata: { avatarUrl },
+  });
+
+  ok(res, { avatarUrl, user: authService.toPublicUser(updated!) }, 'Tải lên ảnh đại diện thành công.');
 });
 
 export const changePasswordController = asyncHandler(async (req, res) => {

@@ -7,6 +7,8 @@ export interface User {
   status: 'ACTIVE' | 'DISABLED';
   avatar_url: string | null;
   contact_info: string | null;
+  bio?: string | null;
+  public_profile?: string | null;
   created_at: string;
   updated_at: string;
 }

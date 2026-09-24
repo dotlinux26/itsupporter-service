@@ -93,6 +93,130 @@ router.get('/settings', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res
   } catch (err) { next(err); }
 });
 
+// Manager: POST /orders/:id/assign
+router.post('/orders/:id/assign', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
+  try {
+    const orderId = Number(req.params.id);
+    const technicianId = Number(req.body.technician_id || req.body.technicianId);
+    const db = getDb();
+    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as OrderRow | undefined;
+    if (!order) throw new AppError('NOT_FOUND', 'Không tìm thấy đơn hàng.', 404);
+
+    const tech = db.prepare('SELECT * FROM users WHERE id = ? AND role = \'TECHNICIAN\' AND is_deleted = 0').get(technicianId);
+    if (!tech) throw new AppError('NOT_FOUND', 'Không tìm thấy kỹ thuật viên hợp lệ.', 404);
+
+    db.prepare('UPDATE orders SET technician_id = ?, status = CASE WHEN status = \'PENDING\' THEN \'CONFIRMED\' ELSE status END, updated_at = datetime(\'now\') WHERE id = ?').run(technicianId, orderId);
+    const updated = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
+    res.json({ data: updated, message: 'Phân công kỹ thuật viên thành công.' });
+  } catch (err) { next(err); }
+});
+
+// Manager: PATCH /orders/:id/status
+router.patch('/orders/:id/status', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
+  try {
+    const orderId = Number(req.params.id);
+    const status = String(req.body.status);
+    const valid = ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
+    if (!valid.includes(status)) {
+      throw new AppError('VALIDATION_ERROR', 'Trạng thái đơn hàng không hợp lệ.', 400);
+    }
+    const db = getDb();
+    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as OrderRow | undefined;
+    if (!order) throw new AppError('NOT_FOUND', 'Không tìm thấy đơn hàng.', 404);
+
+    db.prepare('UPDATE orders SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').run(status, orderId);
+    const updated = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
+    res.json({ data: updated, message: 'Cập nhật trạng thái đơn hàng thành công.' });
+  } catch (err) { next(err); }
+});
+
+// Manager: POST /packages (create new package)
+router.post('/packages', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
+  try {
+    const { name, description, price, duration_minutes, features, is_active } = req.body;
+    if (!name || price == null) {
+      throw new AppError('VALIDATION_ERROR', 'Vui lòng điền đầy đủ tên gói và giá.', 400);
+    }
+    const db = getDb();
+    const result = db.prepare(`
+      INSERT INTO service_packages (name, description, price, duration_minutes, features, is_active, display_order)
+      VALUES (?, ?, ?, ?, ?, ?, 99)
+    `).run(
+      String(name).trim(),
+      description ? String(description).trim() : '',
+      Number(price),
+      Number(duration_minutes) || 60,
+      features ? String(features).trim() : '',
+      is_active !== undefined ? (is_active ? 1 : 0) : 1
+    );
+    const newPkg = db.prepare('SELECT * FROM service_packages WHERE id = ?').get(Number(result.lastInsertRowid));
+    res.json({ data: newPkg, message: 'Tạo gói dịch vụ thành công.' });
+  } catch (err) { next(err); }
+});
+
+// Manager: PATCH /packages/:id (update package)
+router.patch('/packages/:id', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const db = getDb();
+    const current = db.prepare('SELECT * FROM service_packages WHERE id = ?').get(id) as any;
+    if (!current) throw new AppError('NOT_FOUND', 'Không tìm thấy gói dịch vụ.', 404);
+
+    const name = req.body.name !== undefined ? String(req.body.name).trim() : current.name;
+    const description = req.body.description !== undefined ? String(req.body.description).trim() : current.description;
+    const price = req.body.price !== undefined ? Number(req.body.price) : current.price;
+    const duration_minutes = req.body.duration_minutes !== undefined ? Number(req.body.duration_minutes) : current.duration_minutes;
+    const features = req.body.features !== undefined ? String(req.body.features).trim() : current.features;
+    const is_active = req.body.is_active !== undefined ? (req.body.is_active ? 1 : 0) : current.is_active;
+
+    db.prepare(`
+      UPDATE service_packages 
+      SET name = ?, description = ?, price = ?, duration_minutes = ?, features = ?, is_active = ?
+      WHERE id = ?
+    `).run(name, description, price, duration_minutes, features, is_active, id);
+
+    const updated = db.prepare('SELECT * FROM service_packages WHERE id = ?').get(id);
+    res.json({ data: updated, message: 'Cập nhật gói dịch vụ thành công.' });
+  } catch (err) { next(err); }
+});
+
+// Manager: DELETE /packages/:id (toggle active/inactive)
+router.delete('/packages/:id', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const db = getDb();
+    const current = db.prepare('SELECT * FROM service_packages WHERE id = ?').get(id) as any;
+    if (!current) throw new AppError('NOT_FOUND', 'Không tìm thấy gói dịch vụ.', 404);
+
+    const newStatus = current.is_active ? 0 : 1;
+    db.prepare('UPDATE service_packages SET is_active = ? WHERE id = ?').run(newStatus, id);
+    res.json({ message: newStatus ? 'Đã kích hoạt gói dịch vụ.' : 'Đã tắt gói dịch vụ.' });
+  } catch (err) { next(err); }
+});
+
+// Manager: POST /settlements (execute settlement)
+router.post('/settlements', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
+  try {
+    const technicianId = Number(req.body.technician_id || req.body.technicianId);
+    const notes = req.body.notes ? String(req.body.notes) : undefined;
+    const authUser = getAuthUser(req);
+    const managerId = authUser ? authUser.id : 1;
+    const { createSettlement } = require('../services/financeService.js');
+    const result = createSettlement(technicianId, managerId, notes);
+    res.json({ data: result, message: 'Tạo phiếu quyết toán thành công.' });
+  } catch (err) { next(err); }
+});
+
+// Manager: DELETE /reviews/:id (delete review)
+router.delete('/reviews/:id', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const db = getDb();
+    db.prepare('DELETE FROM reviews WHERE id = ?').run(id);
+    res.json({ message: 'Đã xóa đánh giá thành công.' });
+  } catch (err) { next(err); }
+});
+
 // Manager: GET /export?type=orders|settlements|financial&format=xlsx|csv
 router.get('/export', authenticate, requireRole('MANAGER', 'ADMIN'), async (req, res, next) => {
   try {

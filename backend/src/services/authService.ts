@@ -32,9 +32,20 @@ export interface PublicUser {
   contact_info: string | null;
   status: string;
   created_at: string;
+  bio?: string | null;
+  public_profile?: string | null;
 }
 
 export function toPublicUser(user: User): PublicUser {
+  let bio: string | null = null;
+  let public_profile: string | null = null;
+  if (user.role === 'TECHNICIAN') {
+    const techProf = userRepo.getTechnicianProfile(user.id);
+    if (techProf) {
+      bio = techProf.bio;
+      public_profile = techProf.public_profile;
+    }
+  }
   return {
     id: user.id,
     email: user.email,
@@ -45,6 +56,8 @@ export function toPublicUser(user: User): PublicUser {
     contact_info: user.contact_info,
     status: user.status,
     created_at: user.created_at,
+    bio,
+    public_profile,
   };
 }
 
