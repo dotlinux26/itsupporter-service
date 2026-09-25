@@ -49,8 +49,6 @@ export function TermsPage() {
           <h2 className="text-xl font-semibold text-text mb-4">Khiếu nại</h2>
           <p className="text-text-secondary mb-4">Nếu có khiếu nại hoặc cần hỗ trợ, vui lòng liên hệ qua các kênh chính thức:</p>
           <ul className="space-y-2 text-text-secondary">
-            <li>Email: support@itsupporter.vn</li>
-            <li>Zalo: @itsupporter</li>
             <li>
               Fanpage Facebook:{' '}
               <a 

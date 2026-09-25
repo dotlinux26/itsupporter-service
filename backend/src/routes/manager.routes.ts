@@ -82,6 +82,7 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
       const row = db.prepare(`
         SELECT 
           COALESCE(SUM(final_amount), 0) AS revenue,
+          COALESCE(SUM(extend_fee), 0) AS extend_fee,
           COUNT(*) AS order_count
         FROM orders
         WHERE (
@@ -91,12 +92,16 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
       `).get(dateStr, dateStr) as any;
 
       const rev = Number(row?.revenue || 0);
+      const ext = Number(row?.extend_fee || 0);
+      const base = Math.max(0, rev - ext);
+      const teamShare = Math.round(base * 0.3);
+      const techShare = (base - teamShare) + ext;
       dateSeries.push({
         date: dateStr,
         revenue: rev,
         order_count: Number(row?.order_count || 0),
-        team_share: Math.round(rev * 0.3),
-        tech_share: Math.round(rev * 0.7),
+        team_share: teamShare,
+        tech_share: techShare,
       });
     }
 

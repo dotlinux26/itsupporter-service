@@ -117,8 +117,14 @@ export function getLedger(options: {
 export function getRunBalance(technicianId: number): number {
   const row = getDb()
     .prepare(
-      `SELECT COALESCE(SUM(CASE WHEN direction = 'IN' THEN amount ELSE -amount END), 0) AS balance
-       FROM financial_transactions WHERE technician_id = ?`
+      `SELECT COALESCE(SUM(CASE 
+        WHEN type IN ('TECHNICIAN_SHARE', 'EXTEND_FEE') THEN amount 
+        WHEN type = 'SETTLEMENT' THEN -amount
+        WHEN direction = 'IN' THEN amount
+        ELSE -amount
+      END), 0) AS balance
+       FROM financial_transactions 
+       WHERE technician_id = ? AND type != 'LATE_PENALTY'`
     )
     .get(technicianId) as { balance: number };
   return row.balance;
@@ -129,7 +135,7 @@ export function getTeamBalance(): number {
     .prepare(
       `SELECT COALESCE(SUM(CASE WHEN direction = 'IN' THEN amount ELSE -amount END), 0) AS balance
        FROM financial_transactions 
-       WHERE (technician_id IS NULL OR technician_id = 0) AND type != 'ORDER_REVENUE'`
+       WHERE (technician_id IS NULL OR technician_id = 0) AND type != 'ORDER_REVENUE' AND type != 'LATE_PENALTY'`
     )
     .get() as { balance: number };
   return row.balance;
@@ -157,15 +163,15 @@ export function settleOrderLedger(order: Order, createdBy: number): void {
     createdBy,
   });
 
-  // 2. Fines / phạt
-  if (order.penalty > 0 && order.technician_id != null) {
+  // 2. Fines / phạt (ghi nhận kiểm toán đơn hàng, không trừ đúp vào số dư KTV vì final_amount đã trừ phạt)
+  if (order.penalty > 0) {
     insertLedgerEntry({
       type: 'LATE_PENALTY',
       amount: order.penalty,
       orderId: order.id,
-      technicianId: order.technician_id,
+      technicianId: null,
       referenceId: order.code,
-      metadata: { penalty: order.penalty, base },
+      metadata: { penalty: order.penalty, base, technician_id: order.technician_id },
       createdBy,
     });
   }
