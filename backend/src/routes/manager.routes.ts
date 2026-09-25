@@ -84,8 +84,11 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
           COALESCE(SUM(final_amount), 0) AS revenue,
           COUNT(*) AS order_count
         FROM orders
-        WHERE scheduled_date = ? AND status = 'COMPLETED'
-      `).get(dateStr) as any;
+        WHERE (
+          DATE(completed_at, '+7 hours') = ? 
+          OR (completed_at IS NULL AND scheduled_date = ?)
+        ) AND status = 'COMPLETED'
+      `).get(dateStr, dateStr) as any;
 
       const rev = Number(row?.revenue || 0);
       dateSeries.push({

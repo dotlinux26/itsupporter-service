@@ -4,6 +4,7 @@ import { MainLayout } from './components/Layout';
 import { useAuth } from './context/AuthContext';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ScrollToTop } from './components/ScrollToTop';
 
 // Public pages
 import { HomePage } from './pages/public/HomePage';
@@ -101,9 +102,11 @@ function PublicOnly({ children }: { children?: React.ReactNode }) {
 
 function AppRoutes() {
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<MainLayout />}>
+    <>
+      <ScrollToTop />
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<MainLayout />}>
         <Route index element={<HomePage />} />
         <Route path="services" element={<ServicesPage />} />
         <Route path="about" element={<AboutPage />} />
@@ -160,6 +163,7 @@ function AppRoutes() {
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
+    </>
   );
 }
 

@@ -139,10 +139,12 @@ export function getTeamBalance(): number {
 export function settleOrderLedger(order: Order, createdBy: number): void {
   const settings = getSystemSettings();
   const techPercent = settings.technicianSharePercent / 100;
-  const base = order.price - order.penalty;
+  const extendFee = Number(order.extend_fee || 0);
+  // Base revenue for 70/30 split is the actual collected service revenue after discounts/vouchers/penalties and before tech's 100% extend fee
+  const base = Math.max(0, Number(order.final_amount) - extendFee);
   const techShare = Math.round(base * techPercent);
   const teamShare = base - techShare;
-  const finalAmount = order.final_amount;
+  const finalAmount = Number(order.final_amount);
 
   // 1. Tổng doanh thu công ty
   insertLedgerEntry({
