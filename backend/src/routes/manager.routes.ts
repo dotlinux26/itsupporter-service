@@ -6,7 +6,7 @@ import { getDb } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import type { OrderRow } from '../models/index.js';
 import { listSettlements, createSettlement, getTeamBalance, getRunBalance } from '../services/financeService.js';
-import { getSystemSettings } from '../services/settingsService.js';
+import { getSystemSettings, setSetting } from '../services/settingsService.js';
 import { getAvailableTechnicians } from '../services/calendarService.js';
 
 const router = Router();
@@ -209,10 +209,78 @@ router.get('/reviews', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res,
 });
 
 // Manager: GET /settings
-router.get('/settings', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
+router.get('/settings', authenticate, requireRole('MANAGER', 'ADMIN'), (_req, res, next) => {
   try {
     const settings = getSystemSettings();
     res.json({ data: settings });
+  } catch (err) { next(err); }
+});
+
+// Manager: PUT /settings
+router.put('/settings', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
+  try {
+    const user = getAuthUser(req);
+    const body = req.body || {};
+
+    const keyMap: Record<string, string> = {
+      latePenaltyMinutes: 'late_penalty_minutes',
+      late_penalty_minutes: 'late_penalty_minutes',
+      latePenaltyPercent: 'late_penalty_percent',
+      late_penalty_percent: 'late_penalty_percent',
+      freeServiceAfterMinutes: 'free_service_after_minutes',
+      free_service_after_minutes: 'free_service_after_minutes',
+      workingStart: 'working_start',
+      working_start: 'working_start',
+      workingEnd: 'working_end',
+      working_end: 'working_end',
+      slotDurationMinutes: 'slot_duration_minutes',
+      slot_duration_minutes: 'slot_duration_minutes',
+      timezone: 'timezone',
+      technicianSharePercent: 'technician_share_percent',
+      technician_share_percent: 'technician_share_percent',
+      teamSharePercent: 'team_share_percent',
+      team_share_percent: 'team_share_percent',
+      teamName: 'team_name',
+      team_name: 'team_name',
+      university: 'university',
+      workshopAddress: 'workshop_address',
+      workshop_address: 'workshop_address',
+      contactPhone: 'contact_phone',
+      contact_phone: 'contact_phone',
+      contactEmail: 'contact_email',
+      contact_email: 'contact_email',
+      facebookPage: 'facebook_page',
+      facebook_page: 'facebook_page',
+      distributorName: 'distributor_name',
+      distributor_name: 'distributor_name',
+      distributorUrl: 'distributor_url',
+      distributor_url: 'distributor_url',
+      googleMapEmbedUrl: 'google_map_embed_url',
+      google_map_embed_url: 'google_map_embed_url',
+      googleMapDirectUrl: 'google_map_direct_url',
+      google_map_direct_url: 'google_map_direct_url',
+      workingHoursDisplay: 'working_hours_display',
+      working_hours_display: 'working_hours_display',
+      bookingNotice: 'booking_notice',
+      booking_notice: 'booking_notice',
+      warrantyPolicyEnabled: 'warranty_policy_enabled',
+      warranty_policy_enabled: 'warranty_policy_enabled',
+      warrantyPolicyDays: 'warranty_policy_days',
+      warranty_policy_days: 'warranty_policy_days',
+      warrantyPolicyTitle: 'warranty_policy_title',
+      warranty_policy_title: 'warranty_policy_title',
+      warrantyPolicyContent: 'warranty_policy_content',
+      warranty_policy_content: 'warranty_policy_content',
+    };
+
+    for (const [prop, dbKey] of Object.entries(keyMap)) {
+      if (body[prop] !== undefined) {
+        setSetting(dbKey, String(body[prop]), user?.id);
+      }
+    }
+
+    const updated = getSystemSettings();
+    res.json({ data: updated, message: 'Cập nhật cài đặt thành công.' });
   } catch (err) { next(err); }
 });
 

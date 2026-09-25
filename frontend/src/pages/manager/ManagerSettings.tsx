@@ -53,15 +53,24 @@ export function ManagerSettings() {
     setSettings((prev: SystemSettings) => ({ ...prev, [field]: Number(e.target.value) }));
   };
 
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    setSuccessMsg('');
+    setErrorMsg('');
     try {
-      // This would need a proper endpoint
-      setSaving(false);
-      alert('Đã lưu cài đặt');
-    } catch (error) {
+      const res = await managerApi.updateSettings(settings);
+      if (res.data?.data) {
+        setSettings(res.data.data);
+      }
+      setSuccessMsg('Đã lưu cài đặt hệ thống thành công!');
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch (error: any) {
       console.error('Failed to save settings:', error);
+      setErrorMsg(error.response?.data?.error?.message || 'Lỗi khi lưu cài đặt');
     } finally {
       setSaving(false);
     }
@@ -81,6 +90,20 @@ export function ManagerSettings() {
   return (
     <div className="container py-5 sm:py-8 md:py-12 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-text mb-6 sm:mb-8">Cài đặt hệ thống</h1>
+
+      {successMsg && (
+        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm font-medium flex items-center gap-2">
+          <span>✓</span>
+          <span>{successMsg}</span>
+        </div>
+      )}
+
+      {errorMsg && (
+        <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-sm font-medium flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{errorMsg}</span>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="card p-4 sm:p-6 md:p-8 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

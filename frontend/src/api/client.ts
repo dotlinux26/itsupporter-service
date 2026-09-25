@@ -175,7 +175,7 @@ export const technicianApi = {
   orderDetail: (id: number) => api.get(`/technician/orders/${id}`),
   confirm: (id: number) => api.post(`/technician/orders/${id}/confirm`),
   start: (id: number) => api.post(`/technician/orders/${id}/start`),
-  penalty: (id: number, data: { penalty_percent: number; reason?: string }) =>
+  penalty: (id: number, data: { penalty_percent?: number; late_minutes?: number; reason?: string }) =>
     api.post(`/technician/orders/${id}/penalty`, data),
   extend: (id: number, data: { extend_fee: number; reason?: string }) =>
     api.post(`/technician/orders/${id}/extend`, data),
@@ -230,6 +230,7 @@ export const managerApi = {
   reviews: () => api.get('/manager/reviews'),
   deleteReview: (id: number) => api.delete(`/manager/reviews/${id}`),
   settings: () => api.get('/manager/settings'),
+  updateSettings: (data: any) => api.put('/manager/settings', data),
   exportReport: (params: { type: 'orders' | 'settlements' | 'financial'; format: 'xlsx' | 'csv'; from?: string; to?: string; status?: string; technician_id?: number }) =>
     api.get('/manager/export', { params, responseType: 'blob' }),
   finance: {

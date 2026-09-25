@@ -44,6 +44,9 @@ router.get('/info', (_req, res, next) => {
         warranty_policy_days: settings.warrantyPolicyDays,
         warranty_policy_title: settings.warrantyPolicyTitle,
         warranty_policy_content: settings.warrantyPolicyContent,
+        late_penalty_minutes: settings.latePenaltyMinutes,
+        late_penalty_percent: settings.latePenaltyPercent,
+        free_service_after_minutes: settings.freeServiceAfterMinutes,
         stats: {
           completed_orders_count: completedCountRow.c,
           total_orders_count: totalOrdersRow.c,
@@ -53,6 +56,9 @@ router.get('/info', (_req, res, next) => {
           active_technicians_count: activeTechsRow.c,
         },
         // CamelCase properties for convenience in frontend
+        latePenaltyMinutes: settings.latePenaltyMinutes,
+        latePenaltyPercent: settings.latePenaltyPercent,
+        freeServiceAfterMinutes: settings.freeServiceAfterMinutes,
         teamName: settings.teamName,
         workshopAddress: settings.workshopAddress,
         contactPhone: settings.contactPhone,

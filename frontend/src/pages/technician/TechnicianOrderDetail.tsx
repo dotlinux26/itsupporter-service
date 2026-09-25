@@ -57,6 +57,23 @@ export function TechnicianOrderDetail() {
   const [paymentStatusChoice, setPaymentStatusChoice] = useState<'PAID' | 'UNPAID'>('PAID');
   const [unpaidReason, setUnpaidReason] = useState('');
 
+  // System penalty settings from manager
+  const [systemSettings, setSystemSettings] = useState<{
+    latePenaltyMinutes: number;
+    latePenaltyPercent: number;
+    freeServiceAfterMinutes: number;
+  }>({
+    latePenaltyMinutes: 10,
+    latePenaltyPercent: 15,
+    freeServiceAfterMinutes: 45,
+  });
+
+  // Modal: Late penalty
+  const [showPenaltyModal, setShowPenaltyModal] = useState(false);
+  const [lateMinutesInput, setLateMinutesInput] = useState<number>(0);
+  const [penaltyPercentInput, setPenaltyPercentInput] = useState<number>(0);
+  const [penaltyReasonInput, setPenaltyReasonInput] = useState('');
+
   // 2nd Confirmation Modal for Completion & Settlement
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completePaymentStatus, setCompletePaymentStatus] = useState<'PAID' | 'UNPAID'>('PAID');
@@ -107,10 +124,27 @@ export function TechnicianOrderDetail() {
     }
   };
 
+  const loadSystemSettings = async () => {
+    try {
+      const res = await publicApi.info();
+      const data = res.data?.data;
+      if (data) {
+        setSystemSettings({
+          latePenaltyMinutes: Number(data.latePenaltyMinutes ?? data.late_penalty_minutes ?? 10),
+          latePenaltyPercent: Number(data.latePenaltyPercent ?? data.late_penalty_percent ?? 15),
+          freeServiceAfterMinutes: Number(data.freeServiceAfterMinutes ?? data.free_service_after_minutes ?? 45),
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load system settings:', err);
+    }
+  };
+
   useEffect(() => {
     loadOrder();
     loadBankQr();
     loadSalePrograms();
+    loadSystemSettings();
   }, [id]);
 
   // Handle timer
@@ -190,26 +224,85 @@ export function TechnicianOrderDetail() {
     }
   };
 
-  // Late Penalty Free Service button handler
-  const handleApplyPenalty = async (percent: number) => {
-    if (!id) return;
-    const confirmMsg =
-      percent === 100
-        ? 'Xác nhận áp dụng vi phạm muộn > 30p: Làm MIỄN PHÍ cho khách (Đơn hàng 0đ, Kỹ thuật viên không nhận tiền)?'
-        : 'Xác nhận trừ phạt 15% cho đơn này?';
-    if (!window.confirm(confirmMsg)) return;
+  // Calculate minutes late relative to scheduled time
+  const getMinutesLate = () => {
+    if (!order?.scheduled_date || !order?.scheduled_start) return 0;
+    const [year, month, day] = order.scheduled_date.split('-').map(Number);
+    const [hour, min] = order.scheduled_start.split(':').map(Number);
+    if (!year || !month || !day || isNaN(hour) || isNaN(min)) return 0;
 
+    const referenceTime = order.started_at ? parseServerDate(order.started_at).getTime() : Date.now();
+    const scheduledTime = new Date(year, month - 1, day, hour, min, 0, 0).getTime();
+    const diffMinutes = Math.floor((referenceTime - scheduledTime) / (60 * 1000));
+    return Math.max(0, diffMinutes);
+  };
+
+  // Automatically compute penalty percent based on late minutes and manager's system settings
+  const computePenaltyPercentFromMinutes = (minutes: number) => {
+    if (minutes >= systemSettings.freeServiceAfterMinutes) {
+      return 100;
+    }
+    if (minutes >= systemSettings.latePenaltyMinutes) {
+      return systemSettings.latePenaltyPercent;
+    }
+    return 0;
+  };
+
+  // Open Late Penalty Modal
+  const openPenaltyModal = () => {
+    const detectedMinutes = getMinutesLate();
+    const initialMinutes = (order?.penalty_percent > 0 && detectedMinutes === 0)
+      ? (order.penalty_percent >= 100 ? systemSettings.freeServiceAfterMinutes : systemSettings.latePenaltyMinutes)
+      : detectedMinutes;
+    setLateMinutesInput(initialMinutes);
+    const initialPct = computePenaltyPercentFromMinutes(initialMinutes);
+    setPenaltyPercentInput(initialPct);
+    setPenaltyReasonInput(
+      initialPct >= 100
+        ? `Vi phạm muộn ${initialMinutes}p (>= ${systemSettings.freeServiceAfterMinutes}p) - Làm FREE 0đ cho khách`
+        : initialPct > 0
+        ? `Đến muộn ${initialMinutes}p - Phạt ${initialPct}% theo cài đặt gốc của Quản lý`
+        : `Đến đúng giờ / muộn ${initialMinutes}p (dưới ngưỡng ${systemSettings.latePenaltyMinutes}p) - Không phạt`
+    );
+    setShowPenaltyModal(true);
+  };
+
+  // When technician edits or clicks minute presets
+  const handleLateMinutesChange = (minutes: number) => {
+    const validMinutes = Math.max(0, isNaN(minutes) ? 0 : minutes);
+    setLateMinutesInput(validMinutes);
+    const pct = computePenaltyPercentFromMinutes(validMinutes);
+    setPenaltyPercentInput(pct);
+    setPenaltyReasonInput(
+      pct >= 100
+        ? `Vi phạm muộn ${validMinutes}p (>= ${systemSettings.freeServiceAfterMinutes}p) - Làm FREE 0đ cho khách`
+        : pct > 0
+        ? `Đến muộn ${validMinutes}p - Phạt ${pct}% theo cài đặt gốc của Quản lý`
+        : `Đến đúng giờ / muộn ${validMinutes}p (dưới ngưỡng ${systemSettings.latePenaltyMinutes}p) - Không phạt`
+    );
+  };
+
+  // Confirm applying penalty
+  const handleConfirmPenalty = async () => {
+    if (!id) return;
     setActionLoading(true);
     setError('');
+    setSuccess('');
     try {
       await technicianApi.penalty(Number(id), {
-        penalty_percent: percent,
-        reason: percent === 100 ? 'Muộn > 30p - Làm FREE cho khách hàng' : 'Đến muộn 15%',
+        penalty_percent: penaltyPercentInput,
+        late_minutes: lateMinutesInput,
+        reason: penaltyReasonInput,
       });
-      setSuccess(`Đã áp dụng mức phạt ${percent}% thành công!`);
+      setSuccess(
+        penaltyPercentInput > 0
+          ? `Đã áp dụng mức phạt ${penaltyPercentInput}% (${lateMinutesInput} phút muộn) thành công!`
+          : 'Đã cập nhật đúng giờ / hủy phạt thành công!'
+      );
+      setShowPenaltyModal(false);
       loadOrder();
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Lỗi áp dụng phạt');
+      setError(err.response?.data?.error?.message || 'Lỗi áp dụng phạt muộn');
     } finally {
       setActionLoading(false);
     }
@@ -524,7 +617,7 @@ export function TechnicianOrderDetail() {
         {/* Financial Details Box */}
         <div className="bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-border mb-4 sm:mb-6">
           <h4 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-3">Chi tiết tài chính đơn hàng</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4 text-sm">
             <div>
               <span className="text-text-secondary text-xs">Giá gốc gói:</span>
               <div className="font-semibold text-text">{Number(order.price).toLocaleString('vi-VN')}đ</div>
@@ -537,6 +630,12 @@ export function TechnicianOrderDetail() {
               <span className="text-text-secondary text-xs">Giảm giá / Voucher:</span>
               <div className="font-semibold text-orange-600">-{Number(order.discount || 0).toLocaleString('vi-VN')}đ</div>
             </div>
+            {order.penalty > 0 && (
+              <div>
+                <span className="text-rose-600 text-xs font-semibold">Phạt muộn ({order.penalty_percent}%):</span>
+                <div className="font-semibold text-rose-600">-{Number(order.penalty).toLocaleString('vi-VN')}đ</div>
+              </div>
+            )}
             <div>
               <span className="text-text-secondary text-xs">Khách cần thanh toán:</span>
               <div className="text-xl font-extrabold text-orange-600">
@@ -570,39 +669,49 @@ export function TechnicianOrderDetail() {
         </div>
 
         {/* In-Session Technician Feature Toolbar */}
-        {order.status === 'IN_PROGRESS' && (
+        {(order.status === 'IN_PROGRESS' || order.status === 'CONFIRMED') && (
           <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-border">
-            {/* Sale Program & Voucher button */}
-            <button
-              onClick={() => setShowVoucherModal(true)}
-              className="btn btn-outline flex items-center gap-1.5 text-xs py-2"
-              type="button"
-            >
-              <Ticket className="w-4 h-4 text-orange-600" />
-              <span>Áp dụng Voucher / Giảm giá</span>
-            </button>
+            {order.status === 'IN_PROGRESS' && (
+              <>
+                {/* Sale Program & Voucher button */}
+                <button
+                  onClick={() => setShowVoucherModal(true)}
+                  className="btn btn-outline flex items-center gap-1.5 text-xs py-2"
+                  type="button"
+                >
+                  <Ticket className="w-4 h-4 text-orange-600" />
+                  <span>Áp dụng Voucher / Giảm giá</span>
+                </button>
 
-            {/* Extra service fee button */}
-            <button
-              onClick={() => setShowExtendModal(true)}
-              className="btn btn-outline flex items-center gap-1.5 text-xs py-2"
-              type="button"
-            >
-              <PlusCircle className="w-4 h-4 text-green-600" />
-              <span>Thêm phụ phí / gia hạn (100% KTV)</span>
-            </button>
+                {/* Extra service fee button */}
+                <button
+                  onClick={() => setShowExtendModal(true)}
+                  className="btn btn-outline flex items-center gap-1.5 text-xs py-2"
+                  type="button"
+                >
+                  <PlusCircle className="w-4 h-4 text-green-600" />
+                  <span>Thêm phụ phí / gia hạn (100% KTV)</span>
+                </button>
+              </>
+            )}
 
             {/* Late penalty button */}
-            {order.penalty_percent < 100 && (
-              <button
-                onClick={() => handleApplyPenalty(100)}
-                className="btn btn-outline text-red-600 hover:bg-red-50 border-red-300 flex items-center gap-1.5 text-xs py-2 ml-auto"
-                type="button"
-              >
-                <AlertTriangle className="w-4 h-4 text-red-600" />
-                <span>Vi phạm muộn &gt; 30p: Làm FREE cho khách (0đ)</span>
-              </button>
-            )}
+            <button
+              onClick={openPenaltyModal}
+              className={`btn btn-outline flex items-center gap-1.5 text-xs py-2 ml-auto ${
+                order.penalty_percent > 0
+                  ? 'bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100'
+                  : 'text-amber-700 hover:bg-amber-50 border-amber-300'
+              }`}
+              type="button"
+            >
+              <AlertTriangle className="w-4 h-4 text-rose-600" />
+              <span>
+                {order.penalty_percent > 0
+                  ? `Đã phạt muộn ${order.penalty_percent}%: -${Number(order.penalty).toLocaleString('vi-VN')}đ (Chỉnh sửa)`
+                  : 'Xử lý phạt muộn giờ hẹn'}
+              </span>
+            </button>
           </div>
         )}
 
@@ -1066,6 +1175,243 @@ export function TechnicianOrderDetail() {
                   className="btn btn-primary text-xs"
                 >
                   Lưu xác nhận
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Xử lý vi phạm giờ hẹn & Phạt muộn */}
+      {showPenaltyModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="card max-w-lg w-full p-4 sm:p-6 animate-in fade-in zoom-in-95 max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-border">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Xử lý vi phạm giờ hẹn & Phạt muộn</h3>
+                  <p className="text-xs text-slate-500">Tự động tính mức phạt % theo cài đặt gốc từ Quản lý</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPenaltyModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 text-base font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Quy định gốc từ Quản lý */}
+            <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3 sm:p-3.5 mb-4 text-xs text-amber-950 space-y-1.5">
+              <div className="font-bold flex items-center gap-1.5 text-amber-900">
+                <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>Cài đặt gốc từ Quản lý hệ thống:</span>
+              </div>
+              <ul className="list-disc list-inside space-y-1 text-slate-700 pl-0.5">
+                <li>
+                  Dưới <strong className="text-slate-900">{systemSettings.latePenaltyMinutes} phút</strong>: <span className="text-emerald-700 font-semibold">0% (Đúng giờ - Không phạt)</span>
+                </li>
+                <li>
+                  Muộn từ <strong className="text-slate-900">{systemSettings.latePenaltyMinutes} phút</strong> đến trước <strong className="text-slate-900">{systemSettings.freeServiceAfterMinutes} phút</strong>: <span className="text-amber-800 font-bold">Phạt {systemSettings.latePenaltyPercent}%</span>
+                </li>
+                <li>
+                  Muộn từ <strong className="text-slate-900">{systemSettings.freeServiceAfterMinutes} phút trở lên</strong>: <span className="text-rose-700 font-extrabold">Phạt 100% (Làm MIỄN PHÍ 0đ cho khách)</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Thông tin lịch hẹn đơn hàng */}
+            <div className="bg-slate-50 p-3 rounded-xl border border-border mb-4 text-xs space-y-1.5">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Lịch hẹn khách hàng:</span>
+                <span className="font-semibold text-slate-800">
+                  {order.scheduled_start} - {order.scheduled_end} ({new Date(order.scheduled_date).toLocaleDateString('vi-VN')})
+                </span>
+              </div>
+              {order.started_at && (
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Bắt đầu thực tế:</span>
+                  <span className="font-medium text-slate-800">{formatVietnamTime(order.started_at)}</span>
+                </div>
+              )}
+              {getMinutesLate() > 0 && (
+                <div className="flex justify-between items-center pt-1 border-t border-slate-200">
+                  <span className="text-rose-600 font-medium">Hệ thống đo được trễ:</span>
+                  <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                    ~{getMinutesLate()} phút
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Input số phút muộn */}
+            <div className="space-y-4">
+              <div>
+                <label className="label text-xs font-bold text-slate-800 flex justify-between items-center">
+                  <span>Số phút muộn thực tế (phút)</span>
+                  <span className="text-xs text-orange-600 font-semibold">Tự động tính % phạt</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min={0}
+                    max={360}
+                    value={lateMinutesInput}
+                    onChange={(e) => handleLateMinutesChange(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="input font-bold text-base pr-14"
+                    placeholder="VD: 15"
+                  />
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
+                    phút
+                  </span>
+                </div>
+
+                {/* Quick preset buttons */}
+                <div className="flex flex-wrap gap-1.5 mt-2.5">
+                  <button
+                    type="button"
+                    onClick={() => handleLateMinutesChange(0)}
+                    className={`px-2.5 py-1 text-xs rounded-lg border font-medium transition-colors ${
+                      lateMinutesInput === 0
+                        ? 'bg-slate-900 text-white border-slate-900'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    Đúng giờ (0p)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLateMinutesChange(systemSettings.latePenaltyMinutes)}
+                    className={`px-2.5 py-1 text-xs rounded-lg border font-medium transition-colors ${
+                      lateMinutesInput === systemSettings.latePenaltyMinutes
+                        ? 'bg-amber-600 text-white border-amber-600'
+                        : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                    }`}
+                  >
+                    Muộn {systemSettings.latePenaltyMinutes}p (-{systemSettings.latePenaltyPercent}%)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLateMinutesChange(20)}
+                    className={`px-2.5 py-1 text-xs rounded-lg border font-medium transition-colors ${
+                      lateMinutesInput === 20
+                        ? 'bg-amber-600 text-white border-amber-600'
+                        : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+                    }`}
+                  >
+                    Muộn 20p (-{systemSettings.latePenaltyPercent}%)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLateMinutesChange(systemSettings.freeServiceAfterMinutes)}
+                    className={`px-2.5 py-1 text-xs rounded-lg border font-medium transition-colors ${
+                      lateMinutesInput >= systemSettings.freeServiceAfterMinutes
+                        ? 'bg-rose-600 text-white border-rose-600'
+                        : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100'
+                    }`}
+                  >
+                    Muộn ≥{systemSettings.freeServiceAfterMinutes}p (Làm FREE 0đ)
+                  </button>
+                </div>
+              </div>
+
+              {/* Tạm tính kết quả theo % phạt */}
+              {(() => {
+                const previewPenalty = penaltyPercentInput >= 100
+                  ? Number(order.price)
+                  : Math.round((Number(order.price) * penaltyPercentInput) / 100);
+                const previewFinal = Math.max(
+                  0,
+                  Number(order.price) + Number(order.extend_fee || 0) - Number(order.discount || 0) - previewPenalty
+                );
+
+                return (
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+                      <span className="font-semibold text-slate-700">Mức phạt hệ thống tính:</span>
+                      <span
+                        className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full ${
+                          penaltyPercentInput >= 100
+                            ? 'bg-red-100 text-red-700'
+                            : penaltyPercentInput > 0
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-emerald-100 text-emerald-800'
+                        }`}
+                      >
+                        {penaltyPercentInput >= 100
+                          ? '100% (Làm MIỄN PHÍ 0đ)'
+                          : penaltyPercentInput > 0
+                          ? `Giảm -${penaltyPercentInput}% giá gói`
+                          : '0% (Không phạt)'}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between text-slate-600">
+                      <span>Giá gốc gói:</span>
+                      <span className="font-medium text-slate-800">{Number(order.price).toLocaleString('vi-VN')} đ</span>
+                    </div>
+                    {Number(order.extend_fee || 0) > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Phụ phí gia hạn:</span>
+                        <span className="font-semibold">+{Number(order.extend_fee).toLocaleString('vi-VN')} đ</span>
+                      </div>
+                    )}
+                    {Number(order.discount || 0) > 0 && (
+                      <div className="flex justify-between text-orange-600">
+                        <span>Voucher / Khuyến mãi:</span>
+                        <span className="font-semibold">-{Number(order.discount).toLocaleString('vi-VN')} đ</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-rose-600 font-semibold">
+                      <span>Tiền phạt trừ khách ({penaltyPercentInput}%):</span>
+                      <span>-{previewPenalty.toLocaleString('vi-VN')} đ</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-extrabold text-slate-900 pt-2 border-t border-slate-200">
+                      <span>Khách cần thanh toán:</span>
+                      <span className="text-orange-600">{previewFinal.toLocaleString('vi-VN')} đ</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div>
+                <label className="label text-xs">Lý do / Ghi chú áp dụng phạt</label>
+                <input
+                  type="text"
+                  value={penaltyReasonInput}
+                  onChange={(e) => setPenaltyReasonInput(e.target.value)}
+                  className="input text-xs"
+                  placeholder="Ghi chú lý do muộn..."
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setShowPenaltyModal(false)}
+                  className="btn btn-ghost text-xs"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmPenalty}
+                  disabled={actionLoading}
+                  className={`btn text-xs text-white ${
+                    penaltyPercentInput >= 100
+                      ? 'bg-rose-600 hover:bg-rose-700'
+                      : penaltyPercentInput > 0
+                      ? 'bg-amber-600 hover:bg-amber-700'
+                      : 'btn-primary'
+                  }`}
+                >
+                  {penaltyPercentInput > 0
+                    ? `Xác nhận phạt ${penaltyPercentInput}% (${lateMinutesInput}p)`
+                    : 'Xác nhận đúng giờ (0% phạt)'}
                 </button>
               </div>
             </div>

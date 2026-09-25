@@ -7,6 +7,7 @@ import { logStatusChange, findOrderById, listOrders, getOrderTimeline } from '..
 import { settleOrderLedger } from '../services/financeService.js';
 import { bookOrder } from '../services/bookingService.js';
 import { sendOrderNotification } from '../services/notificationService.js';
+import { getSystemSettings } from '../services/settingsService.js';
 
 export function createBookingHandler(req: Request, res: Response, next: NextFunction): void {
   try {
@@ -116,19 +117,20 @@ export function technicianStartHandler(req: Request, res: Response, next: NextFu
     let penaltyPercent = order.penalty_percent || 0;
     let penaltyAmount = order.penalty || 0;
 
+    const settings = getSystemSettings();
     if (order.scheduled_date && order.scheduled_start) {
       const [year, month, day] = order.scheduled_date.split('-').map(Number);
       const [hour, min] = order.scheduled_start.split(':').map(Number);
       if (year && month && day && !isNaN(hour) && !isNaN(min)) {
         const scheduledTime = new Date(year, month - 1, day, hour, min, 0, 0);
         const lateMinutes = Math.floor((now.getTime() - scheduledTime.getTime()) / (60 * 1000));
-        // Quy định: Muộn >= 30p làm FREE cho khách (100% phạt, đơn 0đ)
-        if (lateMinutes >= 30) {
+        // Quy định theo cài đặt hệ thống của Quản lý:
+        if (lateMinutes >= settings.freeServiceAfterMinutes) {
           penaltyPercent = 100;
           penaltyAmount = order.price;
-        } else if (lateMinutes >= 10 && penaltyPercent < 15) {
-          penaltyPercent = 15;
-          penaltyAmount = Math.round((order.price * 15) / 100);
+        } else if (lateMinutes >= settings.latePenaltyMinutes && penaltyPercent < settings.latePenaltyPercent) {
+          penaltyPercent = settings.latePenaltyPercent;
+          penaltyAmount = Math.round((order.price * settings.latePenaltyPercent) / 100);
         }
       }
     }
@@ -170,8 +172,36 @@ export function technicianPenaltyHandler(req: Request, res: Response, next: Next
     const order = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow | undefined;
     if (!order) { next(new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404)); return; }
 
-    const penaltyPercent = Number(req.body.penalty_percent ?? 100);
-    const reason = String(req.body.reason ?? 'Vi phạm muộn > 30p - Làm FREE cho khách');
+    const settings = getSystemSettings();
+    let penaltyPercent = req.body.penalty_percent !== undefined ? Number(req.body.penalty_percent) : NaN;
+    let reason = req.body.reason ? String(req.body.reason) : '';
+
+    // If late_minutes was provided and penalty_percent wasn't explicitly supplied
+    if (req.body.late_minutes !== undefined && isNaN(penaltyPercent)) {
+      const lateMins = Math.max(0, Number(req.body.late_minutes) || 0);
+      if (lateMins >= settings.freeServiceAfterMinutes) {
+        penaltyPercent = 100;
+      } else if (lateMins >= settings.latePenaltyMinutes) {
+        penaltyPercent = settings.latePenaltyPercent;
+      } else {
+        penaltyPercent = 0;
+      }
+      if (!reason) {
+        reason = `Muộn ${lateMins} phút (Phạt ${penaltyPercent}% theo cài đặt gốc)`;
+      }
+    }
+
+    if (isNaN(penaltyPercent)) {
+      penaltyPercent = 100;
+    }
+
+    if (!reason) {
+      reason = penaltyPercent >= 100
+        ? `Vi phạm muộn >= ${settings.freeServiceAfterMinutes}p - Làm FREE cho khách`
+        : penaltyPercent > 0
+        ? `Phạt muộn ${penaltyPercent}% theo quy định`
+        : 'Đúng giờ - Không phạt';
+    }
 
     let penaltyAmount = 0;
     if (penaltyPercent >= 100) {
