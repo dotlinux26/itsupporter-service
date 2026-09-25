@@ -237,7 +237,7 @@ export function ChatPage() {
       : `/orders/${id}`;
 
   return (
-    <div className="container max-w-4xl mx-auto px-4 py-6 flex flex-col h-[calc(100vh-4.5rem)] min-h-[550px]">
+    <div className="container max-w-4xl mx-auto py-3 sm:py-6 flex flex-col h-[calc(100vh-4.5rem)] min-h-[520px]">
       {/* Main Chat Container Box */}
       <div className="flex-1 flex flex-col bg-white rounded-2xl border border-border shadow-xs overflow-hidden">
         

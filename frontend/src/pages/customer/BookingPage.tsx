@@ -169,7 +169,7 @@ export function BookingPage() {
 
   if (loading) {
     return (
-      <div className="container py-12 max-w-4xl mx-auto">
+      <div className="container py-5 sm:py-8 md:py-12 max-w-4xl mx-auto">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-gray-200 rounded w-1/3" />
           <div className="h-40 bg-gray-100 rounded-xl" />
@@ -180,14 +180,14 @@ export function BookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10">
-      <div className="container max-w-4xl mx-auto px-4">
+    <div className="min-h-screen bg-slate-50 py-5 sm:py-8 md:py-12">
+      <div className="container max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8 text-center sm:text-left">
+        <div className="mb-6 sm:mb-8 text-center sm:text-left">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold uppercase tracking-wider mb-2">
             <Sparkles className="w-3.5 h-3.5" /> Đặt lịch tiếp nhận tại IT Supporter HaUI
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Đặt lịch bảo dưỡng & vệ sinh máy tính
           </h1>
           <p className="text-slate-600 mt-1 text-sm">
@@ -215,9 +215,9 @@ export function BookingPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
           {/* Step 1: Choose Package */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 border border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <span className="w-6 h-6 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center">1</span>
               <h2 className="text-lg font-bold text-slate-800">Chọn gói dịch vụ</h2>
@@ -261,7 +261,7 @@ export function BookingPage() {
           </div>
 
           {/* Step 2: Date & Time Slot */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 border border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <span className="w-6 h-6 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center">2</span>
               <h2 className="text-lg font-bold text-slate-800">Chọn thời gian phục vụ (Tối thiểu trước 4 tiếng)</h2>
@@ -320,7 +320,7 @@ export function BookingPage() {
           </div>
 
           {/* Step 3: Technician Selection */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 border border-slate-200 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center">3</span>
@@ -416,14 +416,14 @@ export function BookingPage() {
           </div>
 
           {/* Step 4: Workshop Address & Device Notes */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 border border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <span className="w-6 h-6 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center">4</span>
               <h2 className="text-lg font-bold text-slate-800">Địa điểm tiếp nhận & Ghi chú thiết bị</h2>
             </div>
 
             <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-orange-50/80 border border-orange-200 flex items-start gap-3">
+              <div className="p-3.5 sm:p-4 rounded-xl bg-orange-50/80 border border-orange-200 flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <div className="text-xs font-bold uppercase tracking-wider text-orange-800 mb-0.5">
@@ -454,7 +454,7 @@ export function BookingPage() {
           </div>
 
           {/* Summary & Submit */}
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-6 shadow-lg">
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
               <div>
                 <div className="text-xs text-slate-400 uppercase tracking-wider mb-1 font-semibold">Tóm tắt thanh toán</div>

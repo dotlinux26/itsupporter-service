@@ -55,7 +55,7 @@ export function AdminSettings() {
 
   if (loading) {
     return (
-      <div className="container py-10 md:py-12 max-w-4xl">
+      <div className="container py-5 sm:py-8 md:py-12 max-w-4xl mx-auto">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-slate-200 rounded w-1/3"></div>
           <div className="card p-6 space-y-4">
@@ -68,7 +68,7 @@ export function AdminSettings() {
   }
 
   return (
-    <div className="container py-10 md:py-12 max-w-4xl">
+    <div className="container py-5 sm:py-8 md:py-12 max-w-4xl mx-auto">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Cài đặt hệ thống</h1>

@@ -29,7 +29,7 @@ export function ServicesPage() {
   }, []);
 
   return (
-    <div className="container py-10 md:py-12 md:py-10 max-w-6xl mx-auto">
+    <div className="container py-5 sm:py-8 md:py-12 max-w-6xl mx-auto">
       <div className="text-center max-w-2xl mx-auto mb-12">
         <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
           {t('nav.services')}

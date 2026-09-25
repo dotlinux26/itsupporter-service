@@ -213,9 +213,9 @@ export function ProfilePage() {
   };
 
   return (
-    <div className="container py-10 md:py-12 max-w-4xl mx-auto space-y-8">
+    <div className="container py-5 sm:py-8 md:py-12 max-w-4xl mx-auto space-y-6 sm:space-y-8">
       {/* PROFILE BANNER CARD */}
-      <div className="bg-white rounded-2xl border border-border shadow-sm p-6 sm:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-6 relative overflow-hidden">
+      <div className="bg-white rounded-2xl border border-border shadow-sm p-4 sm:p-6 md:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 relative overflow-hidden">
         <div className="absolute -top-12 -right-12 w-48 h-48 bg-orange-50 rounded-full pointer-events-none -z-0 opacity-60" />
 
         {/* Avatar with upload trigger */}
@@ -294,7 +294,7 @@ export function ProfilePage() {
 
       {/* TAB CONTENT: THÔNG TIN CÁ NHÂN / LIÊN HỆ */}
       {tab === 'profile' && (
-        <form onSubmit={handleProfileSubmit} className="card p-6 sm:p-8 space-y-6">
+        <form onSubmit={handleProfileSubmit} className="card p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-6">
           <div className="border-b border-gray-100 pb-4">
             <h2 className="text-lg font-bold text-gray-900">
               {isTechnician ? 'Thông tin tiếp nhận & Liên hệ KTV' : 'Thông tin tài khoản cá nhân'}
@@ -409,7 +409,7 @@ export function ProfilePage() {
       {/* TAB CONTENT: HỒ SƠ KỸ THUẬT VIÊN & MARKDOWN (CHỈ KTV) */}
       {isTechnician && tab === 'technician_profile' && (
         <form onSubmit={handleProfileSubmit} className="space-y-6">
-          <div className="card p-6 sm:p-8 space-y-6">
+          <div className="card p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-6">
             <div className="border-b border-gray-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
@@ -671,7 +671,7 @@ export function ProfilePage() {
 
       {/* TAB CONTENT: ĐỔI MẬT KHẨU */}
       {tab === 'password' && (
-        <form onSubmit={handlePasswordSubmit} className="card p-6 sm:p-8 space-y-6">
+        <form onSubmit={handlePasswordSubmit} className="card p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-6">
           <div className="border-b border-gray-100 pb-4">
             <h2 className="text-lg font-bold text-gray-900">Đổi mật khẩu tài khoản</h2>
             <p className="text-xs text-gray-500 mt-0.5">

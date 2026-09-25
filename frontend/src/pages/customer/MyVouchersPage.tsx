@@ -38,11 +38,11 @@ export function MyVouchersPage() {
   }, []);
 
   return (
-    <div className="container py-10 md:py-12 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+    <div className="container py-5 sm:py-8 md:py-12 max-w-5xl mx-auto">
+      <div className="flex items-center justify-between mb-6 sm:mb-8">
         <div>
           <h1 className="text-2xl font-bold text-text flex items-center gap-2">
-            <Ticket className="w-7 h-7 text-orange-600" />
+            <Ticket className="w-6 h-6 sm:w-7 sm:h-7 text-orange-600" />
             Voucher của tôi
           </h1>
           <p className="text-sm text-text-secondary mt-1">
@@ -52,19 +52,19 @@ export function MyVouchersPage() {
       </div>
 
       {error && (
-        <div className="mb-6 p-4 rounded-lg bg-red-50 text-red-700 flex items-center gap-2 text-sm border border-red-200">
+        <div className="mb-4 sm:mb-6 p-4 rounded-lg bg-red-50 text-red-700 flex items-center gap-2 text-sm border border-red-200">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {loading ? (
-        <div className="py-16 text-center">
+        <div className="py-12 sm:py-16 text-center">
           <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm text-text-secondary mt-3">Đang tải voucher...</p>
         </div>
       ) : vouchers.length === 0 ? (
-        <div className="card p-12 text-center text-text-secondary">
+        <div className="card p-8 sm:p-12 text-center text-text-secondary">
           <Ticket className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="font-medium text-base text-gray-700">Bạn chưa có voucher nào</p>
           <p className="text-sm text-gray-500 mt-1">

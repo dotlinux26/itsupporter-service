@@ -116,7 +116,7 @@ export function ManagerSettlements() {
   const totalSettled = safeSettlements.reduce((acc, s) => acc + (s?.amount || 0), 0);
 
   return (
-    <div className="container py-10 md:py-12 max-w-6xl mx-auto space-y-8">
+    <div className="container py-5 sm:py-8 md:py-12 max-w-6xl mx-auto space-y-6 sm:space-y-8">
       {/* PAGE HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

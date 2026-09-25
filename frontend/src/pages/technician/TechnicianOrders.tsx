@@ -24,7 +24,7 @@ export function TechnicianOrders() {
   }, [filterStatus]);
 
   return (
-    <div className="container py-10 md:py-12 max-w-6xl mx-auto">
+    <div className="container py-5 sm:py-8 md:py-12 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-text">Đơn hàng của tôi</h1>
         <select

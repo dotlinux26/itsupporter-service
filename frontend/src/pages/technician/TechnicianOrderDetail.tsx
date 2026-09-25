@@ -293,7 +293,7 @@ export function TechnicianOrderDetail() {
 
   if (loading) {
     return (
-      <div className="container py-16 text-center">
+      <div className="container py-10 sm:py-16 text-center">
         <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
       </div>
     );
@@ -301,7 +301,7 @@ export function TechnicianOrderDetail() {
 
   if (!order) {
     return (
-      <div className="container py-16 text-center max-w-md mx-auto">
+      <div className="container py-10 sm:py-16 text-center max-w-md mx-auto">
         <h1 className="text-2xl font-bold text-text mb-4">Không tìm thấy đơn hàng</h1>
         <button
           onClick={() => navigate('/technician/orders')}
@@ -315,9 +315,9 @@ export function TechnicianOrderDetail() {
   }
 
   return (
-    <div className="container py-10 md:py-12 max-w-5xl mx-auto">
+    <div className="container py-5 sm:py-8 md:py-12 max-w-5xl mx-auto">
       {/* Top navigation bar */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <button
           onClick={() => navigate('/technician/orders')}
           className="btn btn-ghost btn-sm inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium"
@@ -328,7 +328,7 @@ export function TechnicianOrderDetail() {
 
         <Link
           to={`/orders/${id}/chat`}
-          className="btn btn-outline text-orange-600 border-orange-300 hover:bg-orange-50 flex items-center gap-1.5 text-sm"
+          className="btn btn-outline text-orange-600 border-orange-300 hover:bg-orange-50 flex items-center justify-center gap-1.5 text-sm"
         >
           <MessageSquare className="w-4 h-4" />
           <span>Mở khung Chat với khách</span>
@@ -336,21 +336,21 @@ export function TechnicianOrderDetail() {
       </div>
 
       {error && (
-        <div className="mb-6 p-4 rounded-lg bg-red-50 text-red-700 flex items-center gap-2 text-sm border border-red-200">
+        <div className="mb-4 sm:mb-6 p-4 rounded-lg bg-red-50 text-red-700 flex items-center gap-2 text-sm border border-red-200">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {success && (
-        <div className="mb-6 p-4 rounded-lg bg-green-50 text-green-700 flex items-center gap-2 text-sm border border-green-200">
+        <div className="mb-4 sm:mb-6 p-4 rounded-lg bg-green-50 text-green-700 flex items-center gap-2 text-sm border border-green-200">
           <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
           <span>{success}</span>
         </div>
       )}
 
       {/* Main Order Header Card */}
-      <div className="card p-6 mb-6 border border-border">
+      <div className="card p-4 sm:p-6 md:p-8 mb-4 sm:mb-6 border border-border">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 pb-6 border-b border-border">
           <div>
             <div className="flex items-center gap-3">
@@ -411,7 +411,7 @@ export function TechnicianOrderDetail() {
         </div>
 
         {/* Customer Information Card */}
-        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 mb-6">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 border border-slate-200 mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
               <div className="w-12 h-12 rounded-full bg-slate-200 text-slate-800 font-bold text-lg flex items-center justify-center border border-slate-300 shadow-2xs">
@@ -462,9 +462,9 @@ export function TechnicianOrderDetail() {
         </div>
 
         {/* Distinct Blocks: Service Package vs Customer Note */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
           {/* Service Package */}
-          <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
+          <div className="p-3.5 sm:p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Gói dịch vụ</span>
             <div className="flex items-baseline justify-between mb-2">
               <h3 className="text-lg font-bold text-slate-900">{order.package_name}</h3>
@@ -484,7 +484,7 @@ export function TechnicianOrderDetail() {
           </div>
 
           {/* Customer Note */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
+          <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Ghi chú từ khách hàng</span>
             {order.note ? (
               <div className="text-sm text-slate-700 bg-white p-3 rounded-lg border border-slate-200 leading-relaxed max-h-36 overflow-y-auto">
@@ -497,7 +497,7 @@ export function TechnicianOrderDetail() {
         </div>
 
         {/* Schedule & Location */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 pt-4 border-t border-border">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6 pt-4 border-t border-border">
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
               <Calendar className="w-3.5 h-3.5" />
@@ -522,7 +522,7 @@ export function TechnicianOrderDetail() {
         </div>
 
         {/* Financial Details Box */}
-        <div className="bg-slate-50 p-4 rounded-xl border border-border mb-6">
+        <div className="bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-border mb-4 sm:mb-6">
           <h4 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-3">Chi tiết tài chính đơn hàng</h4>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
             <div>
@@ -675,7 +675,7 @@ export function TechnicianOrderDetail() {
       </div>
 
       {/* Payment QR Section */}
-      <div className="card p-6 border border-border">
+      <div className="card p-4 sm:p-6 md:p-8 border border-border">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <QrCode className="w-6 h-6 text-orange-600" />

@@ -33,7 +33,7 @@ export function AdminStats() {
 
   if (loading) {
     return (
-      <div className="container py-10 md:py-12 max-w-6xl mx-auto">
+      <div className="container py-5 sm:py-8 md:py-12 max-w-6xl mx-auto">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-gray-200 rounded w-1/4"></div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -45,8 +45,8 @@ export function AdminStats() {
   }
 
   return (
-    <div className="container py-10 md:py-12 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold text-text mb-8">Thống kê hệ thống</h1>
+    <div className="container py-5 sm:py-8 md:py-12 max-w-6xl mx-auto">
+      <h1 className="text-2xl font-bold text-text mb-6 sm:mb-8">Thống kê hệ thống</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="card p-6">

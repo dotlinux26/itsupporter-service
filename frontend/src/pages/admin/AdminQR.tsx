@@ -63,7 +63,7 @@ export function AdminQR() {
   };
 
   return (
-    <div className="container py-10 md:py-12 max-w-2xl">
+    <div className="container py-5 sm:py-8 md:py-12 max-w-2xl mx-auto">
       <div className="flex items-center gap-3 mb-8">
         <QrCode className="w-8 h-8 text-orange-600" />
         <div>

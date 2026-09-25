@@ -1,6 +1,6 @@
 export function TermsPage() {
   return (
-    <div className="container py-10 md:py-12 max-w-4xl mx-auto">
+    <div className="container py-5 sm:py-8 md:py-12 max-w-4xl mx-auto">
       <div className="mb-10 text-center sm:text-left">
         <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">Quy định & Cam kết dịch vụ</h1>
         <p className="text-sm sm:text-base text-slate-500 mt-2">

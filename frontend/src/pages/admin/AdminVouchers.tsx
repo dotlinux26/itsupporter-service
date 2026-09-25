@@ -88,7 +88,7 @@ export function AdminVouchers() {
   };
 
   return (
-    <div className="container py-10 md:py-12 max-w-5xl">
+    <div className="container py-5 sm:py-8 md:py-12 max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-text flex items-center gap-2">

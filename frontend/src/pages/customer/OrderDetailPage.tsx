@@ -106,7 +106,7 @@ export function OrderDetailPage() {
 
   if (loading) {
     return (
-      <div className="container py-10 md:py-12 max-w-5xl mx-auto">
+      <div className="container py-5 sm:py-8 md:py-12 max-w-5xl mx-auto">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-gray-200 rounded w-1/4"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -120,7 +120,7 @@ export function OrderDetailPage() {
 
   if (error || !order) {
     return (
-      <div className="container py-16 text-center max-w-md mx-auto">
+      <div className="container py-10 sm:py-16 text-center max-w-md mx-auto">
         <h1 className="text-2xl font-bold text-text mb-4">{error || t('error.notFound')}</h1>
         <Link to="/orders" className="btn btn-primary inline-flex items-center gap-2">
           <ArrowLeft className="w-4 h-4" />
@@ -131,9 +131,9 @@ export function OrderDetailPage() {
   }
 
   return (
-    <div className="container py-10 md:py-12 max-w-5xl mx-auto">
+    <div className="container py-5 sm:py-8 md:py-12 max-w-5xl mx-auto">
       {/* Top navigation bar */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <Link
           to="/orders"
           className="btn btn-ghost btn-sm inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium"
@@ -144,7 +144,7 @@ export function OrderDetailPage() {
 
         <Link
           to={`/orders/${order.id}/chat`}
-          className="btn btn-outline text-orange-600 border-orange-300 hover:bg-orange-50 flex items-center gap-2 text-sm"
+          className="btn btn-outline text-orange-600 border-orange-300 hover:bg-orange-50 flex items-center justify-center gap-2 text-sm"
         >
           <MessageSquare className="w-4 h-4" />
           <span>Mở khung Chat với KTV</span>
@@ -152,7 +152,7 @@ export function OrderDetailPage() {
       </div>
 
       {/* Main Order Header Card */}
-      <div className="card p-6 mb-6">
+      <div className="card p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 pb-6 border-b border-border">
           <div>
             <div className="flex items-center gap-3">
@@ -210,17 +210,17 @@ export function OrderDetailPage() {
 
         {/* Assigned Technician Profile Card (If confirmed/in-progress/completed) */}
         {order.technician_name ? (
-          <div className="p-4 rounded-xl bg-orange-50/60 border border-orange-200 mb-6">
+          <div className="p-3.5 sm:p-4 rounded-xl bg-orange-50/60 border border-orange-200 mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
                 {order.technician_avatar_url ? (
                   <img
                     src={order.technician_avatar_url}
                     alt={order.technician_name}
-                    className="w-14 h-14 rounded-full object-cover border-2 border-orange-300 shadow-xs"
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-orange-300 shadow-xs"
                   />
                 ) : (
-                  <div className="w-14 h-14 rounded-full bg-orange-200 text-orange-800 font-bold text-xl flex items-center justify-center border-2 border-orange-300 shadow-xs">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-orange-200 text-orange-800 font-bold text-xl flex items-center justify-center border-2 border-orange-300 shadow-xs">
                     {order.technician_name.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -237,7 +237,7 @@ export function OrderDetailPage() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 {order.technician_phone && (
                   <a
                     href={`tel:${order.technician_phone}`}
@@ -267,7 +267,7 @@ export function OrderDetailPage() {
             </div>
           </div>
         ) : (
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 mb-6 flex items-center gap-3 text-slate-600">
+          <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 border border-slate-200 mb-4 sm:mb-6 flex items-center gap-3 text-slate-600">
             <User className="w-5 h-5 text-slate-400" />
             <div className="text-sm">
               <strong className="text-slate-800">Kỹ thuật viên:</strong> Hệ thống đang điều phối kỹ thuật viên chuyên trách cho đơn của bạn.
@@ -276,9 +276,9 @@ export function OrderDetailPage() {
         )}
 
         {/* Detailed Grid: Service Package vs Customer Note vs Schedule & Location */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
           {/* Service Package Box */}
-          <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
+          <div className="p-3.5 sm:p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Gói dịch vụ</span>
             <div className="flex items-baseline justify-between mb-2">
               <h3 className="text-lg font-bold text-slate-900">{order.package_name}</h3>
@@ -298,7 +298,7 @@ export function OrderDetailPage() {
           </div>
 
           {/* Customer Note Box */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
+          <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Ghi chú của bạn / Yêu cầu thêm</span>
             {order.note ? (
               <div className="text-sm text-slate-700 bg-white p-3 rounded-lg border border-slate-200 leading-relaxed max-h-36 overflow-y-auto">
@@ -311,7 +311,7 @@ export function OrderDetailPage() {
         </div>
 
         {/* Schedule & Location & Penalties */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 pt-4 border-t border-border">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6 pt-4 border-t border-border">
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
               <Calendar className="w-3.5 h-3.5" />
@@ -368,7 +368,7 @@ export function OrderDetailPage() {
 
       {/* Payment QR Section if available and not PAID */}
       {order.payment_qr_path && order.payment_status !== 'PAID' && (
-        <div className="card p-6 mb-6">
+        <div className="card p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex items-center gap-2 mb-4">
             <QrCode className="w-5 h-5 text-orange-600" />
             <h3 className="font-semibold text-text">Mã QR Thanh Toán Ngân Hàng</h3>
@@ -399,7 +399,7 @@ export function OrderDetailPage() {
 
       {/* Customer Review & Rating Section (Shown when COMPLETED) */}
       {order.status === 'COMPLETED' && (
-        <div className="card p-6 mb-6 border border-border shadow-xs">
+        <div className="card p-4 sm:p-6 mb-4 sm:mb-6 border border-border shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Star className="w-5 h-5 text-amber-500 fill-amber-500" />

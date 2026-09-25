@@ -35,7 +35,7 @@ export function PublicOrdersPage() {
   };
 
   return (
-    <div className="container py-10 md:py-12 max-w-6xl mx-auto">
+    <div className="container py-5 sm:py-8 md:py-12 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold text-text mb-8">{t('nav.orders')}</h1>
 
       {loading ? (

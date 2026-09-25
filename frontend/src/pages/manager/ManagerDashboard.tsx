@@ -189,7 +189,7 @@ export function ManagerDashboard() {
 
   if (loading && !analytics) {
     return (
-      <div className="container py-10 md:py-12 max-w-6xl mx-auto space-y-8">
+      <div className="container py-5 sm:py-8 md:py-12 max-w-6xl mx-auto space-y-6 sm:space-y-8">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-200 rounded-lg w-64"></div>
           <div className="h-4 bg-gray-100 rounded w-96"></div>
@@ -208,7 +208,7 @@ export function ManagerDashboard() {
   }
 
   return (
-    <div className="container py-10 md:py-12 max-w-6xl mx-auto space-y-8">
+    <div className="container py-5 sm:py-8 md:py-12 max-w-6xl mx-auto space-y-6 sm:space-y-8">
       {/* PAGE HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

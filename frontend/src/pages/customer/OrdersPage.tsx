@@ -41,8 +41,8 @@ export function OrdersPage() {
   }, []);
 
   return (
-    <div className="container py-10 md:py-12 max-w-5xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+    <div className="container py-5 sm:py-8 md:py-12 max-w-5xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{t('orders.myOrders')}</h1>
           <p className="text-sm text-slate-500 mt-1">
@@ -54,7 +54,7 @@ export function OrdersPage() {
       {loading && orders.length === 0 ? (
         <div className="space-y-4">
           {[1, 2, 3].map(i => (
-            <div key={i} className="animate-pulse card p-6">
+            <div key={i} className="animate-pulse card p-4 sm:p-5">
               <div className="flex items-center justify-between">
                 <div className="h-4 bg-gray-200 rounded w-1/4"></div>
                 <div className="h-6 bg-gray-200 rounded w-20"></div>
@@ -64,7 +64,7 @@ export function OrdersPage() {
           ))}
         </div>
       ) : orders.length === 0 ? (
-        <div className="card p-12 text-center">
+        <div className="card p-8 sm:p-12 text-center">
           <svg className="w-16 h-16 mx-auto text-text-muted mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 002-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
           </svg>
@@ -76,7 +76,7 @@ export function OrdersPage() {
         <>
           <div className="space-y-4">
             {orders.map((order) => (
-              <Link key={order.id} to={`/orders/${order.id}`} className="card p-6 hover:shadow-md transition-shadow block">
+              <Link key={order.id} to={`/orders/${order.id}`} className="card p-4 sm:p-5 md:p-6 hover:shadow-md transition-shadow block">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
