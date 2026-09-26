@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, ZoomIn, Download } from 'lucide-react';
 
 interface ImageModalProps {
@@ -10,6 +11,8 @@ interface ImageModalProps {
 }
 
 export function ImageModal({ isOpen, onClose, imageUrl, title, caption }: ImageModalProps) {
+  const { t } = useTranslation();
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -53,14 +56,14 @@ export function ImageModal({ isOpen, onClose, imageUrl, title, caption }: ImageM
               rel="noopener noreferrer"
               download
               className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-              title="Tải ảnh gốc / Mở tab mới"
+              title={t('common.downloadOriginal')}
             >
               <Download className="w-5 h-5" />
             </a>
             <button
               onClick={onClose}
               className="p-2 rounded-full bg-white/10 hover:bg-red-500/80 text-white transition-colors"
-              title="Đóng (ESC)"
+              title={t('common.closeEsc')}
             >
               <X className="w-5 h-5" />
             </button>
@@ -71,13 +74,13 @@ export function ImageModal({ isOpen, onClose, imageUrl, title, caption }: ImageM
         <div className="relative bg-white rounded-2xl p-3 sm:p-4 shadow-2xl overflow-hidden max-h-[75vh] flex items-center justify-center border border-white/20">
           <img
             src={imageUrl}
-            alt={title || 'Phóng to ảnh'}
+            alt={title || t('common.zoomImage')}
             className="max-h-[70vh] max-w-full w-auto object-contain rounded-xl select-none"
           />
         </div>
 
         <p className="text-xs text-gray-400 mt-3 text-center">
-          Nhấn phím <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-gray-200 text-[11px]">ESC</kbd> hoặc click vào vùng bên ngoài để đóng
+          {t('common.pressEscToClose')}
         </p>
       </div>
     </div>
@@ -101,6 +104,7 @@ export function ZoomableImage({
   title,
   caption,
 }: ZoomableImageProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   return (
@@ -112,7 +116,7 @@ export function ZoomableImage({
         <img src={src} alt={alt} className={className} />
         <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center text-white font-semibold text-xs gap-1 pointer-events-none">
           <ZoomIn className="w-4 h-4" />
-          <span>Phóng to</span>
+          <span>{t('common.zoomIn')}</span>
         </div>
       </div>
 

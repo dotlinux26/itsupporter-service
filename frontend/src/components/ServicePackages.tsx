@@ -11,7 +11,8 @@ interface ServicePackagesProps {
 }
 
 export function ServicePackages({ packages, loading }: ServicePackagesProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
   const { isAuthenticated } = useAuth();
 
   if (loading) {
@@ -31,7 +32,7 @@ export function ServicePackages({ packages, loading }: ServicePackagesProps) {
           {t('home.selectPackage')}
         </h2>
         <p className="text-sm text-slate-500 mt-2">
-          Sử dụng keo tản nhiệt chất lượng cao, quy trình 9 bước vệ sinh vi mạch chống tĩnh điện an toàn tuyệt đối.
+          {t('packages.subtitle')}
         </p>
       </div>
 
@@ -59,9 +60,9 @@ export function ServicePackages({ packages, loading }: ServicePackagesProps) {
                   <h3 className="text-2xl font-bold text-slate-900">{pkg.name}</h3>
                   <div className="text-right">
                     <span className="text-2xl font-extrabold text-orange-600 block">
-                      {pkg.price.toLocaleString('vi-VN')} đ
+                      {pkg.price.toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
                     </span>
-                    <span className="text-xs text-slate-400 font-medium">Trọn gói tại P.1603 A1</span>
+                    <span className="text-xs text-slate-400 font-medium">{t('packages.allInclusive')}</span>
                   </div>
                 </div>
 
@@ -101,14 +102,14 @@ export function ServicePackages({ packages, loading }: ServicePackagesProps) {
               <div className="px-6 md:px-8 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-xs text-slate-500">
                   <Clock className="w-4 h-4 text-slate-400" />
-                  <span>Thời lượng: ~{pkg.duration_minutes || 60} phút</span>
+                  <span>{t('packages.duration', { minutes: pkg.duration_minutes || 60 })}</span>
                 </div>
 
                 <Link
                   to={bookingUrl}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-500 text-white text-sm font-bold rounded-xl shadow-sm transition group"
                 >
-                  <span>Đặt gói này</span>
+                  <span>{t('packages.bookThisPackage')}</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </div>

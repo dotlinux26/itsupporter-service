@@ -18,7 +18,7 @@ interface PublicReview {
 }
 
 export function ReviewSection() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [reviews, setReviews] = useState<PublicReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -63,7 +63,7 @@ export function ReviewSection() {
         <div>
           <h2 className="text-2xl font-bold text-text">{t('home.customerReviews')}</h2>
           <p className="text-sm text-text-secondary mt-1">
-            Đánh giá thực tế từ các khách hàng đã hoàn thành dịch vụ tại IT Supporter.
+            {t('home.reviewsSubtitle')}
           </p>
         </div>
       </div>
@@ -76,8 +76,8 @@ export function ReviewSection() {
         </div>
       ) : reviews.length === 0 ? (
         <div className="card p-10 text-center text-text-secondary">
-          <p className="text-base font-semibold text-gray-700">Chưa có đánh giá nào</p>
-          <p className="text-sm text-gray-500 mt-1">Các đánh giá mới nhất sẽ tự động hiển thị tại đây khi khách hàng hoàn thành đơn.</p>
+          <p className="text-base font-semibold text-gray-700">{t('home.noReviewsYet')}</p>
+          <p className="text-sm text-gray-500 mt-1">{t('home.noReviewsDesc')}</p>
         </div>
       ) : (
         <>
@@ -90,7 +90,9 @@ export function ReviewSection() {
                       <Avatar name={review.customer_name} size={34} />
                       <div>
                         <div className="text-sm font-semibold text-text">{review.customer_name}</div>
-                        <div className="text-xs text-text-muted">{new Date(review.created_at).toLocaleDateString('vi-VN')}</div>
+                        <div className="text-xs text-text-muted">
+                          {new Date(review.created_at).toLocaleDateString(i18n.language?.startsWith('en') ? 'en-US' : 'vi-VN')}
+                        </div>
                       </div>
                     </div>
 
@@ -112,7 +114,7 @@ export function ReviewSection() {
                     {review.package_name}
                   </span>
                   {review.technician_name && (
-                    <span>KTV: <strong className="text-gray-700">{review.technician_name}</strong></span>
+                    <span>{t('orders.technician')}: <strong className="text-gray-700">{review.technician_name}</strong></span>
                   )}
                 </div>
               </div>
@@ -131,7 +133,7 @@ export function ReviewSection() {
                 ) : (
                   <ChevronDown className="w-4 h-4" />
                 )}
-                {t('pagination.loadMore')} (10 đánh giá cũ hơn)
+                {t('pagination.loadMore')} ({t('home.olderReviews')})
               </button>
             </div>
           )}

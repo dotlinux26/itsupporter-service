@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { managerApi } from '../../api/client';
 import {
   Package,
@@ -11,6 +12,9 @@ import {
 } from 'lucide-react';
 
 export function ManagerPackages() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
+
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -38,7 +42,7 @@ export function ManagerPackages() {
       setPackages(response.data?.data || []);
     } catch (error) {
       console.error('Failed to load packages:', error);
-      showFeedback('error', 'Không thể tải danh sách gói dịch vụ.');
+      showFeedback('error', isEn ? 'Failed to load packages list.' : 'Không thể tải danh sách gói dịch vụ.');
     } finally {
       setLoading(false);
     }
@@ -86,7 +90,7 @@ export function ManagerPackages() {
           features: features.trim(),
           is_active: isActive ? 1 : 0,
         });
-        showFeedback('success', `Đã cập nhật gói "${name}".`);
+        showFeedback('success', isEn ? `Updated package "${name}".` : `Đã cập nhật gói "${name}".`);
       } else {
         await managerApi.createPackage({
           name: name.trim(),
@@ -96,12 +100,12 @@ export function ManagerPackages() {
           features: features.trim(),
           is_active: isActive ? 1 : 0,
         });
-        showFeedback('success', `Đã tạo gói dịch vụ mới.`);
+        showFeedback('success', isEn ? `Created new service package.` : `Đã tạo gói dịch vụ mới.`);
       }
       setModalOpen(false);
       loadPackages();
     } catch (err: any) {
-      showFeedback('error', err.response?.data?.message || 'Lưu gói dịch vụ thất bại.');
+      showFeedback('error', err.response?.data?.message || (isEn ? 'Failed to save package.' : 'Lưu gói dịch vụ thất bại.'));
     } finally {
       setSaving(false);
     }
@@ -113,9 +117,9 @@ export function ManagerPackages() {
       setPackages((prev) =>
         prev.map((p) => (p.id === pkg.id ? { ...p, is_active: p.is_active ? 0 : 1 } : p))
       );
-      showFeedback('success', `Đã đổi trạng thái gói "${pkg.name}".`);
+      showFeedback('success', isEn ? `Updated status of package "${pkg.name}".` : `Đã đổi trạng thái gói "${pkg.name}".`);
     } catch (err: any) {
-      showFeedback('error', 'Đổi trạng thái thất bại.');
+      showFeedback('error', isEn ? 'Failed to toggle package status.' : 'Đổi trạng thái thất bại.');
     }
   };
 
@@ -126,10 +130,10 @@ export function ManagerPackages() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5">
             <Layers className="w-7 h-7 text-primary" />
-            Quản lý gói dịch vụ bảo dưỡng
+            {t('manager.pkgTitle')}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Thiết lập các gói vệ sinh, bảo trì máy tính, đơn giá và thời lượng tiếp nhận.
+            {t('manager.pkgSubtitle')}
           </p>
         </div>
 
@@ -139,7 +143,7 @@ export function ManagerPackages() {
           className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md transition self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
-          <span>Thêm gói dịch vụ</span>
+          <span>{t('manager.createPkg')}</span>
         </button>
       </div>
 
@@ -176,9 +180,9 @@ export function ManagerPackages() {
       ) : packages.length === 0 ? (
         <div className="card p-12 text-center space-y-3 bg-white">
           <Package className="w-12 h-12 text-gray-300 mx-auto" />
-          <p className="text-base font-semibold text-gray-700">Chưa có gói dịch vụ nào</p>
+          <p className="text-base font-semibold text-gray-700">{isEn ? 'No service packages yet' : 'Chưa có gói dịch vụ nào'}</p>
           <button onClick={openCreateModal} className="btn btn-primary text-xs px-4">
-            + Tạo gói dịch vụ đầu tiên
+            {isEn ? '+ Create first package' : '+ Tạo gói dịch vụ đầu tiên'}
           </button>
         </div>
       ) : (
@@ -195,7 +199,7 @@ export function ManagerPackages() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-primary block">
-                      Gói #{pkg.id}
+                      {isEn ? `Package #${pkg.id}` : `Gói #${pkg.id}`}
                     </span>
                     <h3 className="font-bold text-lg text-gray-900">{pkg.name}</h3>
                   </div>
@@ -208,12 +212,12 @@ export function ManagerPackages() {
                         : 'bg-rose-50 text-rose-700 border-rose-200'
                     }`}
                   >
-                    {pkg.is_active ? 'Đang mở' : 'Đã tắt'}
+                    {pkg.is_active ? (isEn ? 'Active' : 'Đang mở') : (isEn ? 'Inactive' : 'Đã tắt')}
                   </button>
                 </div>
 
                 <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">
-                  {pkg.description || 'Chưa có mô tả ngắn...'}
+                  {pkg.description || (isEn ? 'No short description...' : 'Chưa có mô tả ngắn...')}
                 </p>
 
                 {/* Features list */}
@@ -232,12 +236,12 @@ export function ManagerPackages() {
               {/* Price & Actions */}
               <div className="pt-4 mt-6 border-t border-gray-100 flex items-center justify-between">
                 <div>
-                  <span className="text-xs text-gray-400 block font-medium">Đơn giá / Thời lượng</span>
+                  <span className="text-xs text-gray-400 block font-medium">{isEn ? 'Price / Duration' : 'Đơn giá / Thời lượng'}</span>
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-lg font-bold text-primary">
-                      {pkg.price.toLocaleString('vi-VN')} đ
+                      {(pkg.price || 0).toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
                     </span>
-                    <span className="text-xs text-gray-500 font-medium">({pkg.duration_minutes}p)</span>
+                    <span className="text-xs text-gray-500 font-medium">({pkg.duration_minutes}{isEn ? 'm' : 'p'})</span>
                   </div>
                 </div>
 
@@ -245,7 +249,7 @@ export function ManagerPackages() {
                   type="button"
                   onClick={() => openEditModal(pkg)}
                   className="p-2 text-gray-600 hover:text-primary hover:bg-orange-50 rounded-xl border border-gray-200 transition"
-                  title="Chỉnh sửa gói"
+                  title={isEn ? "Edit package" : "Chỉnh sửa gói"}
                 >
                   <Edit2 className="w-4 h-4" />
                 </button>
@@ -263,7 +267,7 @@ export function ManagerPackages() {
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-primary" />
                 <h3 className="font-bold text-gray-900 text-base">
-                  {editingPkg ? 'Chỉnh sửa gói dịch vụ' : 'Tạo gói dịch vụ mới'}
+                  {editingPkg ? (isEn ? 'Edit Service Package' : 'Chỉnh sửa gói dịch vụ') : (isEn ? 'Create Service Package' : 'Tạo gói dịch vụ mới')}
                 </h3>
               </div>
               <button
@@ -277,13 +281,13 @@ export function ManagerPackages() {
             <form onSubmit={handleSavePackage} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Tên gói dịch vụ <span className="text-red-500">*</span>
+                  {t('manager.pkgName')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ví dụ: Vệ sinh & Tra keo tản nhiệt Laptop Gaming"
+                  placeholder={isEn ? "E.g.: Gaming Laptop Cleaning & Thermal Repaste" : "Ví dụ: Vệ sinh & Tra keo tản nhiệt Laptop Gaming"}
                   required
                   className="input text-sm"
                 />
@@ -292,7 +296,7 @@ export function ManagerPackages() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                    Đơn giá (VNĐ) <span className="text-red-500">*</span>
+                    {t('manager.pkgPrice')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -308,7 +312,7 @@ export function ManagerPackages() {
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                    Thời lượng ước tính (Phút)
+                    {t('manager.pkgDuration')}
                   </label>
                   <input
                     type="number"
@@ -324,27 +328,27 @@ export function ManagerPackages() {
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Mô tả ngắn gói dịch vụ
+                  {isEn ? 'Short description' : 'Mô tả ngắn gói dịch vụ'}
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={2}
                   className="input text-sm resize-none"
-                  placeholder="Mô tả tóm tắt dịch vụ cho khách hàng..."
+                  placeholder={isEn ? "Brief service summary for customers..." : "Mô tả tóm tắt dịch vụ cho khách hàng..."}
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Các hạng mục dịch vụ (Mỗi dòng 1 gạch đầu dòng)
+                  {t('manager.pkgFeatures')}
                 </label>
                 <textarea
                   value={features}
                   onChange={(e) => setFeatures(e.target.value)}
                   rows={4}
                   className="input text-xs font-mono leading-relaxed"
-                  placeholder={`Vệ sinh sạch quạt & khe tản nhiệt\nTra keo tản nhiệt chuyên dụng\nKiểm tra nhiệt độ CPU/GPU trước & sau\nBảo hành keo 3 tháng`}
+                  placeholder={isEn ? "Deep cleaning fan & exhaust vents\nHigh-grade thermal repaste\nCPU/GPU thermal stress test\n3-month paste warranty" : `Vệ sinh sạch quạt & khe tản nhiệt\nTra keo tản nhiệt chuyên dụng\nKiểm tra nhiệt độ CPU/GPU trước & sau\nBảo hành keo 3 tháng`}
                 />
               </div>
 
@@ -357,7 +361,7 @@ export function ManagerPackages() {
                   className="w-4 h-4 accent-primary rounded"
                 />
                 <label htmlFor="pkgActive" className="text-xs font-semibold text-gray-800 cursor-pointer">
-                  Mở hiển thị công khai cho khách hàng đặt lịch
+                  {isEn ? 'Display publicly for customers to book' : 'Mở hiển thị công khai cho khách hàng đặt lịch'}
                 </label>
               </div>
 
@@ -367,14 +371,14 @@ export function ManagerPackages() {
                   onClick={() => setModalOpen(false)}
                   className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition"
                 >
-                  Hủy
+                  {t('common.cancel', isEn ? 'Cancel' : 'Hủy')}
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
                   className="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md transition disabled:opacity-50"
                 >
-                  {saving ? 'Đang lưu...' : editingPkg ? 'Cập nhật' : 'Tạo mới'}
+                  {saving ? (isEn ? 'Saving...' : 'Đang lưu...') : editingPkg ? (isEn ? 'Update' : 'Cập nhật') : (isEn ? 'Create' : 'Tạo mới')}
                 </button>
               </div>
             </form>

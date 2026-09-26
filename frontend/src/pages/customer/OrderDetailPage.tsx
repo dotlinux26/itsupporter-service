@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { orderApi, reviewApi } from '../../api/client';
 import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { vi, enUS } from 'date-fns/locale';
 import { formatVietnamTime } from '../../utils/date';
 import { MarkdownRenderer } from '../../components/MarkdownRenderer';
 import { ZoomableImage } from '../../components/ImageModal';
@@ -27,7 +27,9 @@ import {
 } from 'lucide-react';
 
 export function OrderDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language?.startsWith('en') ? enUS : vi;
+  const isEn = i18n.language?.startsWith('en');
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<any>(null);
   const [timeline, setTimeline] = useState<OrderTimelineItem[]>([]);
@@ -98,7 +100,7 @@ export function OrderDetailPage() {
       setReview(res.data.data);
       setReviewSuccess(true);
     } catch (err: any) {
-      setReviewError(err.response?.data?.error?.message || 'Không thể gửi đánh giá');
+      setReviewError(err.response?.data?.error?.message || t('review.reviewError'));
     } finally {
       setSubmittingReview(false);
     }
@@ -147,7 +149,7 @@ export function OrderDetailPage() {
           className="btn btn-outline text-orange-600 border-orange-300 hover:bg-orange-50 flex items-center justify-center gap-2 text-sm"
         >
           <MessageSquare className="w-4 h-4" />
-          <span>Mở khung Chat với KTV</span>
+          <span>{t('orders.openChatWithTech')}</span>
         </Link>
       </div>
 
@@ -171,30 +173,30 @@ export function OrderDetailPage() {
                 }`}
               >
                 {order.status === 'PENDING'
-                  ? 'Chờ xác nhận'
+                  ? t('status.pending')
                   : order.status === 'CONFIRMED'
-                  ? 'Đã xác nhận'
+                  ? t('status.confirmed')
                   : order.status === 'IN_PROGRESS'
-                  ? 'Đang thực hiện'
+                  ? t('status.in_progress')
                   : order.status === 'COMPLETED'
-                  ? 'Hoàn thành'
-                  : 'Đã hủy'}
+                  ? t('status.completed')
+                  : t('status.cancelled')}
               </span>
             </div>
             <p className="text-xs text-text-muted mt-1">
-              Thời gian tạo đơn: {formatVietnamTime(order.created_at, 'dd/MM/yyyy HH:mm:ss')}
+              {t('orders.createdAtTime')} {formatVietnamTime(order.created_at, 'dd/MM/yyyy HH:mm:ss')}
             </p>
           </div>
 
           <div className="text-left md:text-right">
-            <span className="text-xs text-text-muted uppercase tracking-wider font-semibold block">Tổng chi phí</span>
+            <span className="text-xs text-text-muted uppercase tracking-wider font-semibold block">{t('orders.totalFee')}</span>
             <div className="flex items-baseline gap-2 md:justify-end">
               <span className={`text-2xl font-black ${order.final_amount === 0 ? 'text-emerald-600' : 'text-primary'}`}>
-                {Number(order.final_amount).toLocaleString('vi-VN')} VNĐ
+                {Number(order.final_amount).toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'VNĐ'}
               </span>
               {order.price !== order.final_amount && (
                 <span className="text-sm text-slate-400 line-through">
-                  {Number(order.price).toLocaleString('vi-VN')} đ
+                  {Number(order.price).toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
                 </span>
               )}
             </div>
@@ -202,7 +204,7 @@ export function OrderDetailPage() {
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                 order.payment_status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
               }`}>
-                {order.payment_status === 'PAID' ? '✓ Đã thanh toán' : 'Chưa thanh toán'}
+                {order.payment_status === 'PAID' ? t('orders.paid') : t('orders.unpaid')}
               </span>
             </div>
           </div>
@@ -227,7 +229,7 @@ export function OrderDetailPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs uppercase font-extrabold tracking-wider px-2 py-0.5 rounded bg-orange-100 text-orange-800">
-                      Kỹ thuật viên phụ trách
+                      {t('orders.assignedTech')}
                     </span>
                   </div>
                   <h3 className="text-lg font-bold text-slate-900 mt-0.5">{order.technician_name}</h3>
@@ -261,7 +263,7 @@ export function OrderDetailPage() {
                   className="btn btn-primary btn-sm flex items-center gap-1.5 text-xs"
                 >
                   <MessageSquare className="w-3.5 h-3.5" />
-                  <span>Nhắn tin KTV</span>
+                  <span>{t('orders.messageTech')}</span>
                 </Link>
               </div>
             </div>
@@ -270,7 +272,7 @@ export function OrderDetailPage() {
           <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 border border-slate-200 mb-4 sm:mb-6 flex items-center gap-3 text-slate-600">
             <User className="w-5 h-5 text-slate-400" />
             <div className="text-sm">
-              <strong className="text-slate-800">Kỹ thuật viên:</strong> Hệ thống đang điều phối kỹ thuật viên chuyên trách cho đơn của bạn.
+              <strong className="text-slate-800">{t('orders.technician')}:</strong> {t('orders.techPendingDispatch')}
             </div>
           </div>
         )}
@@ -279,11 +281,11 @@ export function OrderDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
           {/* Service Package Box */}
           <div className="p-3.5 sm:p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Gói dịch vụ</span>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">{t('orders.servicePackage')}</span>
             <div className="flex items-baseline justify-between mb-2">
               <h3 className="text-lg font-bold text-slate-900">{order.package_name}</h3>
               <span className="text-sm font-extrabold text-orange-600">
-                {Number(order.package_price || order.price).toLocaleString('vi-VN')} đ
+                {Number(order.package_price || order.price).toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
               </span>
             </div>
             {order.package_description && (
@@ -299,13 +301,13 @@ export function OrderDetailPage() {
 
           {/* Customer Note Box */}
           <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Ghi chú của bạn / Yêu cầu thêm</span>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">{t('orders.customerNotes')}</span>
             {order.note ? (
               <div className="text-sm text-slate-700 bg-white p-3 rounded-lg border border-slate-200 leading-relaxed max-h-36 overflow-y-auto">
                 <MarkdownRenderer content={order.note} />
               </div>
             ) : (
-              <p className="text-xs text-slate-500 italic py-2">Không có ghi chú thêm khi đặt đơn.</p>
+              <p className="text-xs text-slate-500 italic py-2">{t('orders.noNotesProvided')}</p>
             )}
           </div>
         </div>
@@ -315,21 +317,21 @@ export function OrderDetailPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
               <Calendar className="w-3.5 h-3.5" />
-              <span>Thời gian hẹn</span>
+              <span>{t('orders.scheduledTime')}</span>
             </div>
             <p className="text-slate-900 font-semibold">
-              {format(new Date(order.scheduled_date), 'dd/MM/yyyy', { locale: vi })}
+              {format(new Date(order.scheduled_date), 'dd/MM/yyyy', { locale: dateLocale })}
             </p>
             <p className="text-xs text-orange-600 font-bold flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              <span>Khung giờ: {order.scheduled_start} - {order.scheduled_end}</span>
+              <span>{t('orders.timeSlot')} {order.scheduled_start} - {order.scheduled_end}</span>
             </p>
           </div>
 
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
               <MapPin className="w-3.5 h-3.5" />
-              <span>Địa điểm thực hiện</span>
+              <span>{t('orders.serviceLocation')}</span>
             </div>
             <p className="text-slate-900 font-medium text-sm leading-snug">{order.location}</p>
           </div>
@@ -341,8 +343,8 @@ export function OrderDetailPage() {
             <div>
               <strong>
                 {order.penalty_percent >= 100
-                  ? '🎉 Áp dụng chính sách vi phạm giờ hẹn > 30p: MIỄN PHÍ 100% (0đ)'
-                  : `Áp dụng giảm trừ vi phạm giờ hẹn: -${order.penalty_percent}%`}
+                  ? t('orders.lateFree100')
+                  : t('orders.latePenaltyDeduction', { percent: order.penalty_percent })}
               </strong>
               {order.penalty_reason && <p className="text-slate-600 mt-0.5">{order.penalty_reason}</p>}
             </div>
@@ -353,7 +355,7 @@ export function OrderDetailPage() {
         <div className="border-t border-border pt-6">
           <h3 className="font-bold text-text text-base mb-4 flex items-center gap-2">
             <Clock className="w-4 h-4 text-orange-600" />
-            <span>Tiến trình & Lịch sử trạng thái đơn hàng</span>
+            <span>{t('orders.timelineHistoryTitle')}</span>
           </h3>
           <OrderTimeline
             timeline={timeline}
@@ -371,26 +373,26 @@ export function OrderDetailPage() {
         <div className="card p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex items-center gap-2 mb-4">
             <QrCode className="w-5 h-5 text-orange-600" />
-            <h3 className="font-semibold text-text">Mã QR Thanh Toán Ngân Hàng</h3>
+            <h3 className="font-semibold text-text">{t('orders.bankPaymentQR')}</h3>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="flex flex-col items-center">
               <ZoomableImage
                 src={order.payment_qr_path}
-                alt="QR Thanh Toán"
+                alt="QR"
                 className="w-48 h-48 object-contain rounded-xl border border-slate-200 shadow-xs bg-white p-2"
-                title="Mã QR Thanh Toán Ngân Hàng"
-                caption={`Mã đơn hàng: ${order.code} • Số tiền: ${Number(order.final_amount).toLocaleString('vi-VN')} VNĐ`}
+                title={t('orders.bankPaymentQR')}
+                caption={`${t('orders.orderCode')}: ${order.code} • ${t('orders.priceInfo')}: ${Number(order.final_amount).toLocaleString(isEn ? 'en-US' : 'vi-VN')} ${isEn ? 'VND' : 'VNĐ'}`}
               />
-              <span className="text-[11px] text-slate-400 mt-1">Nhấn để phóng to ảnh</span>
+              <span className="text-[11px] text-slate-400 mt-1">{t('orders.clickToZoom')}</span>
             </div>
             <div className="text-sm text-slate-600 space-y-1">
-              <p className="font-bold text-slate-800">Quét mã QR bằng ứng dụng Ngân hàng</p>
-              <p>Số tiền thanh toán: <strong className="text-orange-600 text-base">{Number(order.final_amount).toLocaleString('vi-VN')} VNĐ</strong></p>
-              <p className="text-xs text-slate-500">Nội dung chuyển khoản: <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-semibold">{order.code}</span></p>
+              <p className="font-bold text-slate-800">{t('orders.scanQRNotice')}</p>
+              <p>{t('orders.paymentAmount')} <strong className="text-orange-600 text-base">{Number(order.final_amount).toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'VNĐ'}</strong></p>
+              <p className="text-xs text-slate-500">{t('orders.transferContent')} <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-semibold">{order.code}</span></p>
               <div className="pt-2 text-xs text-emerald-700 flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Kỹ thuật viên sẽ xác nhận thanh toán trực tiếp khi nhận được thông báo biến động số dư.</span>
+                <span>{t('orders.techConfirmPaymentNotice')}</span>
               </div>
             </div>
           </div>
@@ -403,11 +405,11 @@ export function OrderDetailPage() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
-              <h3 className="font-bold text-text text-base">Đánh giá & Phản hồi dịch vụ</h3>
+              <h3 className="font-bold text-text text-base">{t('orders.reviewServiceTitle')}</h3>
             </div>
             {review && (
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                ✓ Bạn đã đánh giá
+                {t('orders.youReviewed')}
               </span>
             )}
           </div>
@@ -426,7 +428,7 @@ export function OrderDetailPage() {
                       }`}
                     />
                   ))}
-                  <span className="font-bold text-slate-800 text-sm ml-2">{review.rating} / 5 sao</span>
+                  <span className="font-bold text-slate-800 text-sm ml-2">{t('orders.fiveStars', { rating: review.rating })}</span>
                 </div>
                 <span className="text-xs text-slate-500 font-mono">
                   {formatVietnamTime(review.created_at, 'dd/MM/yyyy HH:mm:ss')}
@@ -437,12 +439,12 @@ export function OrderDetailPage() {
           ) : (
             <form onSubmit={handleSubmitReview} className="space-y-4">
               <p className="text-xs text-slate-600">
-                Cảm ơn bạn đã sử dụng dịch vụ IT Supporter! Hãy chia sẻ trải nghiệm để giúp kỹ thuật viên nâng cao chất lượng phục vụ.
+                {t('orders.reviewThankYouPrompt')}
               </p>
 
               {reviewSuccess && (
                 <div className="p-3 rounded-lg bg-emerald-50 text-emerald-800 text-xs border border-emerald-200">
-                  🎉 Cảm ơn bạn! Đánh giá đã được ghi nhận thành công.
+                  {t('orders.reviewSuccessPrompt')}
                 </div>
               )}
 
@@ -453,7 +455,7 @@ export function OrderDetailPage() {
               )}
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Mức độ hài lòng:</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">{t('orders.satisfactionLevel')}</label>
                 <div className="flex items-center gap-2">
                   {[1, 2, 3, 4, 5].map((star) => {
                     const active = (hoverRating !== null ? hoverRating : ratingInput) >= star;
@@ -475,20 +477,20 @@ export function OrderDetailPage() {
                     );
                   })}
                   <span className="text-sm font-bold text-amber-600 ml-2">
-                    {hoverRating !== null ? hoverRating : ratingInput} / 5 sao
+                    {t('orders.fiveStars', { rating: hoverRating !== null ? hoverRating : ratingInput })}
                   </span>
                 </div>
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Nhận xét chi tiết (Thái độ phục vụ, chuyên môn, tốc độ...):
+                  {t('orders.reviewDetailLabel')}
                 </label>
                 <textarea
                   rows={3}
                   value={commentInput}
                   onChange={(e) => setCommentInput(e.target.value)}
-                  placeholder="Hãy chia sẻ cảm nhận thực tế của bạn..."
+                  placeholder={t('orders.reviewDetailPlaceholder')}
                   className="input w-full text-sm resize-none"
                   required
                 />
@@ -501,7 +503,7 @@ export function OrderDetailPage() {
                   className="btn btn-primary flex items-center gap-2 text-sm"
                 >
                   <Send className="w-4 h-4" />
-                  <span>{submittingReview ? 'Đang gửi...' : 'Gửi đánh giá dịch vụ'}</span>
+                  <span>{submittingReview ? t('common.loading') : t('orders.submitReviewBtn')}</span>
                 </button>
               </div>
             </form>
@@ -518,10 +520,10 @@ export function OrderDetailPage() {
             </div>
             <div>
               <h3 className="font-semibold text-text group-hover:text-orange-600 transition-colors">{t('orders.chat')}</h3>
-              <p className="text-text-secondary text-sm">Trò chuyện trực tiếp, gửi ảnh máy hoặc nhận Voucher từ Kỹ thuật viên</p>
+              <p className="text-text-secondary text-sm">{t('orders.chatBannerDesc')}</p>
             </div>
           </div>
-          <span className="text-sm font-semibold text-orange-600">Mở Chat →</span>
+          <span className="text-sm font-semibold text-orange-600">{t('orders.openChatBtn')}</span>
         </div>
       </Link>
     </div>

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useState, useEffect, useMemo } from 'react';
 import { Avatar } from './Avatar';
 import { publicApi } from '../api/client';
-import { ExternalLink, ChevronLeft, ChevronRight, Ticket } from 'lucide-react';
+import { ExternalLink, ChevronLeft, ChevronRight, Ticket, Package, User, LogOut } from 'lucide-react';
 import { ScrollToTopButton } from './ScrollToTopButton';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -25,28 +25,28 @@ export function AppHeader() {
       ];
     } else if (user?.role === 'TECHNICIAN') {
       return [
-        { path: '/technician', label: 'Bàn làm việc' },
-        { path: '/technician/schedule', label: 'Lịch trực' },
-        { path: '/technician/orders', label: 'Đơn phụ trách' },
+        { path: '/technician', label: t('nav.techWorkspace') || 'Bàn làm việc' },
+        { path: '/technician/schedule', label: t('nav.techSchedule') || 'Lịch trực' },
+        { path: '/technician/orders', label: t('nav.techOrders') || 'Đơn phụ trách' },
       ];
     } else if (user?.role === 'MANAGER') {
       return [
-        { path: '/manager', label: 'Bảng điều khiển' },
-        { path: '/manager/orders', label: 'Đơn hàng' },
-        { path: '/manager/technicians', label: 'Kỹ thuật viên' },
-        { path: '/manager/packages', label: 'Gói dịch vụ' },
-        { path: '/manager/settlements', label: 'Quyết toán' },
-        { path: '/manager/reviews', label: 'Đánh giá' },
-        { path: '/manager/settings', label: 'Cài đặt' },
+        { path: '/manager', label: t('nav.mgrDashboard') || 'Bảng điều khiển' },
+        { path: '/manager/orders', label: t('nav.mgrOrders') || 'Đơn hàng' },
+        { path: '/manager/technicians', label: t('nav.mgrTechnicians') || 'Kỹ thuật viên' },
+        { path: '/manager/packages', label: t('nav.mgrPackages') || 'Gói dịch vụ' },
+        { path: '/manager/settlements', label: t('nav.mgrSettlements') || 'Quyết toán' },
+        { path: '/manager/reviews', label: t('nav.mgrReviews') || 'Đánh giá' },
+        { path: '/manager/settings', label: t('nav.mgrSettings') || 'Cài đặt' },
       ];
     } else if (user?.role === 'ADMIN') {
       return [
-        { path: '/admin', label: 'Bảng điều khiển' },
-        { path: '/admin/users', label: 'Người dùng' },
-        { path: '/admin/stats', label: 'Thống kê' },
-        { path: '/admin/vouchers', label: 'Mã giảm giá' },
-        { path: '/admin/qr', label: 'Mã QR' },
-        { path: '/admin/settings', label: 'Cài đặt' },
+        { path: '/admin', label: t('nav.adminDashboard') || 'Bảng điều khiển' },
+        { path: '/admin/users', label: t('nav.adminUsers') || 'Người dùng' },
+        { path: '/admin/stats', label: t('nav.adminStats') || 'Thống kê' },
+        { path: '/admin/vouchers', label: t('nav.adminVouchers') || 'Mã giảm giá' },
+        { path: '/admin/qr', label: t('nav.adminQR') || 'Mã QR' },
+        { path: '/admin/settings', label: t('nav.adminSettings') || 'Cài đặt' },
       ];
     }
     return [];
@@ -109,7 +109,7 @@ export function AppHeader() {
                 onClick={() => setNavPage((p) => Math.max(0, p - 1))}
                 disabled={navPage === 0}
                 className="p-1 rounded-lg text-gray-500 hover:text-primary hover:bg-white disabled:opacity-20 disabled:pointer-events-none transition"
-                title="Trang chức năng trước"
+                title={t('nav.prevNav')}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -139,7 +139,7 @@ export function AppHeader() {
                 onClick={() => setNavPage((p) => Math.min(totalNavPages - 1, p + 1))}
                 disabled={navPage >= totalNavPages - 1}
                 className="p-1 rounded-lg text-gray-500 hover:text-primary hover:bg-white disabled:opacity-20 disabled:pointer-events-none transition"
-                title="Trang chức năng tiếp"
+                title={t('nav.nextNav')}
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -173,17 +173,17 @@ export function AppHeader() {
               {/* Role badge */}
               {user?.role === 'ADMIN' && (
                 <NavLink to="/admin" className="text-xs font-bold px-2.5 py-1 bg-purple-50 text-purple-700 rounded-lg border border-purple-200 hover:bg-purple-100">
-                  Admin
+                  {t('nav.roleAdmin')}
                 </NavLink>
               )}
               {user?.role === 'MANAGER' && (
                 <NavLink to="/manager" className="text-xs font-bold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg border border-blue-200 hover:bg-blue-100">
-                  Quản lý
+                  {t('nav.roleManager')}
                 </NavLink>
               )}
               {user?.role === 'TECHNICIAN' && (
                 <NavLink to="/technician" className="text-xs font-bold px-2.5 py-1 bg-amber-50 text-amber-700 rounded-lg border border-amber-200 hover:bg-amber-100">
-                  Kỹ thuật viên
+                  {t('nav.roleTechnician')}
                 </NavLink>
               )}
 
@@ -195,7 +195,7 @@ export function AppHeader() {
                     className="text-xs font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-lg border border-orange-200 hover:bg-orange-100 hidden sm:flex items-center gap-1.5"
                   >
                     <Ticket className="w-3.5 h-3.5" />
-                    <span>Vé ưu đãi</span>
+                    <span>{t('nav.myVouchers')}</span>
                   </NavLink>
                   <NavLink
                     to="/orders"
@@ -272,9 +272,10 @@ export function AppHeader() {
                       <NavLink
                         to="/orders"
                         onClick={() => setMobileMenuOpen(false)}
-                        className="block px-3 py-2 text-sm font-medium text-text-secondary hover:text-primary"
+                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-text-secondary hover:text-primary"
                       >
-                        📦 {t('nav.orders')}
+                        <Package className="w-4 h-4" />
+                        <span>{t('nav.orders')}</span>
                       </NavLink>
                     </li>
                     <li>
@@ -284,7 +285,7 @@ export function AppHeader() {
                         className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-orange-600 hover:text-orange-700"
                       >
                         <Ticket className="w-4 h-4" />
-                        <span>Vé ưu đãi của tôi</span>
+                        <span>{t('nav.myVouchersDetail')}</span>
                       </NavLink>
                     </li>
                   </>
@@ -293,9 +294,10 @@ export function AppHeader() {
                   <NavLink
                     to="/profile"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 text-sm font-medium text-text-secondary hover:text-primary"
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-text-secondary hover:text-primary"
                   >
-                    👤 {t('nav.profile')}
+                    <User className="w-4 h-4" />
+                    <span>{t('nav.profile')}</span>
                   </NavLink>
                 </li>
                 <li>
@@ -304,9 +306,10 @@ export function AppHeader() {
                       logout();
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full text-left px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition"
+                    className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition"
                   >
-                    🚪 {t('nav.logout')}
+                    <LogOut className="w-4 h-4" />
+                    <span>{t('nav.logout')}</span>
                   </button>
                 </li>
               </div>
@@ -330,7 +333,7 @@ export function AppHeader() {
               </div>
             )}
             <li className="pt-3 mt-2 border-t border-gray-100 px-3 flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500">Ngôn ngữ / Language:</span>
+              <span className="text-xs font-medium text-slate-500">{t('nav.language')}:</span>
               <LanguageSwitcher />
             </li>
           </ul>
@@ -345,6 +348,8 @@ export const PublicHeader = AppHeader;
 export const AuthenticatedHeader = AppHeader;
 
 export function Footer() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
   const [info, setInfo] = useState<{
     team_name: string;
     university: string;
@@ -421,7 +426,7 @@ export function Footer() {
               </div>
             </div>
             <p className="text-slate-400 leading-relaxed text-[12px]">
-              Dịch vụ vệ sinh & bảo dưỡng máy tính trực tiếp tại phòng làm việc trường Đại học Công nghiệp Hà Nội. Đặt lịch online trước tối thiểu 4 tiếng, tiếp nhận và hỗ trợ tận tâm.
+              {t('home.footer.description')}
             </p>
             <div className="pt-1">
               <a
@@ -433,7 +438,7 @@ export function Footer() {
                 <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                 </svg>
-                <span>Fanpage chính thức</span>
+                <span>{t('home.footer.officialFanpage')}</span>
                 <ExternalLink className="w-3 h-3 text-slate-500" />
               </a>
             </div>
@@ -442,32 +447,32 @@ export function Footer() {
           {/* CỘT 2: ĐIỀU HƯỚNG & DỊCH VỤ */}
           <div>
             <h4 className="font-semibold text-slate-200 text-xs uppercase tracking-wider mb-3">
-              Dịch vụ & Liên kết
+              {t('home.footer.servicesAndLinks')}
             </h4>
             <ul className="space-y-2.5 text-[12px]">
               <li>
                 <Link to="/services" className="text-slate-400 hover:text-slate-200 transition-colors">
-                  Gói dịch vụ bảo dưỡng PC/Laptop
+                  {t('home.footer.pcMaintenancePackages')}
                 </Link>
               </li>
               <li>
                 <Link to="/#booking-calendar" className="text-slate-400 hover:text-slate-200 transition-colors">
-                  Đặt lịch tiếp nhận trực tuyến
+                  {t('home.footer.onlineBooking')}
                 </Link>
               </li>
               <li>
                 <Link to="/orders" className="text-slate-400 hover:text-slate-200 transition-colors">
-                  Tra cứu đơn hàng
+                  {t('home.footer.orderTracking')}
                 </Link>
               </li>
               <li>
                 <Link to="/terms" className="text-slate-400 hover:text-slate-200 transition-colors">
-                  Quy định & Cam kết chất lượng
+                  {t('home.footer.termsQuality')}
                 </Link>
               </li>
               <li>
                 <Link to="/about" className="text-slate-400 hover:text-slate-200 transition-colors">
-                  Giới thiệu Đội IT Supporter
+                  {t('home.footer.aboutTeam')}
                 </Link>
               </li>
             </ul>
@@ -476,27 +481,27 @@ export function Footer() {
           {/* CỘT 3: THÔNG TIN TIẾP NHẬN */}
           <div>
             <h4 className="font-semibold text-slate-200 text-xs uppercase tracking-wider mb-3">
-              Tiếp nhận & Liên hệ
+              {t('home.footer.intakeAndContact')}
             </h4>
             <div className="space-y-2.5 text-[12px] text-slate-400">
               <div>
-                <span className="text-slate-500 block text-[11px]">Phòng làm việc tiếp nhận:</span>
+                <span className="text-slate-500 block text-[11px]">{t('home.footer.workshopAddress')}</span>
                 <span className="text-slate-200 font-medium">{info.workshop_address}</span>
               </div>
               <div>
-                <span className="text-slate-500 block text-[11px]">Hotline kỹ thuật:</span>
+                <span className="text-slate-500 block text-[11px]">{t('home.footer.hotline')}</span>
                 <a href={`tel:${info.contact_phone.replace(/\./g, '')}`} className="text-slate-200 hover:text-orange-400 transition-colors font-medium">
                   {info.contact_phone}
                 </a>
               </div>
               <div>
-                <span className="text-slate-500 block text-[11px]">Email hỗ trợ:</span>
+                <span className="text-slate-500 block text-[11px]">{t('home.footer.emailSupport')}</span>
                 <a href={`mailto:${info.email}`} className="text-slate-300 hover:text-white transition-colors">
                   {info.email}
                 </a>
               </div>
               <div>
-                <span className="text-slate-500 block text-[11px]">Thời gian làm việc:</span>
+                <span className="text-slate-500 block text-[11px]">{t('home.footer.workingHours')}</span>
                 <span className="text-slate-300">{info.working_hours_display}</span>
               </div>
             </div>
@@ -505,11 +510,11 @@ export function Footer() {
           {/* CỘT 4: BẢN ĐỒ GOOGLE MAPS (RADIUS 2PX) */}
           <div>
             <h4 className="font-semibold text-slate-200 text-xs uppercase tracking-wider mb-3">
-              Vị trí phòng làm việc
+              {t('home.footer.workshopLocation')}
             </h4>
             <div className="rounded-[2px] overflow-hidden border border-slate-800 bg-slate-900">
               <iframe
-                title="Bản đồ phòng tiếp nhận máy IT Supporter HaUI"
+                title={isEn ? "IT Supporter HaUI workshop map" : "Bản đồ phòng tiếp nhận máy IT Supporter HaUI"}
                 src={info.google_map_embed_url}
                 width="100%"
                 height="130"
@@ -521,14 +526,14 @@ export function Footer() {
               />
             </div>
             <div className="mt-2 flex items-center justify-between text-[11px]">
-              <span className="text-slate-500">Tòa A1, ĐH Công nghiệp HN</span>
+              <span className="text-slate-500">{isEn ? 'Bldg A1, Hanoi Univ of Industry' : 'Tòa A1, ĐH Công nghiệp HN'}</span>
               <a
                 href={info.google_map_direct_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-slate-300 hover:text-white transition-colors"
               >
-                <span>Chỉ đường Maps</span>
+                <span>{t('home.footer.mapsDirection')}</span>
                 <ExternalLink className="w-2.5 h-2.5 text-slate-500" />
               </a>
             </div>
@@ -540,20 +545,20 @@ export function Footer() {
       <div className="bg-slate-950">
         <div className="container mx-auto px-4 pt-2 pb-8 md:pb-10 flex flex-col sm:flex-row items-center justify-between gap-3 text-[12px] text-slate-500">
           <div>
-            <p>© 2026 {info.team_name} · {info.university}. All rights reserved.</p>
+            <p>© 2026 {info.team_name} · {info.university}. {t('home.footer.allRightsReserved')}</p>
           </div>
           <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-end">
             <LanguageSwitcher theme="dark" />
             <span>·</span>
             <span>
-              Phát triển bởi{' '}
+              {t('home.footer.developedBy')}{' '}
               <a href={info.facebook_page} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-slate-200 transition-colors">
                 {info.team_name}
               </a>
             </span>
             <span>·</span>
             <span>
-              Nhà phân phối{' '}
+              {t('home.footer.distributor')}{' '}
               <a href={info.distributor_url} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 font-medium transition-colors">
                 {info.distributor_name}
               </a>

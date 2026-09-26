@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { voucherApi } from '../../api/client';
 import { Ticket, Plus, Sparkles, Check, AlertCircle } from 'lucide-react';
 
@@ -17,6 +18,9 @@ interface VoucherProgramItem {
 }
 
 export function AdminVouchers() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
+
   const [programs, setPrograms] = useState<VoucherProgramItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -39,7 +43,7 @@ export function AdminVouchers() {
       const res = await voucherApi.programs();
       setPrograms(res.data.data || []);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Lỗi tải chương trình voucher';
+      const msg = err instanceof Error ? err.message : t('voucher.loadError');
       setError(msg);
     } finally {
       setLoading(false);
@@ -62,14 +66,14 @@ export function AdminVouchers() {
         discount_value: Number(discountValue),
         valid_to: validTo ? new Date(validTo).toISOString() : undefined,
       });
-      setSuccess('Đã tạo chương trình voucher thành công!');
+      setSuccess(t('admin.programCreated', 'Đã tạo chương trình voucher thành công!'));
       setShowCreateModal(false);
       setCode('');
       setName('');
       setDescription('');
       loadPrograms();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Tạo chương trình thất bại';
+      const msg = err instanceof Error ? err.message : t('admin.programCreateFail', 'Tạo chương trình thất bại');
       setError(msg);
     }
   };
@@ -79,10 +83,10 @@ export function AdminVouchers() {
     try {
       setError(null);
       await voucherApi.generateCodes(generateModalProgram.id, generateCount);
-      setSuccess(`Đã tạo thành công ${generateCount} mã voucher mới cho chương trình ${generateModalProgram.name}!`);
+      setSuccess(t('admin.codesGenerated', 'Đã tạo thành công {{count}} mã voucher mới cho chương trình {{name}}!', { count: generateCount, name: generateModalProgram.name }));
       setGenerateModalProgram(null);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Tạo mã voucher thất bại';
+      const msg = err instanceof Error ? err.message : t('admin.generateCodesFail', 'Tạo mã voucher thất bại');
       setError(msg);
     }
   };
@@ -93,10 +97,10 @@ export function AdminVouchers() {
         <div>
           <h1 className="text-2xl font-bold text-text flex items-center gap-2">
             <Ticket className="w-7 h-7 text-orange-600" />
-            Quản lý chương trình Voucher & Giảm giá
+            {t('admin.voucherTitle')}
           </h1>
           <p className="text-sm text-text-secondary mt-1">
-            Thiết lập các chương trình khuyến mãi (5%, 10%, 15%, 20%, 30%, 50%, 100%) và phát hành mã voucher cho khách hàng.
+            {t('admin.voucherSubtitle')}
           </p>
         </div>
         <button
@@ -104,7 +108,7 @@ export function AdminVouchers() {
           className="btn btn-primary flex items-center gap-2 text-sm shadow-sm"
         >
           <Plus className="w-4 h-4" />
-          Tạo chương trình mới
+          {t('admin.createProgram')}
         </button>
       </div>
 
@@ -129,8 +133,8 @@ export function AdminVouchers() {
       ) : programs.length === 0 ? (
         <div className="card p-12 text-center text-text-secondary">
           <Ticket className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="font-semibold text-gray-700">Chưa có chương trình voucher nào</p>
-          <p className="text-sm text-gray-500 mt-1">Nhấn nút bên trên để tạo chương trình giảm giá đầu tiên.</p>
+          <p className="font-semibold text-gray-700">{t('admin.noPrograms', 'Chưa có chương trình voucher nào')}</p>
+          <p className="text-sm text-gray-500 mt-1">{t('admin.noProgramsDesc', 'Nhấn nút bên trên để tạo chương trình giảm giá đầu tiên.')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -143,11 +147,11 @@ export function AdminVouchers() {
                       {p.code}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                      {p.is_active ? 'Đang hoạt động' : 'Tạm dừng'}
+                      {p.is_active ? t('admin.active') : t('admin.inactive')}
                     </span>
                   </div>
                   <h3 className="text-lg font-bold text-text mt-2">{p.name}</h3>
-                  <p className="text-sm text-text-secondary mt-1">{p.description || 'Không có mô tả'}</p>
+                  <p className="text-sm text-text-secondary mt-1">{p.description || t('common.noDesc', 'Không có mô tả')}</p>
                 </div>
                 <div className="text-right">
                   <div className="text-xl font-extrabold text-orange-600">
@@ -155,14 +159,14 @@ export function AdminVouchers() {
                       ? p.discount_value === 100
                         ? 'FREE 100%'
                         : `-${p.discount_value}%`
-                      : `-${p.discount_value.toLocaleString('vi-VN')}đ`}
+                      : `-${p.discount_value.toLocaleString(isEn ? 'en-US' : 'vi-VN')}${isEn ? ' VND' : 'đ'}`}
                   </div>
                 </div>
               </div>
 
               <div className="mt-4 pt-4 border-t border-border flex items-center justify-between text-xs text-text-muted">
                 <div>
-                  {p.valid_to ? `Hạn dùng: ${new Date(p.valid_to).toLocaleDateString('vi-VN')}` : 'Không thời hạn'}
+                  {p.valid_to ? `${t('admin.validTo')}: ${new Date(p.valid_to).toLocaleDateString(isEn ? 'en-US' : 'vi-VN')}` : t('admin.noExpiration')}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -170,7 +174,7 @@ export function AdminVouchers() {
                     className="flex items-center gap-1 px-3 py-1.5 rounded bg-orange-50 hover:bg-orange-100 text-orange-700 font-semibold transition-colors"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
-                    Sinh mã batch
+                    {t('admin.generateCodes')}
                   </button>
                 </div>
               </div>
@@ -183,14 +187,14 @@ export function AdminVouchers() {
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="card max-w-lg w-full p-6 animate-in fade-in zoom-in-95">
-            <h2 className="text-xl font-bold text-text mb-4">Tạo chương trình Voucher / Giảm giá mới</h2>
+            <h2 className="text-xl font-bold text-text mb-4">{t('admin.createModalTitle')}</h2>
             <form onSubmit={handleCreateProgram} className="space-y-4">
               <div>
-                <label className="label">Mã chương trình (viết hoa liền không dấu)</label>
+                <label className="label">{t('admin.programCode')}</label>
                 <input
                   type="text"
                   required
-                  placeholder="VD: WELCOME10, SALE20, TRIAN50"
+                  placeholder="VD: WELCOME10, SALE20"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                   className="input font-mono"
@@ -198,11 +202,11 @@ export function AdminVouchers() {
               </div>
 
               <div>
-                <label className="label">Tên chương trình hiển thị</label>
+                <label className="label">{t('admin.programName')}</label>
                 <input
                   type="text"
                   required
-                  placeholder="VD: Giảm 20% tri ân khách hàng mới"
+                  placeholder={isEn ? "e.g. 20% off customer appreciation" : "VD: Giảm 20% tri ân khách hàng"}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="input"
@@ -210,10 +214,9 @@ export function AdminVouchers() {
               </div>
 
               <div>
-                <label className="label">Mô tả chi tiết</label>
+                <label className="label">{t('admin.description')} ({t('admin.optional')})</label>
                 <textarea
                   rows={2}
-                  placeholder="Áp dụng cho mọi dịch vụ vệ sinh bảo trì máy tính"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="input"
@@ -222,19 +225,19 @@ export function AdminVouchers() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="label">Hình thức giảm</label>
+                  <label className="label">{t('admin.discountType')}</label>
                   <select
                     value={discountType}
                     onChange={(e) => setDiscountType(e.target.value as 'percent' | 'fixed')}
                     className="input"
                   >
-                    <option value="percent">Phần trăm (%)</option>
-                    <option value="fixed">Số tiền cố định (VNĐ)</option>
+                    <option value="percent">{t('admin.percent')}</option>
+                    <option value="fixed">{t('admin.fixedAmount')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="label">Mức giảm</label>
+                  <label className="label">{t('admin.discountValue')}</label>
                   {discountType === 'percent' ? (
                     <select
                       value={discountValue}
@@ -247,7 +250,7 @@ export function AdminVouchers() {
                       <option value={20}>20%</option>
                       <option value={30}>30%</option>
                       <option value={50}>50%</option>
-                      <option value={100}>100% (Làm FREE)</option>
+                      <option value={100}>100%</option>
                     </select>
                   ) : (
                     <input
@@ -257,14 +260,14 @@ export function AdminVouchers() {
                       value={discountValue}
                       onChange={(e) => setDiscountValue(Number(e.target.value))}
                       className="input"
-                      placeholder="VD: 50000"
+                      placeholder="50000"
                     />
                   )}
                 </div>
               </div>
 
               <div>
-                <label className="label">Ngày hết hạn (tùy chọn)</label>
+                <label className="label">{t('admin.validTo')} ({t('admin.optional')})</label>
                 <input
                   type="date"
                   value={validTo}
@@ -279,10 +282,10 @@ export function AdminVouchers() {
                   onClick={() => setShowCreateModal(false)}
                   className="btn btn-ghost"
                 >
-                  Hủy
+                  {t('common.cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  Lưu chương trình
+                  {t('common.save')}
                 </button>
               </div>
             </form>
@@ -294,14 +297,14 @@ export function AdminVouchers() {
       {generateModalProgram && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="card max-w-md w-full p-6 animate-in fade-in zoom-in-95">
-            <h2 className="text-xl font-bold text-text mb-2">Sinh mã Voucher hàng loạt</h2>
+            <h2 className="text-xl font-bold text-text mb-2">{t('admin.generateModalTitle')}</h2>
             <p className="text-sm text-text-secondary mb-4">
-              Chương trình: <strong className="text-orange-600">{generateModalProgram.name}</strong>
+              {t('admin.generateModalDesc', { name: generateModalProgram.name })}
             </p>
 
             <div className="space-y-4">
               <div>
-                <label className="label">Số lượng mã cần tạo</label>
+                <label className="label">{t('admin.codeQuantity')}</label>
                 <input
                   type="number"
                   min={1}
@@ -310,9 +313,6 @@ export function AdminVouchers() {
                   onChange={(e) => setGenerateCount(Number(e.target.value))}
                   className="input"
                 />
-                <p className="text-xs text-text-muted mt-1">
-                  Mỗi mã là duy nhất (dùng 1 lần gạch luôn trên hệ thống khi kỹ thuật viên xác nhận hoàn tất).
-                </p>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-border">
@@ -321,7 +321,7 @@ export function AdminVouchers() {
                   onClick={() => setGenerateModalProgram(null)}
                   className="btn btn-ghost"
                 >
-                  Đóng
+                  {t('common.close', 'Đóng')}
                 </button>
                 <button
                   type="button"
@@ -329,7 +329,7 @@ export function AdminVouchers() {
                   className="btn btn-primary flex items-center gap-1.5"
                 >
                   <Sparkles className="w-4 h-4" />
-                  Tạo mã ngay
+                  {t('admin.generateCodes')}
                 </button>
               </div>
             </div>

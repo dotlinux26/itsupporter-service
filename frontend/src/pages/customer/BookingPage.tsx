@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { orderApi, publicApi } from '../../api/client';
 import { MarkdownRenderer } from '../../components/MarkdownRenderer';
@@ -37,10 +38,12 @@ export function isSlotTooSoon(dateStr: string, timeStr: string): boolean {
 }
 
 export function BookingPage() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
   useSEO({
-    title: 'Đặt Lịch Vệ Sinh Máy Tính Trực Tiếp Phòng 1603 A1 | IT Supporter HaUI',
-    description: 'Đặt lịch hẹn vệ sinh laptop, bảo dưỡng PC trực tiếp tại Phòng 1603 Tòa A1 ĐH Công nghiệp Hà Nội. Chọn khung giờ linh hoạt, kỹ thuật viên tiếp nhận nhanh chóng.',
-    keywords: 'đặt lịch vệ sinh laptop, hẹn bảo dưỡng máy tính, vệ sinh laptop phòng 1603 a1 haui, it supporter booking',
+    title: t('booking.seoTitle'),
+    description: t('booking.seoDesc'),
+    keywords: t('booking.seoKeywords'),
     canonical: 'https://itsupporter.vn/booking',
   });
 
@@ -180,15 +183,15 @@ export function BookingPage() {
     setErrorMessage(null);
 
     if (!selectedPackageId) {
-      setErrorMessage('Vui lòng chọn gói dịch vụ.');
+      setErrorMessage(t('booking.errSelectPackage'));
       return;
     }
     if (isTooSoon) {
-      setErrorMessage('Theo quy định, Quý khách cần đặt lịch trước tối thiểu 4 tiếng so với giờ bắt đầu ca dịch vụ.');
+      setErrorMessage(t('booking.errTooSoon'));
       return;
     }
     if (turnstileEnabled && !turnstileToken) {
-      setErrorMessage('Vui lòng hoàn thành xác thực bảo vệ chống bot (Cloudflare Turnstile) trước khi đặt lịch.');
+      setErrorMessage(t('booking.errTurnstile'));
       return;
     }
 
@@ -212,7 +215,7 @@ export function BookingPage() {
       console.error('Booking failed:', err);
       setTurnstileResetKey((prev) => prev + 1);
       setTurnstileToken('');
-      const msg = err.response?.data?.error?.message || err.response?.data?.message || 'Đặt lịch thất bại. Vui lòng thử lại!';
+      const msg = err.response?.data?.error?.message || err.response?.data?.message || t('booking.errBookingFailed');
       setErrorMessage(msg);
       // Nếu KTV bị xung đột (409 Conflict - đã có người nhận trước), tự động làm mới danh sách KTV khả dụng
       if (err.response?.status === 409 && selectedDate && selectedTime) {
@@ -242,13 +245,13 @@ export function BookingPage() {
         {/* Header */}
         <div className="mb-6 sm:mb-8 text-center sm:text-left">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold uppercase tracking-wider mb-2">
-            <Sparkles className="w-3.5 h-3.5" /> Đặt lịch tiếp nhận tại IT Supporter HaUI
+            <Sparkles className="w-3.5 h-3.5" /> {t('booking.badgeTitle')}
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Đặt lịch bảo dưỡng & vệ sinh máy tính
+            {t('booking.mainTitle')}
           </h1>
           <p className="text-slate-600 mt-1 text-sm">
-            Quý khách đặt lịch trước, sau đó mang thiết bị tới phòng làm việc của đội để kỹ thuật viên kiểm tra & bảo dưỡng trực tiếp.
+            {t('booking.mainSubtitle')}
           </p>
         </div>
 
@@ -256,12 +259,11 @@ export function BookingPage() {
         <div className="mb-6 p-4 rounded-xl border border-blue-200 bg-blue-50/80 flex items-start gap-3">
           <ShieldCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="text-xs text-blue-900 leading-relaxed">
-            <span className="font-bold">Quy chuẩn lịch hẹn:</span> Hệ thống áp dụng quy định đặt lịch trước{' '}
-            <strong className="text-blue-950 font-bold underline">tối thiểu 4 tiếng</strong> để kỹ thuật viên chuẩn bị đầy đủ trang thiết bị và vật tư chuyên dụng.
-            Quý khách vui lòng mang máy đến đúng giờ hẹn tại{' '}
-            <span className="font-bold text-orange-700">{workshopAddress}</span>.
-            Nếu kỹ thuật viên trễ ca &gt; 30 phút, dịch vụ sẽ được{' '}
-            <span className="font-bold text-orange-600">HOÀN TOÀN MIỄN PHÍ (0đ)</span> theo cam kết chất lượng.
+            <span className="font-bold">{t('booking.ruleStandard')}</span> {t('booking.ruleNoticePart1')}{' '}
+            <strong className="text-blue-950 font-bold underline">{t('booking.min4Hours')}</strong> {t('booking.ruleNoticePart2')}{' '}
+            <span className="font-bold text-orange-700">{workshopAddress}</span>.{' '}
+            {t('booking.ruleNoticePart3')}{' '}
+            <span className="font-bold text-orange-600">{t('booking.free100Percent')}</span> {t('booking.ruleNoticePart4')}
           </div>
         </div>
 
@@ -277,7 +279,7 @@ export function BookingPage() {
           <div className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 border border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <span className="w-6 h-6 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center">1</span>
-              <h2 className="text-lg font-bold text-slate-800">Chọn gói dịch vụ</h2>
+              <h2 className="text-lg font-bold text-slate-800">{t('booking.step1Title')}</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -297,7 +299,7 @@ export function BookingPage() {
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <h3 className="font-bold text-slate-900 text-base">{pkg.name}</h3>
                         <span className="text-lg font-extrabold text-orange-600 whitespace-nowrap">
-                          {pkg.price.toLocaleString('vi-VN')} đ
+                          {pkg.price.toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
                         </span>
                       </div>
                       <div className="text-xs text-slate-600 line-clamp-3 mb-3">
@@ -306,9 +308,9 @@ export function BookingPage() {
                     </div>
 
                     <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                      <span>Thời lượng ước tính: ~{pkg.duration_minutes || 60} phút</span>
+                      <span>{t('packages.duration', { minutes: pkg.duration_minutes || 60 })}</span>
                       <span className={`font-semibold ${isSelected ? 'text-orange-600' : 'text-slate-400'}`}>
-                        {isSelected ? '✓ Đang chọn' : 'Chọn gói'}
+                        {isSelected ? t('booking.selected') : t('booking.selectPackage')}
                       </span>
                     </div>
                   </div>
@@ -321,13 +323,13 @@ export function BookingPage() {
           <div className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 border border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <span className="w-6 h-6 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center">2</span>
-              <h2 className="text-lg font-bold text-slate-800">Chọn thời gian phục vụ (Tối thiểu trước 4 tiếng)</h2>
+              <h2 className="text-lg font-bold text-slate-800">{t('booking.step2Title')}</h2>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                  <CalendarIcon className="w-4 h-4 text-orange-600" /> Ngày làm việc
+                  <CalendarIcon className="w-4 h-4 text-orange-600" /> {t('booking.workingDate')}
                 </label>
                 <input
                   type="date"
@@ -340,7 +342,7 @@ export function BookingPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-orange-600" /> Khung giờ bắt đầu
+                  <Clock className="w-4 h-4 text-orange-600" /> {t('booking.startTime')}
                 </label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {SLOTS.map((slot) => {
@@ -371,7 +373,7 @@ export function BookingPage() {
             {isTooSoon && (
               <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-600" />
-                <span>Khung giờ bạn chọn ({selectedTime} ngày {selectedDate}) chưa đủ 4 tiếng chuẩn bị. Vui lòng chọn khung giờ muộn hơn!</span>
+                <span>{t('booking.tooSoonAlert', { time: selectedTime, date: selectedDate })}</span>
               </div>
             )}
           </div>
@@ -381,17 +383,17 @@ export function BookingPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center">3</span>
-                <h2 className="text-lg font-bold text-slate-800">Kỹ thuật viên phụ trách ca trực</h2>
+                <h2 className="text-lg font-bold text-slate-800">{t('booking.step3Title')}</h2>
               </div>
 
               {technicians.length > 1 && (
                 <button
                   type="button"
                   onClick={handlePickRandomTech}
-                  className="px-3 py-1.5 text-xs font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-xl transition flex items-center gap-1.5"
-                  title="Chọn ngẫu nhiên một kỹ thuật viên khác trong ca này"
+                  className="px-3 py-1.5 text-xs font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+                  title={t('booking.randomTechTooltip')}
                 >
-                  <span>🎲 Chọn ngẫu nhiên KTV</span>
+                  <span>{t('booking.randomTechBtn')}</span>
                 </button>
               )}
             </div>
@@ -399,19 +401,19 @@ export function BookingPage() {
             {loadingTechs ? (
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs flex items-center gap-2.5 animate-pulse">
                 <Clock className="w-4 h-4 text-orange-600 animate-spin" />
-                <span>Đang tải danh sách kỹ thuật viên sẵn sàng cho ca {selectedTime} ngày {selectedDate}...</span>
+                <span>{t('booking.loadingTechs', { time: selectedTime, date: selectedDate })}</span>
               </div>
             ) : technicians.length === 0 ? (
               <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2.5">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-600" />
                 <span>
-                  Chưa có Kỹ thuật viên nào đăng ký trực vào khung giờ <strong>{selectedTime} ngày {selectedDate}</strong>. Quý khách vui lòng chọn một khung giờ hoặc ngày khác để tiếp tục.
+                  {t('booking.noTechsInSlot', { time: selectedTime, date: selectedDate })}
                 </span>
               </div>
             ) : (
               <div className="space-y-3">
                 <p className="text-xs text-slate-500">
-                  Có <strong>{technicians.length}</strong> Kỹ thuật viên sẵn sàng trong ca này. Bạn có thể để Quản lý tự phân công hoặc chỉ định kỹ thuật viên bạn mong muốn:
+                  {t('booking.techsAvailableIntro', { count: technicians.length })}
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -431,18 +433,18 @@ export function BookingPage() {
                       onChange={() => setSelectedTechId(null)}
                       className="text-orange-600 focus:ring-orange-500"
                     />
-                    <div className="w-9 h-9 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center text-base flex-shrink-0">
-                      🤖
+                    <div className="w-9 h-9 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center text-base flex-shrink-0 text-orange-600">
+                      <Sparkles className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-sm text-slate-800 truncate flex items-center gap-1.5">
-                        <span>Hệ thống / Quản lý điều phối</span>
+                        <span>{t('booking.autoDispatchTitle')}</span>
                         <span className="text-[10px] font-extrabold bg-orange-500 text-white px-1.5 py-0.5 rounded-full">
-                          Tự động
+                          {t('booking.auto')}
                         </span>
                       </div>
                       <div className="text-xs text-slate-500 truncate">
-                        Ban quản lý sẽ giao ca cho KTV rảnh & tối ưu nhất
+                        {t('booking.autoDispatchDesc')}
                       </div>
                     </div>
                   </label>
@@ -469,7 +471,7 @@ export function BookingPage() {
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-sm text-slate-800 truncate">{tech.name}</div>
                         <div className="text-xs text-slate-500 truncate">
-                          {tech.bio || 'Kỹ thuật viên IT Supporter HaUI'}
+                          {tech.bio || t('home.techRoleBadge')}
                         </div>
                       </div>
                     </label>
@@ -483,7 +485,7 @@ export function BookingPage() {
           <div className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 border border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <span className="w-6 h-6 rounded-full bg-orange-600 text-white text-xs font-bold flex items-center justify-center">4</span>
-              <h2 className="text-lg font-bold text-slate-800">Địa điểm tiếp nhận & Ghi chú thiết bị</h2>
+              <h2 className="text-lg font-bold text-slate-800">{t('booking.step4Title')}</h2>
             </div>
 
             <div className="space-y-4">
@@ -491,24 +493,24 @@ export function BookingPage() {
                 <MapPin className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <div className="text-xs font-bold uppercase tracking-wider text-orange-800 mb-0.5">
-                    Địa chỉ phòng làm việc tiếp nhận máy của IT Supporter HaUI:
+                    {t('booking.workshopAddressLabel')}
                   </div>
                   <div className="text-base font-extrabold text-slate-900">
                     {workshopAddress}
                   </div>
                   <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                    👉 Quý khách vui lòng mang thiết bị (PC, Laptop, sạc) tới trực tiếp phòng làm việc theo đúng khung giờ đã chọn. Kỹ thuật viên của đội sẽ đón tiếp và tiến hành kiểm tra, vệ sinh ngay trước sự quan sát của quý khách!
+                    {t('booking.workshopAddressNote')}
                   </p>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-slate-500" /> Tình trạng máy / Ghi chú cho kỹ thuật viên
+                  <FileText className="w-4 h-4 text-slate-500" /> {t('booking.noteLabel')}
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="Ví dụ: Laptop Dell XPS 15 bị nóng quạt kêu to, cần tra keo gốm và vệ sinh bụi kẹt..."
+                  placeholder={t('booking.notePlaceholder')}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -521,12 +523,12 @@ export function BookingPage() {
           <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
               <div>
-                <div className="text-xs text-slate-400 uppercase tracking-wider mb-1 font-semibold">Tóm tắt thanh toán</div>
+                <div className="text-xs text-slate-400 uppercase tracking-wider mb-1 font-semibold">{t('booking.paymentSummary')}</div>
                 <div className="text-2xl font-black text-orange-400">
-                  {selectedPackage ? `${selectedPackage.price.toLocaleString('vi-VN')} VNĐ` : '0 VNĐ'}
+                  {selectedPackage ? `${selectedPackage.price.toLocaleString(isEn ? 'en-US' : 'vi-VN')} ${isEn ? 'VND' : 'VNĐ'}` : `0 ${isEn ? 'VND' : 'VNĐ'}`}
                 </div>
                 <div className="text-xs text-slate-300 mt-1">
-                  Thanh toán sau khi hoàn thành · Hỗ trợ Voucher & Giảm giá tại buổi làm việc
+                  {t('booking.payAfterNotice')}
                 </div>
               </div>
 
@@ -552,7 +554,7 @@ export function BookingPage() {
                     submitting ? 'opacity-80 pointer-events-none cursor-wait' : 'cursor-pointer'
                   }`}
                 >
-                  {submitting ? 'Đang khởi tạo đơn...' : 'Xác nhận Đặt Lịch Ngay'}
+                  {submitting ? t('booking.submitting') : t('booking.confirmBookingBtn')}
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>

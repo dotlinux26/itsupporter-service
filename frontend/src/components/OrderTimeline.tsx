@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import {
   CheckCircle2,
   Clock,
@@ -30,17 +31,17 @@ interface EventConfig {
   defaultDesc?: string;
 }
 
-function resolveTimelineEvent(item: OrderTimelineItem, index: number): EventConfig {
+function resolveTimelineEvent(item: OrderTimelineItem, index: number, t: (key: string, opts?: any) => string): EventConfig {
   const noteText = (item.note || item.reason || '').toLowerCase();
 
   // 1. Initial creation (first entry or from_status is null or to_status is PENDING with null from_status)
   if (index === 0 && (!item.from_status || item.to_status === 'PENDING')) {
     return {
-      title: 'Đơn hàng được khởi tạo',
-      badgeLabel: 'Chờ xác nhận',
+      title: t('timeline.orderCreatedTitle'),
+      badgeLabel: t('timeline.pendingConfirmation'),
       badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
       icon: FileText,
-      defaultDesc: 'Khách hàng đặt lịch dịch vụ thành công trên hệ thống',
+      defaultDesc: t('timeline.orderCreatedDesc'),
     };
   }
 
@@ -48,39 +49,39 @@ function resolveTimelineEvent(item: OrderTimelineItem, index: number): EventConf
   if (item.from_status && item.from_status === item.to_status) {
     if (noteText.includes('chương trình') || noteText.includes('voucher') || noteText.includes('giảm')) {
       return {
-        title: 'Áp dụng ưu đãi / Khuyến mãi',
-        badgeLabel: 'Ưu đãi',
+        title: t('timeline.discountAppliedTitle'),
+        badgeLabel: t('timeline.discount'),
         badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',
         icon: Ticket,
       };
     }
     if (noteText.includes('phụ phí')) {
       return {
-        title: 'Thêm phụ phí dịch vụ (100% KTV)',
-        badgeLabel: 'Phụ phí',
+        title: t('timeline.surchargeAddedTitle'),
+        badgeLabel: t('timeline.surcharge'),
         badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
         icon: PlusCircle,
       };
     }
     if (noteText.includes('phạt')) {
       return {
-        title: 'Áp dụng giảm trừ vi phạm giờ hẹn',
-        badgeLabel: 'Giảm trừ',
+        title: t('timeline.penaltyAppliedTitle'),
+        badgeLabel: t('timeline.penalty'),
         badgeColor: 'bg-rose-100 text-rose-800 border-rose-200',
         icon: AlertTriangle,
       };
     }
     if (noteText.includes('thanh toán')) {
       return {
-        title: 'Cập nhật trạng thái thu tiền',
-        badgeLabel: 'Thanh toán',
+        title: t('timeline.paymentUpdatedTitle'),
+        badgeLabel: t('timeline.payment'),
         badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
         icon: DollarSign,
       };
     }
     return {
-      title: 'Cập nhật tiến trình dịch vụ',
-      badgeLabel: 'Ghi nhận',
+      title: t('timeline.progressUpdatedTitle'),
+      badgeLabel: t('timeline.noted'),
       badgeColor: 'bg-slate-100 text-slate-800 border-slate-200',
       icon: FileText,
     };
@@ -90,39 +91,39 @@ function resolveTimelineEvent(item: OrderTimelineItem, index: number): EventConf
   switch (item.to_status.toUpperCase()) {
     case 'CONFIRMED':
       return {
-        title: 'Kỹ thuật viên tiếp nhận đơn',
-        badgeLabel: 'Đã xác nhận',
+        title: t('timeline.techAssignedTitle'),
+        badgeLabel: t('timeline.confirmed'),
         badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
         icon: CalendarCheck,
-        defaultDesc: 'Kỹ thuật viên đã nhận đơn và chuẩn bị hỗ trợ',
+        defaultDesc: t('timeline.techAssignedDesc'),
       };
     case 'IN_PROGRESS':
       return {
-        title: 'Bắt đầu thực hiện công việc',
-        badgeLabel: 'Đang thực hiện',
+        title: t('timeline.workStartedTitle'),
+        badgeLabel: t('timeline.inProgress'),
         badgeColor: 'bg-orange-100 text-orange-800 border-orange-200',
         icon: Clock,
-        defaultDesc: 'Kỹ thuật viên bắt đầu xử lý thiết bị của khách hàng (Bật timer)',
+        defaultDesc: t('timeline.workStartedDesc'),
       };
     case 'COMPLETED':
       return {
-        title: 'Hoàn thành dịch vụ & kết toán',
-        badgeLabel: 'Hoàn thành',
+        title: t('timeline.completedTitle'),
+        badgeLabel: t('timeline.completed'),
         badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
         icon: CheckCircle2,
-        defaultDesc: 'Dịch vụ hoàn tất và kết toán tài chính vào sổ cái',
+        defaultDesc: t('timeline.completedDesc'),
       };
     case 'CANCELLED':
       return {
-        title: 'Đơn hàng bị hủy',
-        badgeLabel: 'Đã hủy',
+        title: t('timeline.cancelledTitle'),
+        badgeLabel: t('timeline.cancelled'),
         badgeColor: 'bg-rose-100 text-rose-800 border-rose-200',
         icon: XCircle,
-        defaultDesc: 'Đơn hàng đã kết thúc',
+        defaultDesc: t('timeline.cancelledDesc'),
       };
     default:
       return {
-        title: `Chuyển trạng thái: ${item.to_status}`,
+        title: t('timeline.statusTransition', { status: item.to_status }),
         badgeLabel: item.to_status,
         badgeColor: 'bg-slate-100 text-slate-800 border-slate-200',
         icon: FileText,
@@ -138,13 +139,14 @@ export function OrderTimeline({
   completedAt,
   completionResult,
 }: OrderTimelineProps) {
+  const { t } = useTranslation();
   const hasHistory = Array.isArray(timeline) && timeline.length > 0;
 
   return (
     <div className="space-y-4">
       {hasHistory ? (
         timeline.map((item, idx) => {
-          const config = resolveTimelineEvent(item, idx);
+          const config = resolveTimelineEvent(item, idx, t);
           const IconComp = config.icon;
           const isLast = idx === timeline.length - 1;
           const noteContent = item.note || item.reason;
@@ -172,7 +174,7 @@ export function OrderTimeline({
                   {changedBy && (
                     <div className="flex items-center gap-1.5 text-slate-500">
                       <UserCheck className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Thực hiện bởi: <strong className="text-slate-700">{changedBy}</strong></span>
+                      <span>{t('timeline.performedBy')}: <strong className="text-slate-700">{changedBy}</strong></span>
                     </div>
                   )}
 
@@ -197,10 +199,10 @@ export function OrderTimeline({
             </div>
             <div className="flex-1 pb-4 border-l-2 border-slate-200 pl-4 -ml-7 mt-8">
               <div className="flex flex-wrap items-center justify-between gap-1 mb-0.5">
-                <span className="font-semibold text-slate-900 text-sm">Đơn hàng được khởi tạo</span>
+                <span className="font-semibold text-slate-900 text-sm">{t('timeline.orderCreatedTitle')}</span>
                 <span className="text-xs text-slate-500 font-mono">{formatVietnamTime(createdAt)}</span>
               </div>
-              <p className="text-xs text-slate-600">Khách hàng đặt lịch dịch vụ thành công trên hệ thống</p>
+              <p className="text-xs text-slate-600">{t('timeline.orderCreatedDesc')}</p>
             </div>
           </div>
 
@@ -211,10 +213,10 @@ export function OrderTimeline({
               </div>
               <div className="flex-1 pb-4 border-l-2 border-slate-200 pl-4 -ml-7 mt-8">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-900 text-sm">Kỹ thuật viên đã nhận đơn</span>
-                  <span className="text-xs text-slate-400 font-medium">Đã ghi nhận</span>
+                  <span className="font-semibold text-slate-900 text-sm">{t('timeline.techAssignedTitle')}</span>
+                  <span className="text-xs text-slate-400 font-medium">{t('timeline.noted')}</span>
                 </div>
-                <p className="text-xs text-slate-600">Đơn hàng đã được xác nhận</p>
+                <p className="text-xs text-slate-600">{t('timeline.orderConfirmedDesc')}</p>
               </div>
             </div>
           )}
@@ -226,10 +228,10 @@ export function OrderTimeline({
               </div>
               <div className={`flex-1 ${orderStatus === 'COMPLETED' ? 'border-l-2 border-slate-200 pb-4' : 'pb-1'} pl-4 -ml-7 mt-8`}>
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-900 text-sm">Đang thực hiện dịch vụ</span>
+                  <span className="font-semibold text-slate-900 text-sm">{t('timeline.workStartedTitle')}</span>
                   <span className="text-xs text-slate-500 font-mono">{formatVietnamTime(startedAt)}</span>
                 </div>
-                <p className="text-xs text-slate-600">Kỹ thuật viên đang xử lý thiết bị của khách hàng</p>
+                <p className="text-xs text-slate-600">{t('timeline.techHandlingDesc')}</p>
               </div>
             </div>
           )}
@@ -241,11 +243,11 @@ export function OrderTimeline({
               </div>
               <div className="flex-1 pb-1 pl-4 -ml-7 mt-8">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-900 text-sm">Hoàn thành & kết toán</span>
+                  <span className="font-semibold text-slate-900 text-sm">{t('timeline.completedTitle')}</span>
                   <span className="text-xs text-slate-500 font-mono">{formatVietnamTime(completedAt)}</span>
                 </div>
                 <p className="text-xs text-slate-600">
-                  {completionResult === 'SUCCESS' ? 'Dịch vụ hoàn tất thành công' : 'Đơn hàng đã kết thúc'}
+                  {completionResult === 'SUCCESS' ? t('timeline.serviceSuccess') : t('timeline.cancelledDesc')}
                 </p>
               </div>
             </div>

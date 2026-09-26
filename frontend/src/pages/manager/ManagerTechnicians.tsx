@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { managerApi, adminApi } from '../../api/client';
 import {
   Wrench,
@@ -14,6 +15,9 @@ import {
 import { Avatar } from '../../components/Avatar';
 
 export function ManagerTechnicians() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
+
   const [technicians, setTechnicians] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,7 +35,7 @@ export function ManagerTechnicians() {
       setTechnicians(response.data?.data || []);
     } catch (error) {
       console.error('Failed to load technicians:', error);
-      showFeedback('error', 'Không thể tải danh sách kỹ thuật viên.');
+      showFeedback('error', isEn ? 'Failed to load technicians list.' : 'Không thể tải danh sách kỹ thuật viên.');
     } finally {
       setLoading(false);
     }
@@ -47,28 +51,28 @@ export function ManagerTechnicians() {
     try {
       await adminApi.updateUserStatus(tech.id, nextStatus);
       setTechnicians((prev) =>
-        prev.map((t) => (t.id === tech.id ? { ...t, status: nextStatus } : t))
+        prev.map((tItem) => (tItem.id === tech.id ? { ...tItem, status: nextStatus } : tItem))
       );
-      showFeedback('success', `Đã cập nhật trạng thái của ${tech.name}.`);
+      showFeedback('success', isEn ? `Updated status of ${tech.name}.` : `Đã cập nhật trạng thái của ${tech.name}.`);
     } catch (err: any) {
-      showFeedback('error', 'Cập nhật trạng thái thất bại.');
+      showFeedback('error', isEn ? 'Failed to update technician status.' : 'Cập nhật trạng thái thất bại.');
     }
   };
 
-  const filteredTechnicians = technicians.filter((t) => {
-    if (statusFilter && t.status !== statusFilter) return false;
+  const filteredTechnicians = technicians.filter((tItem) => {
+    if (statusFilter && tItem.status !== statusFilter) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
-        t.name?.toLowerCase().includes(q) ||
-        t.email?.toLowerCase().includes(q) ||
-        t.phone?.toLowerCase().includes(q)
+        tItem.name?.toLowerCase().includes(q) ||
+        tItem.email?.toLowerCase().includes(q) ||
+        tItem.phone?.toLowerCase().includes(q)
       );
     }
     return true;
   });
 
-  const activeCount = technicians.filter((t) => t.status === 'ACTIVE').length;
+  const activeCount = technicians.filter((tItem) => tItem.status === 'ACTIVE').length;
 
   return (
     <div className="container py-5 sm:py-8 md:py-12 max-w-6xl mx-auto space-y-6 sm:space-y-8">
@@ -77,10 +81,10 @@ export function ManagerTechnicians() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5">
             <Wrench className="w-7 h-7 text-primary" />
-            Đội ngũ Kỹ thuật viên HaUI
+            {t('manager.techTitle')}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Quản lý danh sách sinh viên kỹ thuật trực tiếp nhận máy và hỗ trợ bảo dưỡng.
+            {t('manager.techSubtitle')}
           </p>
         </div>
 
@@ -89,9 +93,9 @@ export function ManagerTechnicians() {
             <Wrench className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-xs text-amber-800 font-semibold block">Đang hoạt động</span>
+            <span className="text-xs text-amber-800 font-semibold block">{t('manager.activeCountLabel')}</span>
             <span className="text-xl font-bold text-amber-900">
-              {activeCount} / {technicians.length} KTV
+              {activeCount} / {technicians.length} {isEn ? 'Techs' : 'KTV'}
             </span>
           </div>
         </div>
@@ -128,7 +132,7 @@ export function ManagerTechnicians() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm kiếm theo tên KTV, email hoặc số điện thoại..."
+            placeholder={isEn ? "Search by technician name, email or phone..." : "Tìm kiếm theo tên KTV, email hoặc số điện thoại..."}
             className="input input-search pl-11 pr-4 text-xs font-medium w-full"
           />
         </div>
@@ -139,9 +143,9 @@ export function ManagerTechnicians() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="input text-xs font-medium w-full sm:w-44"
           >
-            <option value="">Tất cả trạng thái</option>
-            <option value="ACTIVE">🟢 Đang hoạt động</option>
-            <option value="DISABLED">🔴 Tạm ngưng</option>
+            <option value="">{t('orders.allStatuses')}</option>
+            <option value="ACTIVE">{isEn ? 'Active' : 'Đang hoạt động'}</option>
+            <option value="DISABLED">{isEn ? 'Suspended' : 'Tạm ngưng'}</option>
           </select>
 
           {(statusFilter || searchQuery) && (
@@ -152,7 +156,7 @@ export function ManagerTechnicians() {
               }}
               className="btn btn-outline text-xs px-3 whitespace-nowrap"
             >
-              Xóa lọc
+              {isEn ? 'Clear filters' : 'Xóa lọc'}
             </button>
           )}
         </div>
@@ -168,7 +172,7 @@ export function ManagerTechnicians() {
       ) : filteredTechnicians.length === 0 ? (
         <div className="card p-12 text-center space-y-3 bg-white">
           <UserX className="w-12 h-12 text-gray-300 mx-auto" />
-          <p className="text-base font-semibold text-gray-700">Không tìm thấy kỹ thuật viên nào</p>
+          <p className="text-base font-semibold text-gray-700">{isEn ? 'No technicians found' : 'Không tìm thấy kỹ thuật viên nào'}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -200,11 +204,12 @@ export function ManagerTechnicians() {
                             : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
                         }`}
                       >
-                        {tech.status === 'ACTIVE' ? 'Hoạt động' : 'Tạm dừng'}
+                        {tech.status === 'ACTIVE' ? (isEn ? 'Active' : 'Hoạt động') : (isEn ? 'Suspended' : 'Tạm dừng')}
                       </button>
                     </div>
-                    <span className="text-xs text-amber-700 font-medium block">
-                      🛠️ Kỹ thuật viên HaUI #{tech.id}
+                    <span className="text-xs text-amber-700 font-medium inline-flex items-center gap-1">
+                      <Wrench className="w-3 h-3 text-amber-600" />
+                      {isEn ? `HaUI Technician #${tech.id}` : `Kỹ thuật viên HaUI #${tech.id}`}
                     </span>
                   </div>
                 </div>
@@ -223,7 +228,7 @@ export function ManagerTechnicians() {
                   )}
                   <div className="flex items-center gap-2 text-gray-400 text-[11px]">
                     <Calendar className="w-3.5 h-3.5" />
-                    <span>Tham gia: {new Date(tech.created_at).toLocaleDateString('vi-VN')}</span>
+                    <span>{isEn ? 'Joined: ' : 'Tham gia: '}{new Date(tech.created_at).toLocaleDateString(isEn ? 'en-US' : 'vi-VN')}</span>
                   </div>
                 </div>
               </div>

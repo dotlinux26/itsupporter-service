@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { managerApi } from '../../api/client';
 import {
   FileSpreadsheet,
@@ -11,9 +12,12 @@ import {
   Receipt,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { vi, enUS } from 'date-fns/locale';
 
 export function ManagerSettlements() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
+
   const [settlements, setSettlements] = useState<any[]>([]);
   const [technicians, setTechnicians] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +53,7 @@ export function ManagerSettlements() {
       setTechnicians(techRes.data?.data || []);
     } catch (error) {
       console.error('Failed to load settlements:', error);
-      showFeedback('error', 'Không thể tải danh sách quyết toán.');
+      showFeedback('error', isEn ? 'Failed to load settlements list.' : 'Không thể tải danh sách quyết toán.');
     } finally {
       setLoading(false);
     }
@@ -67,7 +71,7 @@ export function ManagerSettlements() {
     setCreating(true);
     try {
       await managerApi.createSettlement(Number(selectedTechId), notes.trim() || undefined);
-      showFeedback('success', 'Đã tạo phiếu quyết toán hoa hồng thành công.');
+      showFeedback('success', isEn ? 'Settlement voucher created successfully.' : 'Đã tạo phiếu quyết toán hoa hồng thành công.');
       setModalOpen(false);
       setSelectedTechId('');
       setNotes('');
@@ -75,7 +79,7 @@ export function ManagerSettlements() {
     } catch (err: any) {
       showFeedback(
         'error',
-        err.response?.data?.message || err.response?.data?.error?.message || 'Tạo quyết toán thất bại (KTV có thể không có số dư khả dụng).'
+        err.response?.data?.message || err.response?.data?.error?.message || (isEn ? 'Failed to create settlement (Technician may have no pending balance).' : 'Tạo quyết toán thất bại (KTV có thể không có số dư khả dụng).')
       );
     } finally {
       setCreating(false);
@@ -103,10 +107,10 @@ export function ManagerSettlements() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      showFeedback('success', `Đã xuất file quyết toán ${formatType.toUpperCase()} thành công!`);
+      showFeedback('success', isEn ? `Exported ${formatType.toUpperCase()} settlement file successfully!` : `Đã xuất file quyết toán ${formatType.toUpperCase()} thành công!`);
     } catch (err) {
       console.error('Export failed:', err);
-      showFeedback('error', 'Xuất quyết toán thất bại. Vui lòng thử lại!');
+      showFeedback('error', isEn ? 'Export failed. Please try again!' : 'Xuất quyết toán thất bại. Vui lòng thử lại!');
     } finally {
       setExporting(null);
     }
@@ -122,10 +126,10 @@ export function ManagerSettlements() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5">
             <Receipt className="w-7 h-7 text-primary" />
-            Quản lý quyết toán hoa hồng KTV
+            {t('manager.settlementMgmtTitle')}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Đối soát số dư thu chi, kết toán định kỳ và lưu vết nhật ký tài chính.
+            {t('manager.settlementMgmtSubtitle')}
           </p>
         </div>
 
@@ -135,7 +139,7 @@ export function ManagerSettlements() {
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md transition"
           >
             <Plus className="w-4 h-4" />
-            <span>Tạo phiếu quyết toán</span>
+            <span>{t('manager.createSettlement')}</span>
           </button>
           <button
             onClick={() => handleExport('xlsx')}
@@ -143,7 +147,7 @@ export function ManagerSettlements() {
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition disabled:opacity-50"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-            {exporting === 'xlsx' ? 'Đang xuất...' : 'Xuất Excel'}
+            {exporting === 'xlsx' ? (isEn ? 'Exporting...' : 'Đang xuất...') : t('manager.exportExcel')}
           </button>
           <button
             onClick={() => handleExport('csv')}
@@ -151,7 +155,7 @@ export function ManagerSettlements() {
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition disabled:opacity-50"
           >
             <FileText className="w-4 h-4 text-slate-600" />
-            {exporting === 'csv' ? 'Đang xuất...' : 'Xuất CSV'}
+            {exporting === 'csv' ? (isEn ? 'Exporting...' : 'Đang xuất...') : t('manager.exportCsv')}
           </button>
         </div>
       </div>
@@ -183,15 +187,15 @@ export function ManagerSettlements() {
       <div className="card p-6 bg-gradient-to-br from-slate-900 to-slate-950 text-white rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="space-y-1 text-center sm:text-left">
           <span className="text-xs text-orange-400 font-semibold uppercase tracking-wider">
-            Tổng giá trị đã quyết toán
+            {isEn ? 'Total settled value' : 'Tổng giá trị đã quyết toán'}
           </span>
           <p className="text-3xl font-bold text-white">
-            {totalSettled.toLocaleString('vi-VN')} đ
+            {(totalSettled || 0).toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
           </p>
         </div>
         <div className="text-xs text-slate-400 text-center sm:text-right">
-          <p>Số lần giải ngân: <strong className="text-white">{safeSettlements.length}</strong> đợt</p>
-          <p>Tất cả giao dịch được ghi nhận tự động vào Sổ cái Ledger</p>
+          <p>{isEn ? 'Disbursements count: ' : 'Số lần giải ngân: '}<strong className="text-white">{safeSettlements.length}</strong>{isEn ? ' batches' : ' đợt'}</p>
+          <p>{isEn ? 'All transactions are automatically recorded in the ledger' : 'Tất cả giao dịch được ghi nhận tự động vào Sổ cái Ledger'}</p>
         </div>
       </div>
 
@@ -200,14 +204,14 @@ export function ManagerSettlements() {
         {loading ? (
           <div className="p-8 text-center space-y-3">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-sm text-gray-500">Đang tải lịch sử quyết toán...</p>
+            <p className="text-sm text-gray-500">{isEn ? 'Loading settlement history...' : 'Đang tải lịch sử quyết toán...'}</p>
           </div>
         ) : safeSettlements.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <Receipt className="w-12 h-12 text-gray-300 mx-auto" />
-            <p className="text-base font-semibold text-gray-700">Chưa có phiếu quyết toán nào</p>
+            <p className="text-base font-semibold text-gray-700">{isEn ? 'No settlement vouchers yet' : 'Chưa có phiếu quyết toán nào'}</p>
             <p className="text-xs text-gray-400">
-              Bấm "Tạo phiếu quyết toán" khi cần chi trả hoa hồng cho kỹ thuật viên.
+              {isEn ? 'Click "Create settlement voucher" when you need to pay commission to technicians.' : 'Bấm "Tạo phiếu quyết toán" khi cần chi trả hoa hồng cho kỹ thuật viên.'}
             </p>
           </div>
         ) : (
@@ -215,12 +219,12 @@ export function ManagerSettlements() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/80 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                  <th className="py-3 px-4">Mã quyết toán</th>
-                  <th className="py-3 px-4">Kỹ thuật viên</th>
-                  <th className="py-3 px-4">Người duyệt</th>
-                  <th className="py-3 px-4">Số tiền kết toán</th>
-                  <th className="py-3 px-4">Ghi chú đối soát</th>
-                  <th className="py-3 px-4 text-right">Thời gian</th>
+                  <th className="py-3 px-4">{isEn ? 'Settlement Code' : 'Mã quyết toán'}</th>
+                  <th className="py-3 px-4">{t('orders.technician')}</th>
+                  <th className="py-3 px-4">{isEn ? 'Approver' : 'Người duyệt'}</th>
+                  <th className="py-3 px-4">{isEn ? 'Settled Amount' : 'Số tiền kết toán'}</th>
+                  <th className="py-3 px-4">{isEn ? 'Audit Notes' : 'Ghi chú đối soát'}</th>
+                  <th className="py-3 px-4 text-right">{t('orders.dateTime')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs">
@@ -230,20 +234,20 @@ export function ManagerSettlements() {
                       {s.settlement_code || `SETTLE-${s.id}`}
                     </td>
                     <td className="py-3.5 px-4 font-semibold text-gray-900">
-                      {s.technician_name || `KTV #${s.technician_id}`}
+                      {s.technician_name || (isEn ? `Tech #${s.technician_id}` : `KTV #${s.technician_id}`)}
                     </td>
                     <td className="py-3.5 px-4 text-gray-600">
-                      {s.manager_name || `Quản lý #${s.manager_id}`}
+                      {s.manager_name || (isEn ? `Manager #${s.manager_id}` : `Quản lý #${s.manager_id}`)}
                     </td>
                     <td className="py-3.5 px-4 font-bold text-emerald-600 text-sm">
-                      {(s.amount || 0).toLocaleString('vi-VN')} đ
+                      {(s.amount || 0).toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
                     </td>
                     <td className="py-3.5 px-4 text-gray-500 max-w-xs truncate">
                       {s.notes || '-'}
                     </td>
                     <td className="py-3.5 px-4 text-gray-400 text-right text-[11px]">
                       {s.created_at
-                        ? format(new Date(s.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })
+                        ? format(new Date(s.created_at), 'dd/MM/yyyy HH:mm', { locale: isEn ? enUS : vi })
                         : '-'}
                     </td>
                   </tr>
@@ -261,7 +265,7 @@ export function ManagerSettlements() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
               <div className="flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-primary" />
-                <h3 className="font-bold text-gray-900 text-base">Tạo phiếu quyết toán hoa hồng</h3>
+                <h3 className="font-bold text-gray-900 text-base">{t('manager.createSettlementModalTitle')}</h3>
               </div>
               <button
                 onClick={() => setModalOpen(false)}
@@ -274,7 +278,7 @@ export function ManagerSettlements() {
             <form onSubmit={handleCreateSettlement} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Chọn kỹ thuật viên nhận thanh toán <span className="text-red-500">*</span>
+                  {isEn ? 'Select technician to pay' : 'Chọn kỹ thuật viên nhận thanh toán'} <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={selectedTechId}
@@ -282,28 +286,28 @@ export function ManagerSettlements() {
                   required
                   className="input text-sm w-full font-medium"
                 >
-                  <option value="">-- Chọn kỹ thuật viên --</option>
-                  {technicians.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name} ({t.email})
+                  <option value="">{isEn ? '-- Select technician --' : '-- Chọn kỹ thuật viên --'}</option>
+                  {technicians.map((tItem) => (
+                    <option key={tItem.id} value={tItem.id}>
+                      {tItem.name} ({tItem.email})
                     </option>
                   ))}
                 </select>
                 <span className="text-[11px] text-gray-500 mt-1 block">
-                  Hệ thống sẽ tự động tổng hợp toàn bộ số dư khả dụng chưa quyết toán của KTV.
+                  {isEn ? 'The system will automatically tally all pending eligible balances for this technician.' : 'Hệ thống sẽ tự động tổng hợp toàn bộ số dư khả dụng chưa quyết toán của KTV.'}
                 </span>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Ghi chú quyết toán (Tùy chọn)
+                  {t('manager.settlementNotes')} ({isEn ? 'Optional' : 'Tùy chọn'})
                 </label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
                   className="input text-sm resize-none"
-                  placeholder="Ví dụ: Quyết toán hoa hồng ca trực tuần 3 tháng 9/2026..."
+                  placeholder={isEn ? "E.g.: Commission payout for shift week 3 of September 2026..." : "Ví dụ: Quyết toán hoa hồng ca trực tuần 3 tháng 9/2026..."}
                 />
               </div>
 
@@ -313,14 +317,14 @@ export function ManagerSettlements() {
                   onClick={() => setModalOpen(false)}
                   className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition"
                 >
-                  Hủy
+                  {t('common.cancel', isEn ? 'Cancel' : 'Hủy')}
                 </button>
                 <button
                   type="submit"
                   disabled={creating || !selectedTechId}
                   className="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md transition disabled:opacity-50"
                 >
-                  {creating ? 'Đang quyết toán...' : 'Xác nhận kết toán'}
+                  {creating ? (isEn ? 'Settling...' : 'Đang quyết toán...') : (isEn ? 'Confirm Settlement' : 'Xác nhận kết toán')}
                 </button>
               </div>
             </form>

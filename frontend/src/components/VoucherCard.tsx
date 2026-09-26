@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { Copy, Check, Ticket, Sparkles } from 'lucide-react';
 
@@ -16,8 +17,8 @@ export interface VoucherCardProps {
 
 export function VoucherCard({
   code,
-  name = 'VOUCHER ƯU ĐÃI',
-  description = 'Áp dụng cho mọi dịch vụ IT Supporter',
+  name,
+  description,
   discountType,
   discountValue,
   status = 'active',
@@ -25,14 +26,19 @@ export function VoucherCard({
   onApply,
   compact = false,
 }: VoucherCardProps) {
+  const { t, i18n } = useTranslation();
   const [copied, setCopied] = useState(false);
+
+  const isEn = i18n.language?.startsWith('en');
+  const displayName = name || t('voucher.defaultName');
+  const displayDescription = description || t('voucher.defaultDesc');
 
   const discountText =
     discountType === 'percent'
       ? discountValue === 100
         ? 'FREE 100%'
         : `-${discountValue}%`
-      : `-${discountValue.toLocaleString('vi-VN')}đ`;
+      : `-${discountValue.toLocaleString(isEn ? 'en-US' : 'vi-VN')}${isEn ? ' VND' : 'đ'}`;
 
   const isUsed = status === 'used';
   const isExpired = status === 'expired';
@@ -60,32 +66,34 @@ export function VoucherCard({
             </span>
             <div className="cut-symbol">✁</div>
           </div>
-          <p className="ticket-program-name">{name}</p>
+          <p className="ticket-program-name">{displayName}</p>
         </div>
 
         {/* Body Section */}
         <div className="ticket-body">
-          <p className="ticket-desc">{description}</p>
+          <p className="ticket-desc">{displayDescription}</p>
           {validTo && (
             <div className="ticket-validity">
-              Hạn dùng: {new Date(validTo).toLocaleDateString('vi-VN')}
+              {t('voucher.validTo', {
+                date: new Date(validTo).toLocaleDateString(isEn ? 'en-US' : 'vi-VN'),
+              })}
             </div>
           )}
 
           {/* Stamp overlay if used or expired */}
           {isUsed && (
             <div className="stamp used-stamp">
-              ĐÃ SỬ DỤNG
+              {t('voucher.statusUsed')}
             </div>
           )}
           {isExpired && (
             <div className="stamp expired-stamp">
-              HẾT HẠN
+              {t('voucher.statusExpired')}
             </div>
           )}
           {isVoided && (
             <div className="stamp voided-stamp">
-              VÔ HIỆU
+              {t('voucher.statusVoided')}
             </div>
           )}
         </div>
@@ -99,7 +107,7 @@ export function VoucherCard({
             <button
               onClick={handleCopy}
               className="copy-btn"
-              title="Sao chép mã"
+              title={t('voucher.copyCode')}
               type="button"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5 text-gray-600" />}
@@ -116,7 +124,7 @@ export function VoucherCard({
               type="button"
             >
               <Sparkles className="w-3 h-3" />
-              Áp dụng ngay
+              {t('voucher.applyNow')}
             </button>
           )}
         </div>

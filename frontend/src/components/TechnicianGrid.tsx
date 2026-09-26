@@ -53,7 +53,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
   if (!technicians.length) {
     return (
       <div className="text-center py-12 text-slate-400">
-        <p>{t('home.technicians')}: Hiện chưa có kỹ thuật viên nào trong ca</p>
+        <p>{t('home.technicians')}: {t('home.noTechniciansInShift')}</p>
       </div>
     );
   }
@@ -71,7 +71,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
             {t('home.technicians')}
           </h2>
           <p className="text-sm text-slate-500 mt-2">
-            Đội ngũ sinh viên kỹ thuật nhiệt huyết HaUI, thao tác cẩn thận, minh bạch và tận tâm hỗ trợ trực tiếp.
+            {t('home.techniciansSubtitle')}
           </p>
         </div>
 
@@ -80,7 +80,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
           <button
             onClick={handlePrev}
             disabled={!canPrev}
-            aria-label="Kỹ thuật viên trước"
+            aria-label={t('common.previous')}
             className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
               canPrev
                 ? 'bg-white border-slate-300 text-slate-700 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 shadow-xs cursor-pointer active:scale-95'
@@ -92,7 +92,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
           <button
             onClick={handleNext}
             disabled={!canNext}
-            aria-label="Kỹ thuật viên tiếp theo"
+            aria-label={t('common.next')}
             className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${
               canNext
                 ? 'bg-white border-slate-300 text-slate-700 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 shadow-xs cursor-pointer active:scale-95'
@@ -138,7 +138,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                   />
                   <span
                     className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white shadow-2xs"
-                    title="Sẵn sàng nhận ca"
+                    title={t('home.techReadyForDuty')}
                   />
                 </div>
 
@@ -147,12 +147,12 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                   {tech.name}
                 </h4>
                 <p className="text-slate-500 text-xs mt-1 flex items-center gap-1 font-medium">
-                  <Wrench className="w-3.5 h-3.5 text-orange-500" /> KTV IT Supporter HaUI
+                  <Wrench className="w-3.5 h-3.5 text-orange-500" /> {t('home.techRoleBadge')}
                 </p>
 
                 {/* Short Bio snippet */}
                 <p className="text-slate-600 text-xs mt-2 line-clamp-2 leading-relaxed px-1">
-                  {tech.bio || 'Kỹ thuật viên IT Supporter · Đại học Công nghiệp Hà Nội.'}
+                  {tech.bio || t('home.techDefaultBio')}
                 </p>
 
                 {/* Skills tags preview */}
@@ -172,7 +172,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                   )}
                   {skills.length === 0 && (
                     <span className="text-[11px] text-slate-400 italic">
-                      Chưa cập nhật kỹ năng
+                      {t('home.techNoSkills')}
                     </span>
                   )}
                 </div>
@@ -189,11 +189,11 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                 ) : (
                   <div className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400">
                     <Star className="w-3.5 h-3.5 text-slate-300" />
-                    <span>Mới</span>
+                    <span>{t('common.new')}</span>
                   </div>
                 )}
                 <span className="text-orange-600 font-semibold group-hover:underline flex items-center gap-0.5 text-xs">
-                  Xem hồ sơ <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                  {t('home.viewProfile')} <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                 </span>
               </div>
             </div>
@@ -214,7 +214,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
             {/* Close button */}
             <button
               onClick={() => setSelectedTech(null)}
-              aria-label="Đóng"
+              aria-label={t('common.close')}
               className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition cursor-pointer z-10"
             >
               <X className="w-5 h-5" />
@@ -231,13 +231,13 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
               <div>
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-semibold mb-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Sẵn sàng tiếp nhận máy
+                  {t('home.techReadyToReceive')}
                 </div>
                 <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
                   {selectedTech.name}
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
-                  <Laptop className="w-3.5 h-3.5 text-orange-500 shrink-0" /> Kỹ thuật viên IT Supporter · ĐH Công nghiệp Hà Nội
+                  <Laptop className="w-3.5 h-3.5 text-orange-500 shrink-0" /> {t('home.techDefaultBio')}
                 </p>
                 {selectedTech.rating_count && selectedTech.rating_count > 0 ? (
                   <div className="flex items-center gap-2 mt-2">
@@ -245,12 +245,12 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                       <Star className="w-3.5 h-3.5 fill-current" />
                       <span>{Number(selectedTech.rating).toFixed(1)} / 5.0</span>
                     </div>
-                    <span className="text-slate-400 text-xs">({selectedTech.rating_count} đánh giá hoàn tất)</span>
+                    <span className="text-slate-400 text-xs">({selectedTech.rating_count} {t('home.completedReviews')})</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 mt-2">
                     <span className="text-slate-400 text-xs bg-slate-50 border border-slate-200/60 px-2.5 py-0.5 rounded-md">
-                      Kỹ thuật viên mới · Chưa có đánh giá
+                      {t('home.techNewNoReviews')}
                     </span>
                   </div>
                 )}
@@ -262,17 +262,17 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
               {/* Bio description */}
               <div>
                 <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Giới thiệu & Chuyên môn
+                  {t('home.techIntroTitle')}
                 </h4>
                 <p className="text-slate-700 leading-relaxed text-xs sm:text-sm bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  {selectedTech.bio || 'Kỹ thuật viên sinh viên khoa CNTT - Đại học Công nghiệp Hà Nội. Đã qua đào tạo bài bản quy trình 9 bước vệ sinh phần cứng an toàn, tra keo tản nhiệt và stress-test hiệu năng.'}
+                  {selectedTech.bio || t('home.techDefaultBio')}
                 </p>
               </div>
 
               {/* Skills */}
               <div>
                 <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  Kỹ năng thao tác thực tế
+                  {t('home.techSkillsTitle')}
                 </h4>
                 <div className="flex flex-wrap gap-1.5">
                   {(() => {
@@ -288,7 +288,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                     if (!skills.length) {
                       return (
                         <span className="text-xs text-slate-400 italic">
-                          Chưa cập nhật danh sách kỹ năng
+                          {t('home.techNoSkills')}
                         </span>
                       );
                     }
@@ -324,10 +324,9 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                 }
 
                 if (!markdownContent) {
-                  markdownContent = `### Giới thiệu Kỹ thuật viên ${selectedTech.name}
-- **Đơn vị công tác**: Đội Hỗ trợ Kỹ thuật IT Supporter - Trường Đại học Công nghiệp Hà Nội.
-- **Cam kết chất lượng**: Thực hiện đúng quy trình 9 bước vệ sinh & bảo dưỡng máy tính trực tiếp trước sự quan sát của khách hàng.
-- **Chuyên môn nổi bật**: Tháo lắp an toàn chống tĩnh điện ESD, tra keo tản nhiệt hiệu năng cao, tối ưu luồng gió tản nhiệt cho máy tính bàn & laptop.`;
+                  markdownContent = `### ${selectedTech.name}
+- **${t('footer.servicesAndLinks')}**: IT Supporter - HaUI.
+- **${t('home.stepsTitle')}**: 9 steps PC/Laptop care.`;
                 }
 
                 const isLongContent = markdownContent.length > 220;
@@ -337,7 +336,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                     <div className="flex items-center justify-between mb-1.5">
                       <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                         <BookOpen className="w-3.5 h-3.5 text-orange-500" />
-                        Bài viết giới thiệu chi tiết
+                        {t('home.techArticleTitle')}
                       </h4>
                       {isLongContent && (
                         <button
@@ -347,12 +346,12 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                         >
                           {isArticleExpanded ? (
                             <>
-                              <span>Thu gọn</span>
+                              <span>{t('home.collapse')}</span>
                               <ChevronUp className="w-3.5 h-3.5" />
                             </>
                           ) : (
                             <>
-                              <span>...Xem thêm</span>
+                              <span>{t('home.viewMore')}</span>
                               <ChevronDown className="w-3.5 h-3.5" />
                             </>
                           )}
@@ -374,11 +373,11 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
               <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 text-xs text-slate-600 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-slate-500" />
-                  <span>Ca tiếp nhận: 07:00 - 19:00 (Thứ 2 - Thứ 7)</span>
+                  <span>{t('home.techShiftTime')}</span>
                 </div>
                 <div className="flex items-center gap-1 text-slate-500">
                   <Calendar className="w-3.5 h-3.5" />
-                  <span>Đặt trước ≥ 4h</span>
+                  <span>{t('home.techBookMinAhead')}</span>
                 </div>
               </div>
             </div>
@@ -390,13 +389,13 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                 onClick={() => setSelectedTech(null)}
                 className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-xs transition cursor-pointer"
               >
-                Đóng
+                {t('common.close')}
               </button>
               <Link
                 to={`/booking?technicianId=${selectedTech.id}`}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs rounded-xl shadow-md shadow-orange-600/20 transition cursor-pointer"
               >
-                <span>Đặt lịch với KTV {selectedTech.name}</span>
+                <span>{t('home.bookWithTechnician', { name: selectedTech.name })}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>

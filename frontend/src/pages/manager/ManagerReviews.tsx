@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { managerApi } from '../../api/client';
 import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { vi, enUS } from 'date-fns/locale';
 import {
   Star,
   Trash2,
@@ -10,9 +11,13 @@ import {
   X,
   MessageSquare,
   Search,
+  Wrench,
 } from 'lucide-react';
 
 export function ManagerReviews() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
+
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [ratingFilter, setRatingFilter] = useState<string>('');
@@ -30,7 +35,7 @@ export function ManagerReviews() {
       setReviews(response.data?.data || []);
     } catch (error) {
       console.error('Failed to load reviews:', error);
-      showFeedback('error', 'Không thể tải danh sách đánh giá.');
+      showFeedback('error', isEn ? 'Failed to load reviews list.' : 'Không thể tải danh sách đánh giá.');
     } finally {
       setLoading(false);
     }
@@ -42,13 +47,13 @@ export function ManagerReviews() {
   };
 
   const handleDeleteReview = async (id: number) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa đánh giá này khỏi hệ thống?')) return;
+    if (!confirm(t('manager.confirmDeleteReview'))) return;
     try {
       await managerApi.deleteReview(id);
       setReviews((prev) => prev.filter((r) => r.id !== id));
-      showFeedback('success', 'Đã xóa đánh giá thành công.');
+      showFeedback('success', isEn ? 'Review deleted successfully.' : 'Đã xóa đánh giá thành công.');
     } catch (err: any) {
-      showFeedback('error', 'Xóa đánh giá thất bại.');
+      showFeedback('error', isEn ? 'Failed to delete review.' : 'Xóa đánh giá thất bại.');
     }
   };
 
@@ -68,8 +73,8 @@ export function ManagerReviews() {
 
   const avgRating =
     reviews.length > 0
-      ? `${(reviews.reduce((acc, r) => acc + (r.rating || 0), 0) / reviews.length).toFixed(1)} / 5.0 ⭐`
-      : 'Chưa có đánh giá';
+      ? `${(reviews.reduce((acc, r) => acc + (r.rating || 0), 0) / reviews.length).toFixed(1)} / 5.0`
+      : t('manager.noReviews');
 
   return (
     <div className="container py-5 sm:py-8 md:py-12 max-w-6xl mx-auto space-y-6 sm:space-y-8">
@@ -78,10 +83,10 @@ export function ManagerReviews() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5">
             <Star className="w-7 h-7 text-amber-500 fill-amber-500" />
-            Quản lý đánh giá & Phản hồi khách hàng
+            {t('manager.reviewTitle')}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Theo dõi chất lượng dịch vụ của kỹ thuật viên và kiểm duyệt đánh giá công khai.
+            {t('manager.reviewSubtitle')}
           </p>
         </div>
 
@@ -90,7 +95,7 @@ export function ManagerReviews() {
             <Star className="w-6 h-6 fill-current" />
           </div>
           <div>
-            <span className="text-xs text-amber-800 font-semibold block">Đánh giá trung bình</span>
+            <span className="text-xs text-amber-800 font-semibold block">{t('manager.avgRatingCard')}</span>
             <span className="text-xl font-bold text-amber-900">{avgRating}</span>
           </div>
         </div>
@@ -127,7 +132,7 @@ export function ManagerReviews() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm kiếm theo mã đơn, khách hàng, KTV hoặc nội dung..."
+            placeholder={isEn ? "Search by order code, customer, technician or content..." : "Tìm kiếm theo mã đơn, khách hàng, KTV hoặc nội dung..."}
             className="input input-search pl-11 pr-4 text-xs font-medium w-full"
           />
         </div>
@@ -138,12 +143,12 @@ export function ManagerReviews() {
             onChange={(e) => setRatingFilter(e.target.value)}
             className="input text-xs font-medium w-full sm:w-44"
           >
-            <option value="">Tất cả số sao</option>
-            <option value="5">⭐⭐⭐⭐⭐ 5 Sao</option>
-            <option value="4">⭐⭐⭐⭐ 4 Sao</option>
-            <option value="3">⭐⭐⭐ 3 Sao</option>
-            <option value="2">⭐⭐ 2 Sao</option>
-            <option value="1">⭐ 1 Sao</option>
+            <option value="">{isEn ? 'All ratings' : 'Tất cả số sao'}</option>
+            <option value="5">{isEn ? '5 Stars' : '5 Sao'}</option>
+            <option value="4">{isEn ? '4 Stars' : '4 Sao'}</option>
+            <option value="3">{isEn ? '3 Stars' : '3 Sao'}</option>
+            <option value="2">{isEn ? '2 Stars' : '2 Sao'}</option>
+            <option value="1">{isEn ? '1 Star' : '1 Sao'}</option>
           </select>
 
           {(ratingFilter || searchQuery) && (
@@ -154,7 +159,7 @@ export function ManagerReviews() {
               }}
               className="btn btn-outline text-xs px-3 whitespace-nowrap"
             >
-              Xóa lọc
+              {isEn ? 'Clear filters' : 'Xóa lọc'}
             </button>
           )}
         </div>
@@ -165,26 +170,26 @@ export function ManagerReviews() {
         {loading ? (
           <div className="p-8 text-center space-y-3">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-sm text-gray-500">Đang tải danh sách đánh giá...</p>
+            <p className="text-sm text-gray-500">{isEn ? 'Loading reviews list...' : 'Đang tải danh sách đánh giá...'}</p>
           </div>
         ) : filteredReviews.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <MessageSquare className="w-12 h-12 text-gray-300 mx-auto" />
-            <p className="text-base font-semibold text-gray-700">Chưa có đánh giá nào</p>
+            <p className="text-base font-semibold text-gray-700">{t('manager.noReviews')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/80 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                  <th className="py-3 px-4">Mã đơn</th>
-                  <th className="py-3 px-4">Khách hàng</th>
-                  <th className="py-3 px-4">Kỹ thuật viên</th>
-                  <th className="py-3 px-4">Gói dịch vụ</th>
-                  <th className="py-3 px-4">Số sao</th>
-                  <th className="py-3 px-4">Nội dung phản hồi</th>
-                  <th className="py-3 px-4">Ngày gửi</th>
-                  <th className="py-3 px-4 text-right">Thao tác</th>
+                  <th className="py-3 px-4">{t('orders.orderCode')}</th>
+                  <th className="py-3 px-4">{t('manager.customer')}</th>
+                  <th className="py-3 px-4">{t('orders.technician')}</th>
+                  <th className="py-3 px-4">{t('orders.servicePackage')}</th>
+                  <th className="py-3 px-4">{isEn ? 'Rating' : 'Số sao'}</th>
+                  <th className="py-3 px-4">{isEn ? 'Feedback Content' : 'Nội dung phản hồi'}</th>
+                  <th className="py-3 px-4">{isEn ? 'Date' : 'Ngày gửi'}</th>
+                  <th className="py-3 px-4 text-right">{isEn ? 'Actions' : 'Thao tác'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs">
@@ -198,8 +203,9 @@ export function ManagerReviews() {
                     </td>
                     <td className="py-3.5 px-4">
                       {review.technician_name ? (
-                        <span className="font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                          🛠️ {review.technician_name}
+                        <span className="font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 inline-flex items-center gap-1">
+                          <Wrench className="w-3 h-3 text-amber-600" />
+                          {review.technician_name}
                         </span>
                       ) : (
                         <span className="text-gray-400">-</span>
@@ -214,11 +220,11 @@ export function ManagerReviews() {
                       </div>
                     </td>
                     <td className="py-3.5 px-4 text-gray-700 max-w-sm">
-                      <p className="line-clamp-2">{review.content || 'Khách hàng không để lại lời nhắn.'}</p>
+                      <p className="line-clamp-2">{review.content || (isEn ? 'No message left by customer.' : 'Khách hàng không để lại lời nhắn.')}</p>
                     </td>
                     <td className="py-3.5 px-4 text-gray-400 text-[11px]">
                       {review.created_at
-                        ? format(new Date(review.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })
+                        ? format(new Date(review.created_at), 'dd/MM/yyyy HH:mm', { locale: isEn ? enUS : vi })
                         : '-'}
                     </td>
                     <td className="py-3.5 px-4 text-right">
@@ -226,7 +232,7 @@ export function ManagerReviews() {
                         type="button"
                         onClick={() => handleDeleteReview(review.id)}
                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                        title="Xóa đánh giá"
+                        title={isEn ? "Delete review" : "Xóa đánh giá"}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

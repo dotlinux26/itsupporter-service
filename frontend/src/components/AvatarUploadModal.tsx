@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { authApi } from '../api/client';
 import { Camera, Upload, ZoomIn, ZoomOut, RotateCw, Trash2, Check, X, AlertCircle } from 'lucide-react';
 import { Avatar } from './Avatar';
@@ -20,6 +21,7 @@ export function AvatarUploadModal({
   userEmail,
   onSuccess,
 }: AvatarUploadModalProps) {
+  const { t } = useTranslation();
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [zoom, setZoom] = useState<number>(1);
   const [rotation, setRotation] = useState<number>(0);
@@ -49,12 +51,12 @@ export function AvatarUploadModal({
     const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
 
     if (!validMimes.includes(file.type) || !validExts.includes(fileExt)) {
-      setError('Định dạng tệp không hợp lệ! Vui lòng chỉ tải lên ảnh JPG, PNG hoặc WEBP.');
+      setError(t('profile.avatarModal.invalidFormat'));
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setError('Dung lượng ảnh quá lớn! Vui lòng chọn tệp nhỏ hơn 5MB.');
+      setError(t('profile.avatarModal.fileTooLarge'));
       return;
     }
 
@@ -131,7 +133,7 @@ export function AvatarUploadModal({
 
     canvas.toBlob(async (blob) => {
       if (!blob) {
-        setError('Lỗi khi tạo ảnh cắt. Vui lòng thử lại.');
+        setError(t('profile.avatarModal.cropError'));
         setLoading(false);
         return;
       }
@@ -143,7 +145,7 @@ export function AvatarUploadModal({
         onSuccess();
         onClose();
       } catch (err: any) {
-        setError(err.response?.data?.message || err.response?.data?.error?.message || 'Tải lên ảnh thất bại.');
+        setError(err.response?.data?.message || err.response?.data?.error?.message || t('profile.avatarModal.uploadFailed'));
       } finally {
         setLoading(false);
       }
@@ -151,7 +153,7 @@ export function AvatarUploadModal({
   };
 
   const handleRemoveAvatar = async () => {
-    if (!confirm('Bạn có chắc chắn muốn gỡ ảnh đại diện và quay về ảnh mặc định?')) return;
+    if (!confirm(t('profile.avatarModal.removeConfirm'))) return;
     setLoading(true);
     setError('');
     try {
@@ -159,7 +161,7 @@ export function AvatarUploadModal({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Gỡ ảnh thất bại.');
+      setError(err.response?.data?.message || t('profile.avatarModal.removeFailed'));
     } finally {
       setLoading(false);
     }
@@ -174,7 +176,7 @@ export function AvatarUploadModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
           <div className="flex items-center gap-2">
             <Camera className="w-5 h-5 text-primary" />
-            <h3 className="font-bold text-gray-900 text-base">Cập nhật ảnh đại diện</h3>
+            <h3 className="font-bold text-gray-900 text-base">{t('profile.avatarModal.title')}</h3>
           </div>
           <button
             onClick={onClose}
@@ -206,8 +208,8 @@ export function AvatarUploadModal({
               </div>
 
               <div className="text-center space-y-1">
-                <p className="text-sm font-semibold text-gray-800">Chọn ảnh chân dung của bạn</p>
-                <p className="text-xs text-gray-500">Chỉ chấp nhận tệp JPG, PNG, WEBP (Tối đa 5MB)</p>
+                <p className="text-sm font-semibold text-gray-800">{t('profile.avatarModal.choosePortrait')}</p>
+                <p className="text-xs text-gray-500">{t('profile.avatarModal.fileAcceptNote')}</p>
               </div>
 
               <input
@@ -225,7 +227,7 @@ export function AvatarUploadModal({
                   className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-hover rounded-xl shadow-sm transition"
                 >
                   <Upload className="w-4 h-4" />
-                  Chọn tệp từ máy
+                  {t('profile.avatarModal.selectFromFile')}
                 </button>
 
                 {currentAvatarUrl && (
@@ -236,7 +238,7 @@ export function AvatarUploadModal({
                     className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl border border-red-200 transition"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Gỡ ảnh
+                    {t('profile.avatarModal.removeAvatar')}
                   </button>
                 )}
               </div>
@@ -255,7 +257,7 @@ export function AvatarUploadModal({
                 <div className="flex items-center justify-between text-xs text-gray-600 font-medium">
                   <span className="flex items-center gap-1">
                     <ZoomIn className="w-3.5 h-3.5 text-gray-500" />
-                    Thu phóng
+                    {t('profile.avatarModal.zoom')}
                   </span>
                   <span>{Math.round(zoom * 100)}%</span>
                 </div>
@@ -280,7 +282,7 @@ export function AvatarUploadModal({
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition"
                   >
                     <RotateCw className="w-3.5 h-3.5" />
-                    Xoay 90°
+                    {t('profile.avatarModal.rotate90')}
                   </button>
                   <button
                     type="button"
@@ -289,7 +291,7 @@ export function AvatarUploadModal({
                     }}
                     className="text-xs text-gray-500 hover:text-gray-800 transition underline"
                   >
-                    Chọn ảnh khác
+                    {t('profile.avatarModal.chooseAnother')}
                   </button>
                 </div>
               </div>
@@ -308,7 +310,7 @@ export function AvatarUploadModal({
               disabled={loading}
               className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition"
             >
-              Hủy
+              {t('common.cancel')}
             </button>
             <button
               type="button"
@@ -319,12 +321,12 @@ export function AvatarUploadModal({
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Đang lưu...</span>
+                  <span>{t('profile.saving')}</span>
                 </>
               ) : (
                 <>
                   <Check className="w-4 h-4" />
-                  <span>Áp dụng & Lưu</span>
+                  <span>{t('profile.avatarModal.applyAndSave')}</span>
                 </>
               )}
             </button>

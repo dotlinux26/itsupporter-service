@@ -26,7 +26,7 @@ export function LanguageSwitcher({ className = '', theme = 'light' }: LanguageSw
     <div
       className={`inline-flex items-center gap-1.5 text-xs select-none ${className}`}
       role="group"
-      aria-label="Chọn ngôn ngữ"
+      aria-label={currentLang === 'en' ? 'Select language' : 'Chọn ngôn ngữ'}
     >
       <Languages
         className={`w-3.5 h-3.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}

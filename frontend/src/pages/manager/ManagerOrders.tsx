@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { managerApi, publicApi } from '../../api/client';
 import { Avatar } from '../../components/Avatar';
 import {
@@ -13,9 +14,13 @@ import {
   Package,
   Zap,
   Sparkles,
+  Wrench,
 } from 'lucide-react';
 
 export function ManagerOrders() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
+
   const [orders, setOrders] = useState<any[]>([]);
   const [technicians, setTechnicians] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +65,7 @@ export function ManagerOrders() {
       setOrders(response.data?.data || []);
     } catch (error) {
       console.error('Failed to load orders:', error);
-      showFeedback('error', 'Không thể tải danh sách đơn hàng.');
+      showFeedback('error', t('orders.loadError', 'Không thể tải danh sách đơn hàng.'));
     } finally {
       setLoading(false);
     }
@@ -119,9 +124,9 @@ export function ManagerOrders() {
     try {
       await managerApi.updateOrderStatus(orderId, nextStatus);
       setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o)));
-      showFeedback('success', `Đã cập nhật trạng thái đơn hàng.`);
+      showFeedback('success', t('orders.statusUpdated', 'Đã cập nhật trạng thái đơn hàng.'));
     } catch (err: any) {
-      showFeedback('error', err.response?.data?.message || 'Cập nhật trạng thái thất bại.');
+      showFeedback('error', err.response?.data?.message || t('orders.statusUpdateFail', 'Cập nhật trạng thái thất bại.'));
     }
   };
 
@@ -144,10 +149,10 @@ export function ManagerOrders() {
             : o
         )
       );
-      showFeedback('success', `Đã phân công ${tech?.name} cho đơn ${assignModalOrder.code}.`);
+      showFeedback('success', t('manager.assignedSuccess', 'Đã phân công {{name}} cho đơn {{code}}.', { name: tech?.name, code: assignModalOrder.code }));
       setAssignModalOrder(null);
     } catch (err: any) {
-      showFeedback('error', err.response?.data?.message || 'Phân công kỹ thuật viên thất bại.');
+      showFeedback('error', err.response?.data?.message || t('manager.assignFail', 'Phân công kỹ thuật viên thất bại.'));
     } finally {
       setAssignLoading(false);
     }
@@ -178,10 +183,10 @@ export function ManagerOrders() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      showFeedback('success', `Đã xuất file ${format.toUpperCase()} thành công!`);
+      showFeedback('success', t('manager.exportSuccess', { type: 'ORDERS', format: format.toUpperCase() }));
     } catch (err) {
       console.error('Export failed:', err);
-      showFeedback('error', 'Xuất file thất bại. Vui lòng thử lại!');
+      showFeedback('error', t('manager.exportFail'));
     } finally {
       setExporting(null);
     }
@@ -206,10 +211,10 @@ export function ManagerOrders() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5">
             <Package className="w-7 h-7 text-primary" />
-            Quản lý điều phối đơn hàng
+            {t('manager.orderMgmtTitle')}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Theo dõi tiến độ, phân công kỹ thuật viên và trích xuất báo cáo doanh thu.
+            {t('manager.orderMgmtSubtitle')}
           </p>
         </div>
 
@@ -220,7 +225,7 @@ export function ManagerOrders() {
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition disabled:opacity-50"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-            {exporting === 'xlsx' ? 'Đang xuất...' : 'Xuất Excel'}
+            {exporting === 'xlsx' ? (isEn ? 'Exporting...' : 'Đang xuất...') : t('manager.exportExcel')}
           </button>
           <button
             onClick={() => handleExport('csv')}
@@ -228,7 +233,7 @@ export function ManagerOrders() {
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition disabled:opacity-50"
           >
             <FileText className="w-4 h-4 text-slate-600" />
-            {exporting === 'csv' ? 'Đang xuất...' : 'Xuất CSV'}
+            {exporting === 'csv' ? (isEn ? 'Exporting...' : 'Đang xuất...') : t('manager.exportCsv')}
           </button>
         </div>
       </div>
@@ -266,7 +271,7 @@ export function ManagerOrders() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm mã đơn, tên khách, KTV..."
+              placeholder={isEn ? "Search code, customer, technician..." : "Tìm mã đơn, tên khách, KTV..."}
               className="input input-search pl-11 pr-4 text-xs font-medium w-full"
             />
           </div>
@@ -278,12 +283,12 @@ export function ManagerOrders() {
               onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
               className="input text-xs font-medium w-full"
             >
-              <option value="">Tất cả trạng thái</option>
-              <option value="PENDING">Chờ xác nhận</option>
-              <option value="CONFIRMED">Đã xác nhận</option>
-              <option value="IN_PROGRESS">Đang thực hiện</option>
-              <option value="COMPLETED">Hoàn thành</option>
-              <option value="CANCELLED">Đã hủy</option>
+              <option value="">{t('orders.allStatuses')}</option>
+              <option value="PENDING">{t('status.pending')}</option>
+              <option value="CONFIRMED">{t('status.confirmed')}</option>
+              <option value="IN_PROGRESS">{t('status.in_progress')}</option>
+              <option value="COMPLETED">{t('status.completed')}</option>
+              <option value="CANCELLED">{t('status.cancelled')}</option>
             </select>
           </div>
 
@@ -294,10 +299,10 @@ export function ManagerOrders() {
               onChange={(e) => setFilters((prev) => ({ ...prev, technician_id: e.target.value }))}
               className="input text-xs font-medium w-full"
             >
-              <option value="">Tất cả Kỹ thuật viên</option>
-              {technicians.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
+              <option value="">{isEn ? "All Technicians" : "Tất cả Kỹ thuật viên"}</option>
+              {technicians.map((tItem) => (
+                <option key={tItem.id} value={tItem.id}>
+                  {tItem.name}
                 </option>
               ))}
             </select>
@@ -312,7 +317,7 @@ export function ManagerOrders() {
               }}
               className="btn btn-outline text-xs px-3 w-full"
             >
-              Xóa lọc
+              {isEn ? "Clear filters" : "Xóa lọc"}
             </button>
           </div>
         </div>
@@ -321,17 +326,17 @@ export function ManagerOrders() {
         <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-gray-100 text-xs text-gray-600">
           <span className="font-semibold flex items-center gap-1">
             <Calendar className="w-3.5 h-3.5 text-gray-400" />
-            Khoảng ngày:
+            {isEn ? "Date range:" : "Khoảng ngày:"}
           </span>
           <div className="flex items-center gap-2">
-            <span>Từ</span>
+            <span>{isEn ? "From" : "Từ"}</span>
             <input
               type="date"
               value={filters.from}
               onChange={(e) => setFilters((prev) => ({ ...prev, from: e.target.value }))}
               className="input text-xs py-1 px-2.5 w-36"
             />
-            <span>đến</span>
+            <span>{isEn ? "to" : "đến"}</span>
             <input
               type="date"
               value={filters.to}
@@ -347,27 +352,27 @@ export function ManagerOrders() {
         {loading ? (
           <div className="p-8 text-center space-y-3">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-sm text-gray-500">Đang tải danh sách đơn hàng...</p>
+            <p className="text-sm text-gray-500">{isEn ? 'Loading orders list...' : 'Đang tải danh sách đơn hàng...'}</p>
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="p-12 text-center space-y-2">
             <Package className="w-10 h-10 text-gray-300 mx-auto" />
-            <p className="text-sm font-semibold text-gray-700">Không có đơn hàng nào phù hợp</p>
-            <p className="text-xs text-gray-400">Hãy thay đổi bộ lọc hoặc từ khóa tìm kiếm.</p>
+            <p className="text-sm font-semibold text-gray-700">{isEn ? 'No matching orders found' : 'Không có đơn hàng nào phù hợp'}</p>
+            <p className="text-xs text-gray-400">{isEn ? 'Try adjusting your filters or search keywords.' : 'Hãy thay đổi bộ lọc hoặc từ khóa tìm kiếm.'}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/80 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                  <th className="py-3 px-4">Mã đơn</th>
-                  <th className="py-3 px-4">Khách hàng</th>
-                  <th className="py-3 px-4">Kỹ thuật viên phụ trách</th>
-                  <th className="py-3 px-4">Gói dịch vụ</th>
-                  <th className="py-3 px-4">Thời gian hẹn</th>
-                  <th className="py-3 px-4">Trạng thái đơn</th>
-                  <th className="py-3 px-4">Thanh toán</th>
-                  <th className="py-3 px-4 text-right">Phân công / Thao tác</th>
+                  <th className="py-3 px-4">{t('orders.orderCode')}</th>
+                  <th className="py-3 px-4">{t('manager.customer')}</th>
+                  <th className="py-3 px-4">{t('orders.technician')}</th>
+                  <th className="py-3 px-4">{t('orders.servicePackage')}</th>
+                  <th className="py-3 px-4">{t('orders.scheduledTime')}</th>
+                  <th className="py-3 px-4">{t('orders.status')}</th>
+                  <th className="py-3 px-4">{t('orders.payment')}</th>
+                  <th className="py-3 px-4 text-right">{isEn ? 'Assignment / Action' : 'Phân công / Thao tác'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs">
@@ -389,8 +394,9 @@ export function ManagerOrders() {
                     {/* Technician */}
                     <td className="py-3.5 px-4">
                       {order.technician_name ? (
-                        <span className="font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 inline-block">
-                          🛠️ {order.technician_name}
+                        <span className="font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 inline-flex items-center gap-1">
+                          <Wrench className="w-3 h-3 text-amber-600" />
+                          {order.technician_name}
                         </span>
                       ) : (
                         <button
@@ -398,7 +404,7 @@ export function ManagerOrders() {
                           onClick={() => openAssignModal(order)}
                           className="text-xs text-orange-600 hover:text-orange-700 bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200 font-semibold"
                         >
-                          + Gán KTV
+                          + {t('manager.assignTech')}
                         </button>
                       )}
                     </td>
@@ -407,14 +413,14 @@ export function ManagerOrders() {
                     <td className="py-3.5 px-4 font-medium text-gray-800">
                       {order.package_name}
                       <span className="text-[11px] text-gray-400 block">
-                        {(order.final_amount ?? order.price ?? 0).toLocaleString('vi-VN')} đ
+                        {(order.final_amount ?? order.price ?? 0).toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
                       </span>
                     </td>
 
                     {/* Date & Time */}
                     <td className="py-3.5 px-4 text-gray-600">
                       <span className="block font-medium">
-                        {new Date(order.scheduled_date).toLocaleDateString('vi-VN')}
+                        {new Date(order.scheduled_date).toLocaleDateString(isEn ? 'en-US' : 'vi-VN')}
                       </span>
                       <span className="text-[11px] text-gray-400 block">{order.scheduled_start}</span>
                     </td>
@@ -436,11 +442,11 @@ export function ManagerOrders() {
                             : 'bg-yellow-50 text-yellow-700 border-yellow-200'
                         }`}
                       >
-                        <option value="PENDING">Chờ xác nhận</option>
-                        <option value="CONFIRMED">Đã xác nhận</option>
-                        <option value="IN_PROGRESS">Đang làm</option>
-                        <option value="COMPLETED">Hoàn thành</option>
-                        <option value="CANCELLED">Đã hủy</option>
+                        <option value="PENDING">{t('status.pending')}</option>
+                        <option value="CONFIRMED">{t('status.confirmed')}</option>
+                        <option value="IN_PROGRESS">{t('status.in_progress')}</option>
+                        <option value="COMPLETED">{t('status.completed')}</option>
+                        <option value="CANCELLED">{t('status.cancelled')}</option>
                       </select>
                     </td>
 
@@ -453,7 +459,7 @@ export function ManagerOrders() {
                             : 'bg-gray-100 text-gray-600 border-gray-200'
                         }`}
                       >
-                        {order.payment_status === 'PAID' ? '✓ Đã thu' : 'Chưa thu'}
+                        {order.payment_status === 'PAID' ? (isEn ? '✓ Paid' : '✓ Đã thu') : (isEn ? 'Unpaid' : 'Chưa thu')}
                       </span>
                     </td>
 
@@ -465,7 +471,7 @@ export function ManagerOrders() {
                         className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-orange-50 hover:text-orange-600 transition"
                       >
                         <UserCheck className="w-3.5 h-3.5" />
-                        <span>{order.technician_id ? 'Đổi KTV' : 'Gán KTV'}</span>
+                        <span>{order.technician_id ? t('manager.reassignTech') : t('manager.assignTech')}</span>
                       </button>
                     </td>
                   </tr>
@@ -483,7 +489,7 @@ export function ManagerOrders() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
               <div className="flex items-center gap-2">
                 <UserCheck className="w-5 h-5 text-primary" />
-                <h3 className="font-bold text-gray-900 text-base">Điều phối Kỹ thuật viên</h3>
+                <h3 className="font-bold text-gray-900 text-base">{isEn ? 'Dispatch Technician' : 'Điều phối Kỹ thuật viên'}</h3>
               </div>
               <button
                 onClick={() => setAssignModalOrder(null)}
@@ -499,14 +505,14 @@ export function ManagerOrders() {
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-orange-950 font-mono text-sm">#{assignModalOrder.code}</span>
                   <span className="text-gray-600 font-medium">
-                    {new Date(assignModalOrder.scheduled_date).toLocaleDateString('vi-VN')} · {assignModalOrder.scheduled_start}
+                    {new Date(assignModalOrder.scheduled_date).toLocaleDateString(isEn ? 'en-US' : 'vi-VN')} · {assignModalOrder.scheduled_start}
                   </span>
                 </div>
                 <div className="text-gray-700">
-                  <strong>Khách hàng:</strong> {assignModalOrder.customer_name} ({assignModalOrder.customer_phone || 'Không có SĐT'})
+                  <strong>{isEn ? 'Customer:' : 'Khách hàng:'}</strong> {assignModalOrder.customer_name} ({assignModalOrder.customer_phone || (isEn ? 'No phone' : 'Không có SĐT')})
                 </div>
                 <div className="text-gray-700">
-                  <strong>Gói dịch vụ:</strong> {assignModalOrder.package_name}
+                  <strong>{isEn ? 'Service Package:' : 'Gói dịch vụ:'}</strong> {assignModalOrder.package_name}
                 </div>
               </div>
 
@@ -515,16 +521,16 @@ export function ManagerOrders() {
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-primary" />
-                    KTV trực ca khả dụng ({slotCandidates.length})
+                    {isEn ? 'Available Shift Technicians' : 'KTV trực ca khả dụng'} ({slotCandidates.length})
                   </label>
                   {slotCandidates.length > 1 && (
                     <button
                       type="button"
                       onClick={handleAutoPickCandidate}
                       className="text-xs font-semibold text-primary hover:text-orange-700 bg-orange-50 px-2.5 py-1 rounded-lg border border-orange-200 transition flex items-center gap-1"
-                      title="Chọn ngẫu nhiên 1 KTV trong ca"
+                      title={isEn ? "Randomly pick 1 on-duty technician" : "Chọn ngẫu nhiên 1 KTV trong ca"}
                     >
-                      <Zap className="w-3 h-3" /> Auto-pick KTV
+                      <Zap className="w-3 h-3" /> {isEn ? 'Auto-pick Tech' : 'Auto-pick KTV'}
                     </button>
                   )}
                 </div>
@@ -532,11 +538,16 @@ export function ManagerOrders() {
                 {candidatesLoading ? (
                   <div className="p-4 text-center text-xs text-gray-500 bg-gray-50 rounded-xl border border-gray-100">
                     <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-1" />
-                    Đang tìm kiếm KTV trực ca này...
+                    {isEn ? 'Searching for on-duty technicians...' : 'Đang tìm kiếm KTV trực ca này...'}
                   </div>
                 ) : slotCandidates.length === 0 ? (
-                  <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
-                    ⚠️ Không có KTV nào đăng ký lịch trực trong ca {assignModalOrder.scheduled_start} ngày {new Date(assignModalOrder.scheduled_date).toLocaleDateString('vi-VN')}. Bạn có thể chỉ định KTV từ danh mục bên dưới:
+                  <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span>
+                      {isEn
+                        ? `No technicians registered for shift ${assignModalOrder.scheduled_start} on ${new Date(assignModalOrder.scheduled_date).toLocaleDateString('en-US')}. You can assign any technician from the list below:`
+                        : `Không có KTV nào đăng ký lịch trực trong ca ${assignModalOrder.scheduled_start} ngày ${new Date(assignModalOrder.scheduled_date).toLocaleDateString('vi-VN')}. Bạn có thể chỉ định KTV từ danh mục bên dưới:`}
+                    </span>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -559,10 +570,10 @@ export function ManagerOrders() {
                         <Avatar name={cand.name} src={cand.avatar_url} size={36} />
                         <div className="flex-1 min-w-0">
                           <div className="font-bold text-xs text-gray-900 truncate">{cand.name}</div>
-                          <div className="text-[11px] text-gray-500 truncate">{cand.email || cand.bio || 'Kỹ thuật viên IT Supporter'}</div>
+                          <div className="text-[11px] text-gray-500 truncate">{cand.email || cand.bio || (isEn ? 'IT Supporter Technician' : 'Kỹ thuật viên IT Supporter')}</div>
                         </div>
                         <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                          Rảnh ca
+                          {isEn ? 'Free shift' : 'Rảnh ca'}
                         </span>
                       </label>
                     ))}
@@ -573,7 +584,7 @@ export function ManagerOrders() {
               {/* All technicians fallback selector */}
               <div className="pt-2 border-t border-gray-100">
                 <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
-                  Hoặc chọn KTV bất kỳ (Tất cả danh sách)
+                  {isEn ? 'Or pick any technician (Full directory)' : 'Hoặc chọn KTV bất kỳ (Tất cả danh sách)'}
                 </label>
                 <select
                   value={selectedTechId}
@@ -581,10 +592,10 @@ export function ManagerOrders() {
                   required
                   className="input text-xs w-full font-medium"
                 >
-                  <option value="">-- Chọn kỹ thuật viên --</option>
-                  {technicians.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name} ({t.email})
+                  <option value="">{isEn ? '-- Select technician --' : '-- Chọn kỹ thuật viên --'}</option>
+                  {technicians.map((tItem) => (
+                    <option key={tItem.id} value={tItem.id}>
+                      {tItem.name} ({tItem.email})
                     </option>
                   ))}
                 </select>
@@ -596,14 +607,14 @@ export function ManagerOrders() {
                   onClick={() => setAssignModalOrder(null)}
                   className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition"
                 >
-                  Hủy
+                  {t('common.cancel', isEn ? 'Cancel' : 'Hủy')}
                 </button>
                 <button
                   type="submit"
                   disabled={assignLoading || !selectedTechId}
                   className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md transition disabled:opacity-50"
                 >
-                  {assignLoading ? 'Đang điều phối...' : 'Xác nhận phân công'}
+                  {assignLoading ? (isEn ? 'Assigning...' : 'Đang điều phối...') : (isEn ? 'Confirm Assignment' : 'Xác nhận phân công')}
                 </button>
               </div>
             </form>

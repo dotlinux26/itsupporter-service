@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { authApi } from '../../api/client';
 import {
@@ -16,6 +17,8 @@ import {
   AlertCircle,
   X,
   Trash2,
+  Phone,
+  Star,
 } from 'lucide-react';
 import { Avatar } from '../../components/Avatar';
 import { AvatarUploadModal } from '../../components/AvatarUploadModal';
@@ -24,19 +27,21 @@ import { MarkdownRenderer } from '../../components/MarkdownRenderer';
 type Tab = 'profile' | 'technician_profile' | 'password';
 
 const PRESET_SKILLS = [
-  'Vệ sinh Laptop Văn Phòng',
-  'Vệ sinh Laptop Gaming',
-  'Tra keo tản nhiệt chất lượng cao',
-  'Tra keo hiệu năng cao chuyên dụng',
-  'Bảo dưỡng PC Desktop',
-  'Cài đặt Windows 10/11 & macOS',
-  'Nâng cấp RAM & SSD NVMe',
-  'Xử lý kẹt quạt & tra dầu',
-  'Tối ưu hóa nhiệt độ CPU/GPU',
-  'Khắc phục lỗi màn hình xanh (BSOD)',
+  { vi: 'Vệ sinh Laptop Văn Phòng', en: 'Office Laptop Cleaning' },
+  { vi: 'Vệ sinh Laptop Gaming', en: 'Gaming Laptop Cleaning' },
+  { vi: 'Tra keo tản nhiệt chất lượng cao', en: 'High Quality Thermal Paste' },
+  { vi: 'Tra keo hiệu năng cao chuyên dụng', en: 'Pro Thermal Paste Application' },
+  { vi: 'Bảo dưỡng PC Desktop', en: 'PC Desktop Maintenance' },
+  { vi: 'Cài đặt Windows 10/11 & macOS', en: 'Windows 10/11 & macOS Setup' },
+  { vi: 'Nâng cấp RAM & SSD NVMe', en: 'RAM & NVMe SSD Upgrade' },
+  { vi: 'Xử lý kẹt quạt & tra dầu', en: 'Fan Cleaning & Lubrication' },
+  { vi: 'Tối ưu hóa nhiệt độ CPU/GPU', en: 'CPU/GPU Thermal Optimization' },
+  { vi: 'Khắc phục lỗi màn hình xanh (BSOD)', en: 'BSOD Troubleshooting' },
 ];
 
 export function ProfilePage() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
   const { user, refreshUser } = useAuth();
   const [tab, setTab] = useState<Tab>('profile');
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
@@ -124,13 +129,13 @@ export function ProfilePage() {
         bio: isTechnician ? bio.trim() || null : undefined,
         publicProfile: profilePayload,
       });
-      setProfileSuccess('Cập nhật hồ sơ thành công!');
+      setProfileSuccess(t('profile.profileUpdated'));
       refreshUser();
     } catch (err: any) {
       setProfileError(
         err.response?.data?.error?.message ||
         err.response?.data?.message ||
-        'Cập nhật thất bại.'
+        t('profile.profileUpdateFailed')
       );
     } finally {
       setProfileSaving(false);
@@ -141,13 +146,12 @@ export function ProfilePage() {
     const trimmed = tagToAdd.trim();
     if (!trimmed || selectedTags.includes(trimmed)) return;
     if (selectedTags.length >= 8) {
-      alert('Bạn chỉ có thể chọn tối đa 8 thẻ chuyên môn.');
+      alert(t('profile.maxSkillsAlert'));
       return;
     }
     const updated = [...selectedTags, trimmed];
     setSelectedTags(updated);
     setCustomTagInput('');
-    // Optionally append to publicProfile
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
@@ -159,17 +163,17 @@ export function ProfilePage() {
     setPwError('');
     setPwSuccess('');
     if (newPassword !== confirmPassword) {
-      setPwError('Mật khẩu xác nhận không khớp.');
+      setPwError(t('profile.passwordMismatch'));
       return;
     }
     if (newPassword.length < 8) {
-      setPwError('Mật khẩu mới phải có ít nhất 8 ký tự.');
+      setPwError(t('profile.passwordMinLength'));
       return;
     }
     setPwSaving(true);
     try {
       await authApi.changePassword(currentPassword, newPassword);
-      setPwSuccess('Đổi mật khẩu thành công!');
+      setPwSuccess(t('profile.passwordChanged'));
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -177,7 +181,7 @@ export function ProfilePage() {
       setPwError(
         err.response?.data?.error?.message ||
         err.response?.data?.message ||
-        'Đổi mật khẩu thất bại.'
+        t('profile.passwordChangeFailed')
       );
     } finally {
       setPwSaving(false);
@@ -186,29 +190,29 @@ export function ProfilePage() {
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = isTechnician
     ? [
-        { key: 'profile', label: 'Thông tin liên hệ', icon: <User className="w-4 h-4" /> },
+        { key: 'profile', label: t('profile.tabContact'), icon: <User className="w-4 h-4" /> },
         {
           key: 'technician_profile',
-          label: 'Hồ sơ KTV & Kỹ năng',
+          label: t('profile.tabTechnician'),
           icon: <Award className="w-4 h-4 text-amber-600" />,
         },
-        { key: 'password', label: 'Đổi mật khẩu', icon: <KeyRound className="w-4 h-4" /> },
+        { key: 'password', label: t('profile.tabPassword'), icon: <KeyRound className="w-4 h-4" /> },
       ]
     : [
-        { key: 'profile', label: 'Thông tin cá nhân', icon: <User className="w-4 h-4" /> },
-        { key: 'password', label: 'Đổi mật khẩu', icon: <KeyRound className="w-4 h-4" /> },
+        { key: 'profile', label: t('profile.tabAccount'), icon: <User className="w-4 h-4" /> },
+        { key: 'password', label: t('profile.tabPassword'), icon: <KeyRound className="w-4 h-4" /> },
       ];
 
   const getRoleBadge = () => {
     switch (user?.role) {
       case 'ADMIN':
-        return <span className="px-2.5 py-0.5 text-xs font-bold bg-purple-100 text-purple-700 rounded-full border border-purple-200">Quản trị viên (Admin)</span>;
+        return <span className="px-2.5 py-0.5 text-xs font-bold bg-purple-100 text-purple-700 rounded-full border border-purple-200">{t('profile.roleAdmin')}</span>;
       case 'MANAGER':
-        return <span className="px-2.5 py-0.5 text-xs font-bold bg-blue-100 text-blue-700 rounded-full border border-blue-200">Quản lý (Manager)</span>;
+        return <span className="px-2.5 py-0.5 text-xs font-bold bg-blue-100 text-blue-700 rounded-full border border-blue-200">{t('profile.roleManager')}</span>;
       case 'TECHNICIAN':
-        return <span className="px-2.5 py-0.5 text-xs font-bold bg-amber-100 text-amber-700 rounded-full border border-amber-200">Kỹ thuật viên HaUI</span>;
+        return <span className="px-2.5 py-0.5 text-xs font-bold bg-amber-100 text-amber-700 rounded-full border border-amber-200">{t('profile.roleTechnician')}</span>;
       default:
-        return <span className="px-2.5 py-0.5 text-xs font-semibold bg-gray-100 text-gray-700 rounded-full border border-gray-200">Khách hàng (Guest)</span>;
+        return <span className="px-2.5 py-0.5 text-xs font-semibold bg-gray-100 text-gray-700 rounded-full border border-gray-200">{t('profile.roleGuest')}</span>;
     }
   };
 
@@ -230,7 +234,7 @@ export function ProfilePage() {
             type="button"
             onClick={() => setAvatarModalOpen(true)}
             className="absolute -bottom-1 -right-1 p-2 bg-primary text-white rounded-full shadow-md hover:bg-primary-hover hover:scale-105 transition-all"
-            title="Đổi ảnh đại diện"
+            title={t('profile.changeAvatarTitle')}
           >
             <Camera className="w-4 h-4" />
           </button>
@@ -244,13 +248,15 @@ export function ProfilePage() {
           </div>
           <p className="text-sm text-gray-500 font-mono">{user?.email}</p>
           {user?.phone && (
-            <p className="text-xs text-gray-600">
-              📞 Hotline liên hệ: <span className="font-semibold text-gray-800">{user.phone}</span>
+            <p className="text-xs text-gray-600 flex items-center justify-center sm:justify-start gap-1">
+              <Phone className="w-3.5 h-3.5 text-gray-500" />
+              <span>{t('profile.hotline')}: <strong className="text-gray-800">{user.phone}</strong></span>
             </p>
           )}
           {isTechnician && (
-            <p className="text-xs text-amber-700 font-medium bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 inline-block">
-              ⭐ Đội ngũ kỹ thuật viên IT Supporter · Đại học Công nghiệp Hà Nội
+            <p className="text-xs text-amber-700 font-medium bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 inline-flex items-center gap-1.5">
+              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+              <span>{t('profile.techTeamBadge')}</span>
             </p>
           )}
         </div>
@@ -263,31 +269,31 @@ export function ProfilePage() {
             className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 rounded-xl hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition"
           >
             <Camera className="w-3.5 h-3.5" />
-            <span>Đổi avatar</span>
+            <span>{t('profile.changeAvatar')}</span>
           </button>
         </div>
       </div>
 
       {/* TABS NAVIGATION */}
       <div className="flex border-b border-border gap-2">
-        {tabs.map((t) => (
+        {tabs.map((tItem) => (
           <button
-            key={t.key}
+            key={tItem.key}
             onClick={() => {
-              setTab(t.key);
+              setTab(tItem.key);
               setProfileError('');
               setProfileSuccess('');
               setPwError('');
               setPwSuccess('');
             }}
             className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
-              tab === t.key
+              tab === tItem.key
                 ? 'border-primary text-primary bg-orange-50/40 rounded-t-lg'
                 : 'border-transparent text-gray-500 hover:text-gray-900'
             }`}
           >
-            {t.icon}
-            <span>{t.label}</span>
+            {tItem.icon}
+            <span>{tItem.label}</span>
           </button>
         ))}
       </div>
@@ -297,10 +303,10 @@ export function ProfilePage() {
         <form onSubmit={handleProfileSubmit} className="card p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-6">
           <div className="border-b border-gray-100 pb-4">
             <h2 className="text-lg font-bold text-gray-900">
-              {isTechnician ? 'Thông tin tiếp nhận & Liên hệ KTV' : 'Thông tin tài khoản cá nhân'}
+              {isTechnician ? t('profile.techContactTitle') : t('profile.tabAccount')}
             </h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              Cập nhật tên hiển thị, số điện thoại và thông tin liên hệ khi phục vụ đơn hàng.
+              {t('profile.accountInfoSubtitle')}
             </p>
           </div>
 
@@ -321,7 +327,7 @@ export function ProfilePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Họ và tên <span className="text-red-500">*</span>
+                {t('profile.name')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -330,13 +336,13 @@ export function ProfilePage() {
                 required
                 maxLength={100}
                 className="input text-sm"
-                placeholder="Nguyễn Văn A"
+                placeholder={isEn ? "John Doe" : "Nguyễn Văn A"}
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Địa chỉ Email
+                {t('profile.email')}
               </label>
               <input
                 type="email"
@@ -344,13 +350,13 @@ export function ProfilePage() {
                 disabled
                 className="input bg-gray-100 text-gray-500 cursor-not-allowed text-sm"
               />
-              <span className="text-[11px] text-gray-400 mt-1 block">Email là định danh tài khoản, không thể thay đổi.</span>
+              <span className="text-[11px] text-gray-400 mt-1 block">{t('profile.emailImmutableNote')}</span>
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-              Số điện thoại liên hệ
+              {t('profile.phone')}
             </label>
             <input
               type="tel"
@@ -364,7 +370,7 @@ export function ProfilePage() {
 
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-              {isTechnician ? 'Địa chỉ phòng trực / Kênh liên hệ' : 'Thông tin liên lạc thêm'}
+              {isTechnician ? t('profile.techAddressLabel') : t('profile.customerContactLabel')}
             </label>
             <textarea
               value={contactInfo}
@@ -374,12 +380,12 @@ export function ProfilePage() {
               className="input text-sm resize-none"
               placeholder={
                 isTechnician
-                  ? 'Ví dụ: Phòng 1603 Tòa A1 Cơ sở 1 HaUI · Facebook: fb.com/itsupporter · Zalo: 0981234567'
-                  : 'Ví dụ: Ký túc xá HaUI, Facebook cá nhân hoặc ghi chú nhận máy...'
+                  ? t('profile.techAddressPlaceholder')
+                  : t('profile.customerContactPlaceholder')
               }
             />
             <div className="flex justify-between text-[11px] text-gray-400 mt-1">
-              <span>Tối đa 300 ký tự</span>
+              <span>{t('profile.max300Chars')}</span>
               <span>{contactInfo.length}/300</span>
             </div>
           </div>
@@ -393,12 +399,12 @@ export function ProfilePage() {
               {profileSaving ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Đang lưu...</span>
+                  <span>{t('profile.saving')}</span>
                 </>
               ) : (
                 <>
                   <Save className="w-4 h-4" />
-                  <span>Lưu thay đổi</span>
+                  <span>{t('profile.saveChanges')}</span>
                 </>
               )}
             </button>
@@ -414,14 +420,14 @@ export function ProfilePage() {
               <div>
                 <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-amber-500" />
-                  Hồ sơ năng lực & Thẻ chi tiết Kỹ thuật viên
+                  {t('profile.techProfileTitle')}
                 </h2>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Nội dung này hiển thị trực tiếp cho khách hàng khi chọn KTV trên lịch và trang thông tin đội ngũ.
+                  {t('profile.techProfileSubtitle')}
                 </p>
               </div>
               <span className="text-xs font-semibold px-2.5 py-1 bg-orange-50 text-orange-700 rounded-lg border border-orange-200 self-start sm:self-auto">
-                Hỗ trợ Markdown 5000 ký tự
+                {t('profile.markdownSupport')}
               </span>
             </div>
 
@@ -435,7 +441,7 @@ export function ProfilePage() {
             {/* Giới thiệu ngắn Bio */}
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Giới thiệu ngắn gọn (Bio popup)
+                {t('profile.bioLabel')}
               </label>
               <textarea
                 value={bio}
@@ -443,10 +449,10 @@ export function ProfilePage() {
                 maxLength={300}
                 rows={2}
                 className="input text-sm resize-none"
-                placeholder="Ví dụ: Sinh viên CNTT K17 HaUI · 2 năm kinh nghiệm vệ sinh tra keo tản nhiệt Gaming, tháo lắp cẩn thận và nhiệt tình."
+                placeholder={t('profile.bioPlaceholder')}
               />
               <div className="flex justify-between text-[11px] text-gray-400 mt-1">
-                <span>Hiển thị khi khách hàng hover chuột vào avatar trên lịch</span>
+                <span>{t('profile.bioHoverTip')}</span>
                 <span>{bio.length}/300</span>
               </div>
             </div>
@@ -456,7 +462,7 @@ export function ProfilePage() {
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
                   <Tag className="w-3.5 h-3.5 text-primary" />
-                  Thẻ chuyên môn & Kỹ năng nổi bật ({selectedTags.length}/8)
+                  {t('profile.skillsLabel')} ({selectedTags.length}/8)
                 </label>
                 {selectedTags.length > 0 && (
                   <button
@@ -465,7 +471,7 @@ export function ProfilePage() {
                     className="text-[11px] font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 px-2 py-0.5 rounded hover:bg-red-50 transition cursor-pointer"
                   >
                     <Trash2 className="w-3 h-3" />
-                    <span>Xóa tất cả thẻ</span>
+                    <span>{t('profile.clearAllTags')}</span>
                   </button>
                 )}
               </div>
@@ -484,7 +490,7 @@ export function ProfilePage() {
                           type="button"
                           onClick={() => handleRemoveTag(tag)}
                           className="hover:bg-orange-700 rounded-full p-0.5 transition cursor-pointer"
-                          title={`Xóa thẻ ${tag}`}
+                          title={t('profile.removeTagTitle', { tag })}
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -493,7 +499,7 @@ export function ProfilePage() {
                   </div>
                 ) : (
                   <p className="text-xs text-gray-400 italic">
-                    Chưa chọn thẻ nào. Khi lưu, trên danh sách ngoài trang chủ sẽ hiển thị: &quot;Chưa cập nhật kỹ năng&quot;.
+                    {t('profile.noSkillsSelected')}
                   </p>
                 )}
               </div>
@@ -501,23 +507,31 @@ export function ProfilePage() {
               {/* Gợi ý mẫu */}
               <div>
                 <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block mb-2">
-                  Gợi ý chọn nhanh thẻ phổ biến:
+                  {t('profile.quickSkillSuggestions')}
                 </span>
                 <div className="flex flex-wrap gap-2">
-                  {PRESET_SKILLS.map((skill) => {
-                    const isSelected = selectedTags.includes(skill);
+                  {PRESET_SKILLS.map((item) => {
+                    const tagValue = isEn ? item.en : item.vi;
+                    const isSelected = selectedTags.includes(item.vi) || selectedTags.includes(item.en);
                     return (
                       <button
                         type="button"
-                        key={skill}
-                        onClick={() => (isSelected ? handleRemoveTag(skill) : handleAddTag(skill))}
+                        key={item.vi}
+                        onClick={() => {
+                          if (isSelected) {
+                            handleRemoveTag(item.vi);
+                            handleRemoveTag(item.en);
+                          } else {
+                            handleAddTag(tagValue);
+                          }
+                        }}
                         className={`text-xs px-3 py-1.5 rounded-lg border transition font-medium cursor-pointer ${
                           isSelected
                             ? 'bg-orange-100 text-orange-800 border-orange-300 font-semibold'
                             : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                         }`}
                       >
-                        {isSelected ? `✓ ${skill}` : `+ ${skill}`}
+                        {isSelected ? `✓ ${tagValue}` : `+ ${tagValue}`}
                       </button>
                     );
                   })}
@@ -536,7 +550,7 @@ export function ProfilePage() {
                       handleAddTag(customTagInput);
                     }
                   }}
-                  placeholder="Nhập kỹ năng tùy chỉnh khác rồi bấm Thêm..."
+                  placeholder={t('profile.customSkillPlaceholder')}
                   className="input text-xs flex-1"
                 />
                 <button
@@ -544,7 +558,7 @@ export function ProfilePage() {
                   onClick={() => handleAddTag(customTagInput)}
                   className="btn btn-outline text-xs px-4 cursor-pointer"
                 >
-                  Thêm thẻ
+                  {t('profile.addSkillBtn')}
                 </button>
               </div>
             </div>
@@ -554,7 +568,7 @@ export function ProfilePage() {
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
                   <FileCode2 className="w-4 h-4 text-purple-600" />
-                  Bài viết giới thiệu chi tiết (Markdown 5000 ký tự)
+                  {t('profile.articleLabel')}
                 </label>
                 <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
                   <button
@@ -564,7 +578,7 @@ export function ProfilePage() {
                       !markdownPreview ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
                     }`}
                   >
-                    Soạn thảo
+                    {t('profile.editorTab')}
                   </button>
                   <button
                     type="button"
@@ -573,7 +587,7 @@ export function ProfilePage() {
                       markdownPreview ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
                     }`}
                   >
-                    Xem trước
+                    {t('profile.previewTab')}
                   </button>
                 </div>
               </div>
@@ -585,20 +599,22 @@ export function ProfilePage() {
                   maxLength={5000}
                   rows={10}
                   className="input font-mono text-xs leading-relaxed"
-                  placeholder={`### Xin chào! Mình là KTV IT Supporter HaUI 🛠️\n\n- **Chuyên môn**: Vệ sinh laptop gaming nhiệt độ cao, bảo dưỡng PC phòng máy.\n- **Cam kết**: Thao tác cẩn thận, không làm gãy ngàm máy, keo tản nhiệt loại xịn.\n- **Kinh nghiệm**: Đã xử lý hơn 100+ máy tính cho sinh viên & cán bộ trường.\n\n*Hẹn gặp các bạn tại phòng 1603 Tòa A1 nhé!*`}
+                  placeholder={isEn
+                    ? `### Hello! I am an IT Supporter HaUI Technician\n\n- **Specialty**: Laptop deep cleaning, thermal repasting, PC maintenance.\n- **Commitment**: Careful handling, high-performance thermal paste.\n- **Experience**: Handled 100+ computers for students & staff.\n\n*See you at Room 1603 Building A1!*`
+                    : `### Xin chào! Mình là KTV IT Supporter HaUI\n\n- **Chuyên môn**: Vệ sinh laptop nhiệt độ cao, bảo dưỡng PC phòng máy.\n- **Cam kết**: Thao tác cẩn thận, không làm gãy ngàm máy, keo tản nhiệt chất lượng cao.\n- **Kinh nghiệm**: Đã xử lý hơn 100+ máy tính cho sinh viên & cán bộ trường.\n\n*Hẹn gặp các bạn tại phòng 1603 Tòa A1 nhé!*`}
                 />
               ) : (
                 <div className="min-h-[220px] p-4 bg-gray-50/70 border border-gray-200 rounded-xl max-w-none text-xs leading-relaxed text-gray-800">
                   {publicProfile.trim() ? (
                     <MarkdownRenderer content={publicProfile} />
                   ) : (
-                    <p className="text-gray-400 italic">Chưa có nội dung xem trước.</p>
+                    <p className="text-gray-400 italic">{t('profile.noPreviewContent')}</p>
                   )}
                 </div>
               )}
 
               <div className="flex justify-between text-[11px] text-gray-400 mt-1">
-                <span>Hỗ trợ định dạng in đậm (**text**), tiêu đề (###), danh sách (-), bảng...</span>
+                <span>{t('profile.markdownSyntaxTip')}</span>
                 <span className={publicProfile.length > 4500 ? 'text-orange-600 font-bold' : ''}>
                   {publicProfile.length}/5000
                 </span>
@@ -614,12 +630,12 @@ export function ProfilePage() {
                 {profileSaving ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Đang lưu...</span>
+                    <span>{t('profile.saving')}</span>
                   </>
                 ) : (
                   <>
                     <Save className="w-4 h-4" />
-                    <span>Lưu hồ sơ Kỹ thuật viên</span>
+                    <span>{t('profile.saveTechProfile')}</span>
                   </>
                 )}
               </button>
@@ -631,9 +647,9 @@ export function ProfilePage() {
             <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
               <span className="text-xs font-bold text-orange-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Eye className="w-3.5 h-3.5" />
-                Xem trước Thẻ Kỹ thuật viên (Khách hàng nhìn thấy)
+                {t('profile.livePreviewTitle')}
               </span>
-              <span className="text-[11px] text-slate-500">Live Preview</span>
+              <span className="text-[11px] text-slate-500">{t('profile.livePreviewBadge')}</span>
             </div>
 
             <div className="flex flex-col sm:flex-row items-start gap-4">
@@ -651,14 +667,14 @@ export function ProfilePage() {
                   </span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  {bio || 'Chưa cập nhật phần giới thiệu ngắn...'}
+                  {bio || t('profile.livePreviewBioFallback')}
                 </p>
 
                 {selectedTags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-1">
-                    {selectedTags.map((t) => (
-                      <span key={t} className="text-[10px] px-2 py-0.5 bg-slate-800 text-slate-300 rounded border border-slate-700">
-                        {t}
+                    {selectedTags.map((tItem) => (
+                      <span key={tItem} className="text-[10px] px-2 py-0.5 bg-slate-800 text-slate-300 rounded border border-slate-700">
+                        {tItem}
                       </span>
                     ))}
                   </div>
@@ -673,9 +689,9 @@ export function ProfilePage() {
       {tab === 'password' && (
         <form onSubmit={handlePasswordSubmit} className="card p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-6">
           <div className="border-b border-gray-100 pb-4">
-            <h2 className="text-lg font-bold text-gray-900">Đổi mật khẩu tài khoản</h2>
+            <h2 className="text-lg font-bold text-gray-900">{t('profile.passwordTitle')}</h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              Để bảo mật tài khoản, vui lòng sử dụng mật khẩu mạnh có tối thiểu 8 ký tự.
+              {t('profile.passwordSubtitle')}
             </p>
           </div>
 
@@ -695,7 +711,7 @@ export function ProfilePage() {
 
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-              Mật khẩu hiện tại <span className="text-red-500">*</span>
+              {t('profile.currentPassword')} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <input
@@ -704,7 +720,7 @@ export function ProfilePage() {
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 required
                 className="input pr-10 text-sm"
-                placeholder="Nhập mật khẩu hiện tại"
+                placeholder={t('profile.currentPasswordPlaceholder')}
               />
               <button
                 type="button"
@@ -719,7 +735,7 @@ export function ProfilePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Mật khẩu mới <span className="text-red-500">*</span>
+                {t('profile.newPassword')} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -729,7 +745,7 @@ export function ProfilePage() {
                   required
                   minLength={8}
                   className="input pr-10 text-sm"
-                  placeholder="Tối thiểu 8 ký tự"
+                  placeholder={t('profile.newPasswordPlaceholder')}
                 />
                 <button
                   type="button"
@@ -743,7 +759,7 @@ export function ProfilePage() {
 
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Xác nhận mật khẩu mới <span className="text-red-500">*</span>
+                {t('profile.confirmNewPassword')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="password"
@@ -751,7 +767,7 @@ export function ProfilePage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 className="input text-sm"
-                placeholder="Nhập lại mật khẩu mới"
+                placeholder={t('profile.confirmNewPasswordPlaceholder')}
               />
             </div>
           </div>
@@ -765,12 +781,12 @@ export function ProfilePage() {
               {pwSaving ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Đang đổi mật khẩu...</span>
+                  <span>{t('profile.updatingPassword')}</span>
                 </>
               ) : (
                 <>
                   <KeyRound className="w-4 h-4" />
-                  <span>Cập nhật mật khẩu</span>
+                  <span>{t('profile.updatePasswordBtn')}</span>
                 </>
               )}
             </button>
@@ -787,7 +803,7 @@ export function ProfilePage() {
         userEmail={user?.email || ''}
         onSuccess={() => {
           refreshUser();
-          setProfileSuccess('Đã cập nhật ảnh đại diện thành công!');
+          setProfileSuccess(t('profile.avatarModal.success'));
         }}
       />
     </div>

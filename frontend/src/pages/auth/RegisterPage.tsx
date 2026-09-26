@@ -6,13 +6,14 @@ import { ArrowLeft } from 'lucide-react';
 import { useSEO } from '../../hooks/useSEO';
 
 export function RegisterPage() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
   useSEO({
-    title: 'Đăng Ký Tài Khoản | IT Supporter HaUI',
-    description: 'Tạo tài khoản thành viên IT Supporter HaUI để đặt lịch vệ sinh laptop nhanh chóng, tích lũy điểm và nhận ưu đãi sinh viên.',
+    title: t('auth.registerTitle'),
+    description: t('auth.registerDesc'),
     canonical: 'https://itsupporter.vn/register',
   });
 
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const { register } = useAuth();
 
@@ -28,12 +29,12 @@ export function RegisterPage() {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp');
+      setError(t('auth.passwordMismatch'));
       return;
     }
 
     if (password.length < 8) {
-      setError('Mật khẩu phải có ít nhất 8 ký tự');
+      setError(t('auth.passwordMinLength'));
       return;
     }
 
@@ -46,7 +47,7 @@ export function RegisterPage() {
       const msg = err.response?.data?.error?.message 
         || err.response?.data?.message 
         || (typeof err.response?.data?.error === 'string' ? err.response?.data?.error : null)
-        || 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.';
+        || t('auth.registerFailed');
       setError(msg);
     } finally {
       setLoading(false);
@@ -57,13 +58,13 @@ export function RegisterPage() {
     <div className="min-h-screen flex items-start justify-center bg-gray-50 pt-10 pb-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <Link to="/" className="inline-block mb-6" aria-label="Về trang chủ">
+          <Link to="/" className="inline-block mb-6" aria-label={t('auth.backToHome')}>
             <img src="/logo_bo3goc.png" alt="IT Supporter" className="w-20 h-20 mx-auto" />
           </Link>
           <h2 className="text-3xl font-bold text-text">{t('auth.register')}</h2>
           <Link to="/" className="mt-2 inline-flex items-center gap-1 text-sm text-text-secondary hover:text-primary transition-colors">
             <ArrowLeft className="w-3.5 h-3.5" />
-            Trang chủ
+            {t('auth.backToHome')}
           </Link>
         </div>
 
@@ -86,7 +87,7 @@ export function RegisterPage() {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 className="input"
-                placeholder="Nguyễn Văn A"
+                placeholder={isEn ? "John Doe" : "Nguyễn Văn A"}
               />
             </div>
 
@@ -117,12 +118,12 @@ export function RegisterPage() {
                 onChange={e => setPassword(e.target.value)}
                 className="input"
                 minLength={8}
-                placeholder="Tối thiểu 8 ký tự"
+                placeholder={t('auth.min8Chars')}
               />
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="label">{t('auth.password')} (xác nhận)</label>
+              <label htmlFor="confirmPassword" className="label">{t('auth.confirmPassword')}</label>
               <input
                 id="confirmPassword"
                 name="confirmPassword"
@@ -132,7 +133,7 @@ export function RegisterPage() {
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 className="input"
-                placeholder="Nhập lại mật khẩu"
+                placeholder={t('auth.retypePassword')}
               />
             </div>
           </div>

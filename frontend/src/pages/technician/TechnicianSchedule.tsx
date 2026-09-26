@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { technicianApi } from '../../api/client';
 import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { vi, enUS } from 'date-fns/locale';
 import {
   Calendar,
   Clock,
@@ -19,6 +20,8 @@ import {
   Square,
   Sparkles,
   Trash2,
+  User,
+  MapPin,
 } from 'lucide-react';
 
 export interface ShiftItem {
@@ -29,7 +32,7 @@ export interface ShiftItem {
   slots: string[];
 }
 
-const DAY_NAMES: Record<number, string> = {
+const DAY_NAMES_VI: Record<number, string> = {
   1: 'Thứ Hai',
   2: 'Thứ Ba',
   3: 'Thứ Tư',
@@ -37,6 +40,16 @@ const DAY_NAMES: Record<number, string> = {
   5: 'Thứ Sáu',
   6: 'Thứ Bảy',
   7: 'Chủ Nhật',
+};
+
+const DAY_NAMES_EN: Record<number, string> = {
+  1: 'Monday',
+  2: 'Tuesday',
+  3: 'Wednesday',
+  4: 'Thursday',
+  5: 'Friday',
+  6: 'Saturday',
+  7: 'Sunday',
 };
 
 const ALL_12_SLOTS = [
@@ -55,6 +68,9 @@ const ALL_12_SLOTS = [
 ];
 
 export function TechnicianSchedule() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
+  const dateLocale = isEn ? enUS : vi;
   const [activeTab, setActiveTab] = useState<'weekly' | 'orders'>('weekly');
 
   // Weekly shift state
@@ -105,7 +121,7 @@ export function TechnicianSchedule() {
       }
     } catch (err) {
       console.error('Failed to load shifts:', err);
-      showFeedback('error', 'Không thể tải cấu hình ca trực.');
+      showFeedback('error', t('technician.loadConfigError'));
     } finally {
       setShiftsLoading(false);
     }
@@ -193,11 +209,11 @@ export function TechnicianSchedule() {
       await technicianApi.updateShifts(shifts);
       showFeedback(
         'success',
-        'Đã xuất bản lịch trực thành công! Khách hàng đặt lịch trên Trang chủ sẽ chỉ thấy các ca bạn đã tích chọn.'
+        t('technician.publishSuccessNotice')
       );
     } catch (err: any) {
       console.error('Failed to publish shifts:', err);
-      showFeedback('error', err.response?.data?.message || 'Xuất bản lịch trực thất bại.');
+      showFeedback('error', err.response?.data?.message || t('technician.publishErrorNotice'));
     } finally {
       setSavingShifts(false);
     }
@@ -210,10 +226,10 @@ export function TechnicianSchedule() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5">
             <Calendar className="w-7 h-7 text-primary" />
-            Quản lý Lịch trực & Đăng ký Ca làm việc
+            {t('technician.scheduleMgmtTitle')}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Chủ động tích chọn bất kỳ ca nào bạn rảnh trong 12 ca hàng ngày để xuất bản lên hệ thống đặt lịch.
+            {t('technician.scheduleMgmtSubtitle')}
           </p>
         </div>
 
@@ -229,7 +245,7 @@ export function TechnicianSchedule() {
             ) : (
               <Send className="w-4 h-4" />
             )}
-            <span>{savingShifts ? 'Đang xuất bản...' : 'Xuất bản Lịch trực'}</span>
+            <span>{savingShifts ? t('technician.publishingBtn') : t('technician.publishScheduleBtn')}</span>
           </button>
         )}
       </div>
@@ -253,6 +269,7 @@ export function TechnicianSchedule() {
       )}
 
       {/* TABS SELECTOR */}
+      {/* TABS SELECTOR */}
       <div className="flex border-b border-border gap-2">
         <button
           type="button"
@@ -264,7 +281,7 @@ export function TechnicianSchedule() {
           }`}
         >
           <Clock className="w-4 h-4" />
-          <span>Lịch trực hàng tuần (Tích chọn 12 ca)</span>
+          <span>{t('technician.weeklyScheduleTab')}</span>
         </button>
 
         <button
@@ -277,7 +294,7 @@ export function TechnicianSchedule() {
           }`}
         >
           <ClipboardList className="w-4 h-4" />
-          <span>Đơn hàng theo ngày trực</span>
+          <span>{t('technician.ordersByDayTab')}</span>
         </button>
       </div>
 
@@ -291,13 +308,13 @@ export function TechnicianSchedule() {
             </div>
             <div className="text-xs text-gray-700 space-y-1">
               <p className="font-bold text-gray-900 text-sm">
-                Quyền lợi tự do lựa chọn ca trực của Kỹ thuật viên:
+                {t('technician.freedomNoticeTitle')}
               </p>
               <p>
-                1. <strong>Tự do tích ca</strong>: Mỗi ngày gồm 12 ca từ 07:00 đến 19:00. Bạn rảnh khung giờ nào chỉ cần bấm tích vào khung giờ đó (không nhất thiết phải trực liên tục).
+                {t('technician.freedomNotice1')}
               </p>
               <p>
-                2. <strong>Đồng bộ tức thì</strong>: Khi bạn bấm <em>"Xuất bản Lịch trực"</em>, khách hàng đặt lịch trên hệ thống chỉ thấy bạn trong các khung giờ bạn đã tích chọn.
+                {t('technician.freedomNotice2')}
               </p>
             </div>
           </div>
@@ -307,11 +324,11 @@ export function TechnicianSchedule() {
             {shiftsLoading ? (
               <div className="p-8 text-center space-y-3 card bg-white">
                 <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-sm text-gray-500">Đang tải lịch trực tuần...</p>
+                <p className="text-sm text-gray-500">{t('technician.loadingWeeklySchedule')}</p>
               </div>
             ) : (
               shifts.map((shift) => {
-                const dayName = DAY_NAMES[shift.day_of_week] || `Thứ ${shift.day_of_week}`;
+                const dayName = t('common.days.' + shift.day_of_week, { defaultValue: (isEn ? DAY_NAMES_EN : DAY_NAMES_VI)[shift.day_of_week] || (isEn ? `Day ${shift.day_of_week}` : `Thứ ${shift.day_of_week}`) });
                 const isActive = !!shift.is_active;
                 const tickedSlots = shift.slots || [];
 
@@ -334,7 +351,7 @@ export function TechnicianSchedule() {
                           className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
                             isActive ? 'bg-orange-600' : 'bg-gray-300'
                           }`}
-                          title={isActive ? 'Đang bật ngày này' : 'Đang tắt ngày này'}
+                          title={isActive ? t('technician.dayEnabledTitle') : t('technician.dayDisabledTitle')}
                         >
                           <div
                             className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
@@ -355,7 +372,7 @@ export function TechnicianSchedule() {
                                   : 'bg-gray-200 text-gray-500'
                               }`}
                             >
-                              {isActive ? `Đã chọn ${tickedSlots.length}/12 ca` : 'Nghỉ trực'}
+                              {isActive ? t('technician.slotsSelectedCount', { count: tickedSlots.length }) : t('technician.offDuty')}
                             </span>
                           </div>
                         </div>
@@ -369,29 +386,29 @@ export function TechnicianSchedule() {
                             onClick={() => applyPreset(shift.day_of_week, 'all')}
                             className="px-2.5 py-1 text-[11px] font-semibold text-primary bg-orange-50 hover:bg-orange-100 rounded-lg border border-orange-200 transition flex items-center gap-1"
                           >
-                            <Sparkles className="w-3 h-3" /> Tất cả 12 ca
+                            <Sparkles className="w-3 h-3" /> {t('technician.all12Slots')}
                           </button>
                           <button
                             type="button"
                             onClick={() => applyPreset(shift.day_of_week, 'morning')}
                             className="px-2.5 py-1 text-[11px] font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 transition flex items-center gap-1"
                           >
-                            <Sun className="w-3 h-3" /> Sáng (07h-12h)
+                            <Sun className="w-3 h-3" /> {t('technician.morningSlots')}
                           </button>
                           <button
                             type="button"
                             onClick={() => applyPreset(shift.day_of_week, 'afternoon')}
                             className="px-2.5 py-1 text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition flex items-center gap-1"
                           >
-                            <Sunset className="w-3 h-3" /> Chiều (12h-19h)
+                            <Sunset className="w-3 h-3" /> {t('technician.afternoonSlots')}
                           </button>
                           <button
                             type="button"
                             onClick={() => applyPreset(shift.day_of_week, 'none')}
                             className="px-2 py-1 text-[11px] font-medium text-gray-500 hover:text-rose-600 bg-gray-100 hover:bg-rose-50 rounded-lg border border-gray-200 transition flex items-center gap-1"
-                            title="Xóa trắng các ca"
+                            title={t('technician.clearAllSlotsTooltip')}
                           >
-                            <Trash2 className="w-3 h-3" /> Xóa hết
+                            <Trash2 className="w-3 h-3" /> {t('technician.clearAllSlots')}
                           </button>
                         </div>
                       )}
@@ -427,7 +444,7 @@ export function TechnicianSchedule() {
                       </div>
                     ) : (
                       <div className="pt-3 text-xs italic text-gray-400">
-                        Ngày này đang được tắt — Khách hàng sẽ không thấy bạn trong các lịch đặt của {dayName}.
+                        {t('technician.dayDisabledHint', { day: dayName })}
                       </div>
                     )}
                   </div>
@@ -439,7 +456,7 @@ export function TechnicianSchedule() {
           {/* BOTTOM SAVE BUTTON */}
           <div className="flex items-center justify-between p-4 card bg-gray-50 border border-gray-200 rounded-2xl">
             <span className="text-xs text-gray-600">
-              Nhớ bấm <strong>Xuất bản Lịch trực</strong> để áp dụng các thay đổi lên hệ thống công khai.
+              {t('technician.rememberPublishNoticePart1')} <strong>{t('technician.publishScheduleBtn')}</strong> {t('technician.rememberPublishNoticePart2')}
             </span>
 
             <button
@@ -453,7 +470,7 @@ export function TechnicianSchedule() {
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              <span>{savingShifts ? 'Đang lưu...' : 'Xuất bản Lịch trực'}</span>
+              <span>{savingShifts ? t('technician.savingBtn') : t('technician.publishScheduleBtn')}</span>
             </button>
           </div>
         </div>
@@ -464,14 +481,14 @@ export function TechnicianSchedule() {
         <div className="space-y-6">
           <div className="card p-5 bg-white border border-gray-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-bold text-gray-900 text-base">Danh sách đơn phục vụ trong ngày</h3>
+              <h3 className="font-bold text-gray-900 text-base">{t('technician.dailyOrdersTitle')}</h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                Xem lịch hẹn chi tiết của các đơn hàng đã được phân công cho bạn.
+                {t('technician.dailyOrdersSubtitle')}
               </p>
             </div>
 
             <div className="flex items-center gap-2">
-              <label className="text-xs font-semibold text-gray-700">Chọn ngày:</label>
+              <label className="text-xs font-semibold text-gray-700">{t('technician.selectDateLabel')}</label>
               <input
                 type="date"
                 value={selectedDate}
@@ -484,16 +501,16 @@ export function TechnicianSchedule() {
           {ordersLoading ? (
             <div className="p-8 text-center space-y-3 card bg-white">
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-sm text-gray-500">Đang tải danh sách đơn ngày {selectedDate}...</p>
+              <p className="text-sm text-gray-500">{t('technician.loadingOrdersForDate', { date: selectedDate })}</p>
             </div>
           ) : dailyOrders.length === 0 ? (
             <div className="card p-12 text-center bg-white border border-gray-100 space-y-2">
               <ClipboardList className="w-10 h-10 text-gray-300 mx-auto" />
               <p className="font-semibold text-gray-700 text-sm">
-                Không có đơn hàng nào trong ngày {format(new Date(selectedDate), 'dd/MM/yyyy', { locale: vi })}
+                {t('technician.noOrdersOnDate', { date: format(new Date(selectedDate), 'dd/MM/yyyy', { locale: dateLocale }) })}
               </p>
               <p className="text-xs text-gray-400">
-                Hãy sẵn sàng tại phòng làm việc 1603 A1 khi đến ca trực đã đăng ký.
+                {t('technician.beReadyPrompt')}
               </p>
             </div>
           ) : (
@@ -524,20 +541,26 @@ export function TechnicianSchedule() {
                             : 'bg-rose-50 text-rose-700 border-rose-200'
                         }`}
                       >
-                        {order.status}
+                        {t('status.' + (order.status || '').toLowerCase(), { defaultValue: order.status })}
                       </span>
                     </div>
 
                     <p className="text-xs text-gray-600 flex items-center gap-2">
-                      <span>👤 Khách hàng: <strong>{order.customer_name}</strong></span>
+                      <span className="inline-flex items-center gap-1">
+                        <User className="w-3.5 h-3.5 text-slate-500" />
+                        <span>{t('technician.customerLabel')} <strong>{order.customer_name}</strong></span>
+                      </span>
                       <span>·</span>
-                      <span>📍 {order.location || 'Phòng 1603, Tòa A1, ĐH Công nghiệp HN'}</span>
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-slate-500" />
+                        <span>{order.location || (isEn ? 'Room 1603, Building A1, HaUI' : 'Phòng 1603, Tòa A1, ĐH Công nghiệp HN')}</span>
+                      </span>
                     </p>
                   </div>
 
                   <div className="flex items-center gap-4 self-end sm:self-center">
                     <div className="text-right">
-                      <span className="text-xs text-gray-400 block font-mono">Khung giờ:</span>
+                      <span className="text-xs text-gray-400 block font-mono">{t('technician.timeSlotLabel')}</span>
                       <span className="text-sm font-bold text-gray-800 font-mono">
                         {order.scheduled_start} - {order.scheduled_end}
                       </span>
@@ -547,7 +570,7 @@ export function TechnicianSchedule() {
                       to={`/technician/orders/${order.id}`}
                       className="btn btn-primary text-xs font-semibold px-4 py-2 flex items-center gap-1.5"
                     >
-                      <span>Thực hiện đơn</span>
+                      <span>{t('technician.executeOrderBtn')}</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>

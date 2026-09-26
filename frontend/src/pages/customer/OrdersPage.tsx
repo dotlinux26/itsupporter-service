@@ -6,7 +6,7 @@ import type { OrderRow } from '../../types';
 import { formatVietnamTime } from '../../utils/date';
 
 export function OrdersPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -46,7 +46,7 @@ export function OrdersPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{t('orders.myOrders')}</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Theo dõi trạng thái tiếp nhận, tiến độ bảo dưỡng và lịch sử đơn hàng của bạn.
+            {t('orders.myOrdersSubtitle')}
           </p>
         </div>
       </div>
@@ -69,7 +69,7 @@ export function OrdersPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 002-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
           </svg>
           <h3 className="text-lg font-medium text-text mb-2">{t('orders.noOrders')}</h3>
-          <p className="text-text-secondary mb-4">Bạn chưa có đơn hàng nào. Hãy đặt lịch dịch vụ đầu tiên của bạn!</p>
+          <p className="text-text-secondary mb-4">{t('orders.noOrdersPrompt')}</p>
           <Link to="/#booking-calendar" className="btn btn-primary">{t('home.bookNow')}</Link>
         </div>
       ) : (
@@ -86,7 +86,7 @@ export function OrdersPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-text">{order.code}</h3>
-                      <p className="text-sm text-text-secondary">{order.package_name || 'Gói dịch vụ'}</p>
+                      <p className="text-sm text-text-secondary">{order.package_name || t('orders.servicePackage')}</p>
                     </div>
                   </div>
 
@@ -95,13 +95,13 @@ export function OrdersPage() {
                                           order.status === 'CONFIRMED' ? 'badge-confirmed' :
                                           order.status === 'IN_PROGRESS' ? 'badge-in_progress' :
                                           order.status === 'COMPLETED' ? 'badge-completed' : 'badge-cancelled'}`}>
-                      {order.status === 'PENDING' ? 'Chờ xác nhận' :
-                       order.status === 'CONFIRMED' ? 'Đã xác nhận' :
-                       order.status === 'IN_PROGRESS' ? 'Đang thực hiện' :
-                       order.status === 'COMPLETED' ? 'Hoàn thành' : 'Đã hủy'}
+                      {order.status === 'PENDING' ? t('status.pending') :
+                       order.status === 'CONFIRMED' ? t('status.confirmed') :
+                       order.status === 'IN_PROGRESS' ? t('status.in_progress') :
+                       order.status === 'COMPLETED' ? t('status.completed') : t('status.cancelled')}
                     </span>
                     <p className="text-text-secondary">
-                      {new Date(order.scheduled_date).toLocaleDateString('vi-VN')} {order.scheduled_start}
+                      {new Date(order.scheduled_date).toLocaleDateString(i18n.language?.startsWith('en') ? 'en-US' : 'vi-VN')} {order.scheduled_start}
                     </p>
                   </div>
                 </div>
@@ -122,9 +122,9 @@ export function OrdersPage() {
                   {order.has_unread && (
                     <span className="badge badge-pending flex items-center gap-1">
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-                        {t('orders.hasNewMessage')}
-                      </span>
-                    )}
+                      {t('orders.hasNewMessage')}
+                    </span>
+                  )}
                 </div>
               </Link>
             ))}

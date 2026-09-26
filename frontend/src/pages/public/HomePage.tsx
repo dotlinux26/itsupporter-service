@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import { CalendarWidget } from '../../components/CalendarWidget';
 import { ServicePackages } from '../../components/ServicePackages';
@@ -17,10 +18,12 @@ import {
 import { useSEO } from '../../hooks/useSEO';
 
 export function HomePage() {
+  const { t } = useTranslation();
+
   useSEO({
-    title: 'IT Supporter HaUI - Vệ Sinh & Bảo Dưỡng Laptop, PC Sinh Viên Giá Rẻ',
-    description: 'Dịch vụ vệ sinh laptop, bảo dưỡng máy tính PC, tra keo tản nhiệt chất lượng cao giá rẻ bình dân cho sinh viên ĐH Công nghiệp Hà Nội. Khách quan sát trực tiếp, an tâm tuyệt đối.',
-    keywords: 'vệ sinh laptop sinh viên, bảo dưỡng laptop giá rẻ, vệ sinh máy tính hà nội, tra keo tản nhiệt laptop, vệ sinh pc sinh viên, it supporter haui, bảo dưỡng máy tính đại học công nghiệp hà nội',
+    title: t('home.seoTitle'),
+    description: t('home.seoDesc'),
+    keywords: t('home.seoKeywords'),
     canonical: 'https://itsupporter.vn/',
   });
 
@@ -148,15 +151,15 @@ export function HomePage() {
           <div className="max-w-4xl mx-auto text-center">
             {/* Main Headline - Bold, Thick typography */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-950 tracking-tight leading-[1.12] mb-6">
-              Hạ nhiệt tức thì cho PC &amp; Laptop.{' '}
+              {t('home.heroCooling')}{' '}
               <span className="text-[#ff6b35] block sm:inline font-black">
-                Đặt lịch tiếp nhận tại {siteInfo.team_name}.
+                {t('home.heroIntakeAt')} {siteInfo.team_name}.
               </span>
             </h1>
 
             {/* Subtitle */}
             <p className="text-base sm:text-lg md:text-xl text-slate-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-              Giải pháp chăm sóc phần cứng chuẩn phòng lab của {siteInfo.team_name}. Đặt lịch hẹn trước tối thiểu 4 tiếng, mang máy tới phòng làm việc ({siteInfo.workshop_address}) để kỹ thuật viên đón tiếp, kiểm tra &amp; bảo dưỡng trực tiếp!
+              {t('home.heroDescription', { teamName: siteInfo.team_name, address: siteInfo.workshop_address })}
             </p>
 
             {/* Action buttons */}
@@ -165,14 +168,14 @@ export function HomePage() {
                 onClick={scrollToCalendar}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-[#ff6b35] hover:bg-[#e85d2d] text-white font-bold text-base rounded-xl shadow-lg shadow-orange-500/25 transition cursor-pointer"
               >
-                <span>Xem lịch trống &amp; Đặt ngay</span>
+                <span>{t('home.viewSlotsAndBook')}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
               <Link
                 to="/services"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-white hover:bg-slate-50 text-slate-800 font-bold text-base rounded-xl border border-slate-200 shadow-2xs transition"
               >
-                Xem chi tiết các gói
+                {t('home.viewPackageDetails')}
               </Link>
             </div>
 
@@ -180,11 +183,11 @@ export function HomePage() {
             <div className="flex flex-wrap items-center justify-center gap-6 text-xs sm:text-sm font-semibold text-slate-700">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Đặt trước tối thiểu 4 tiếng</span>
+                <span>{t('home.bookMinHours')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-orange-600" />
-                <span>KTV trễ hẹn &gt; 30p làm FREE 100% (0đ)</span>
+                <span>{t('home.latePenaltyCommitment')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-blue-600" />
@@ -210,7 +213,7 @@ export function HomePage() {
                   ? `${siteInfo.stats.completed_orders_count}`
                   : `${siteInfo.stats?.total_orders_count || 0}`}
               </div>
-              <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">Máy tính đã vệ sinh an toàn</div>
+              <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">{t('home.computersSafelyCleaned')}</div>
             </div>
             <div>
               <div className="text-3xl sm:text-4xl font-black text-orange-600 font-mono">
@@ -219,17 +222,17 @@ export function HomePage() {
                   : '100%'}
               </div>
               <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-                Khách hàng hài lòng 5 sao ({siteInfo.stats?.total_reviews || 0} đánh giá)
+                {t('home.satisfiedCustomers', { count: siteInfo.stats?.total_reviews || 0 })}
               </div>
             </div>
             <div>
               <div className="text-3xl sm:text-4xl font-black text-slate-900 font-mono">&lt; 30p</div>
-              <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">Cam kết đúng hẹn tuyệt đối</div>
+              <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">{t('home.punctualityCommitment')}</div>
             </div>
             {isWarrantyActive && (
               <div>
-                <div className="text-3xl sm:text-4xl font-black text-emerald-600 font-mono">{siteInfo.warranty_policy_days || '30 Ngày'}</div>
-                <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">{siteInfo.warranty_policy_title || 'Bảo hành hỗ trợ kỹ thuật'}</div>
+                <div className="text-3xl sm:text-4xl font-black text-emerald-600 font-mono">{siteInfo.warranty_policy_days || t('home.defaultWarrantyDays')}</div>
+                <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">{siteInfo.warranty_policy_title || t('home.defaultWarrantyTitle')}</div>
               </div>
             )}
           </div>
@@ -241,10 +244,10 @@ export function HomePage() {
         <div className="container">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-              4 Bước tiếp nhận &amp; bảo dưỡng máy tính chuyên nghiệp
+              {t('home.stepsTitle')}
             </h2>
             <p className="text-sm text-slate-500 mt-2">
-              Trực tiếp quan sát kỹ thuật viên thao tác trên thiết bị của bạn với đầy đủ đồ nghề chuyên dụng.
+              {t('home.stepsSubtitle')}
             </p>
           </div>
 
@@ -256,9 +259,9 @@ export function HomePage() {
               <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center mb-4">
                 <Clock className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-slate-900 text-base mb-1">Đặt lịch online</h3>
+              <h3 className="font-bold text-slate-900 text-base mb-1">{t('home.step1Title')}</h3>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Chọn slot giờ trước tối thiểu 4 tiếng, chọn gói dịch vụ và kỹ thuật viên bạn mong muốn.
+                {t('home.step1Desc')}
               </p>
             </div>
 
@@ -269,9 +272,9 @@ export function HomePage() {
               <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mb-4">
                 <ShieldCheck className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-slate-900 text-base mb-1">Mang máy tới phòng làm việc</h3>
+              <h3 className="font-bold text-slate-900 text-base mb-1">{t('home.step2Title')}</h3>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Mang máy tới {siteInfo.workshop_address} theo giờ hẹn đã đặt. Kỹ thuật viên đón tiếp và xử lý đúng hẹn.
+                {t('home.step2Desc', { address: siteInfo.workshop_address })}
               </p>
             </div>
 
@@ -282,9 +285,9 @@ export function HomePage() {
               <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
                 <Cpu className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-slate-900 text-base mb-1">Vệ sinh &amp; Tối ưu</h3>
+              <h3 className="font-bold text-slate-900 text-base mb-1">{t('home.step3Title')}</h3>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Tháo lắp cẩn thận, làm sạch cánh quạt, tra keo tản nhiệt gốm/kim loại lỏng, test stress test nhiệt độ.
+                {t('home.step3Desc')}
               </p>
             </div>
 
@@ -295,9 +298,9 @@ export function HomePage() {
               <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
                 <Gift className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-slate-900 text-base mb-1">Nghiệm thu &amp; Voucher</h3>
+              <h3 className="font-bold text-slate-900 text-base mb-1">{t('home.step4Title')}</h3>
               <p className="text-xs text-slate-500 leading-relaxed">
-                Kiểm tra máy mượt mà, quét mã QR thanh toán nhanh và nhận Voucher giảm giá cho lần bảo trì sau.
+                {t('home.step4Desc')}
               </p>
             </div>
           </div>

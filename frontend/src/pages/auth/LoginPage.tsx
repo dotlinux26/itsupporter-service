@@ -6,13 +6,13 @@ import { ArrowLeft } from 'lucide-react';
 import { useSEO } from '../../hooks/useSEO';
 
 export function LoginPage() {
+  const { t } = useTranslation();
   useSEO({
-    title: 'Đăng Nhập Tài Khoản | IT Supporter HaUI',
-    description: 'Đăng nhập hệ thống IT Supporter HaUI để theo dõi đơn bảo dưỡng, quản lý lịch hẹn và nhận mã giảm giá.',
+    title: t('auth.loginTitle'),
+    description: t('auth.loginDesc'),
     canonical: 'https://itsupporter.vn/login',
   });
 
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { login } = useAuth();
@@ -58,7 +58,7 @@ export function LoginPage() {
           <h2 className="text-3xl font-bold text-text">{t('auth.login')}</h2>
           <Link to="/" className="mt-2 inline-flex items-center gap-1 text-sm text-text-secondary hover:text-primary transition-colors">
             <ArrowLeft className="w-3.5 h-3.5" />
-            Trang chủ
+            {t('auth.backToHome')}
           </Link>
         </div>
 

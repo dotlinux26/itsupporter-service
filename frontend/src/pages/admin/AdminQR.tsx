@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { adminApi } from '../../api/client';
 import { ZoomableImage } from '../../components/ImageModal';
 import { QrCode, Upload, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export function AdminQR() {
+  const { t } = useTranslation();
   const [qrFile, setQrFile] = useState<File | null>(null);
   const [currentQr, setCurrentQr] = useState<string | null>(null);
   const [currentQrId, setCurrentQrId] = useState<number | null>(null);
@@ -36,29 +38,29 @@ export function AdminQR() {
     setMessage(null);
     try {
       await adminApi.qr.upload(qrFile);
-      setMessage({ type: 'success', text: 'Tải lên và kích hoạt QR thanh toán thành công!' });
+      setMessage({ type: 'success', text: t('admin.qrUploadSuccess') });
       setQrFile(null);
       setPreview(null);
       loadCurrentQr();
     } catch (err) {
       console.error('Upload failed:', err);
-      setMessage({ type: 'error', text: 'Tải lên QR thất bại. Vui lòng thử lại.' });
+      setMessage({ type: 'error', text: t('admin.qrUploadFail') });
     } finally {
       setUploading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!currentQrId && !window.confirm('Bạn có chắc chắn muốn gỡ bỏ QR thanh toán này?')) return;
+    if (!currentQrId && !window.confirm(t('admin.qrDeleteConfirm'))) return;
     try {
       if (currentQrId) {
         await adminApi.qr.delete(currentQrId);
       }
       setCurrentQr(null);
-      setMessage({ type: 'success', text: 'Đã gỡ bỏ QR thanh toán thành công.' });
+      setMessage({ type: 'success', text: t('admin.qrDeleteSuccess') });
     } catch (err) {
       console.error('Delete failed:', err);
-      setMessage({ type: 'error', text: 'Gỡ QR thất bại.' });
+      setMessage({ type: 'error', text: t('admin.qrDeleteFail') });
     }
   };
 
@@ -67,9 +69,9 @@ export function AdminQR() {
       <div className="flex items-center gap-3 mb-8">
         <QrCode className="w-8 h-8 text-orange-600" />
         <div>
-          <h1 className="text-2xl font-bold text-text">Quản lý QR thanh toán ngân hàng</h1>
+          <h1 className="text-2xl font-bold text-text">{t('admin.qrTitle')}</h1>
           <p className="text-sm text-text-secondary">
-            QR này sẽ hiển thị trực tiếp cho khách hàng quét thanh toán tại buổi dịch vụ của kỹ thuật viên.
+            {t('admin.qrSubtitle')}
           </p>
         </div>
       </div>
@@ -93,10 +95,10 @@ export function AdminQR() {
 
       <div className="card p-6 mb-8 border border-border">
         <h2 className="font-semibold text-text mb-4 flex items-center justify-between">
-          <span>QR thanh toán đang hoạt động</span>
+          <span>{t('admin.qrCurrentActive')}</span>
           {currentQr && (
             <span className="text-xs bg-green-100 text-green-700 font-semibold px-2.5 py-0.5 rounded-full">
-              Đang áp dụng
+              {t('admin.qrInUse')}
             </span>
           )}
         </h2>
@@ -104,32 +106,32 @@ export function AdminQR() {
           <div className="text-center py-4">
             <ZoomableImage
               src={currentQr}
-              alt="QR thanh toán ngân hàng"
+              alt="QR Payment"
               className="w-64 h-64 mx-auto rounded-xl border border-border shadow-sm object-contain bg-white p-2"
-              title="QR Thanh Toán Ngân Hàng (Đang áp dụng)"
-              caption="Ảnh QR chính thức do Admin tải lên - Quét mã để chuyển khoản thanh toán"
+              title={t('admin.qrCurrentActive')}
+              caption={t('admin.qrSubtitle')}
             />
             <p className="text-xs text-text-muted mt-1">
-              (Nhấn vào ảnh để phóng to toàn màn hình)
+              ({t('common.clickToEnlarge', '(Nhấn vào ảnh để phóng to toàn màn hình)')})
             </p>
             <p className="text-sm text-text-secondary mt-2">
-              Khách hàng quét mã này để chuyển khoản thanh toán cho đội IT Supporter
+              {t('admin.qrSubtitle')}
             </p>
           </div>
         ) : (
           <div className="text-center py-12 text-text-secondary bg-gray-50 rounded-lg border border-dashed border-gray-300">
             <QrCode className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-            <p className="font-medium text-gray-700">Chưa có QR thanh toán nào được thiết lập</p>
-            <p className="text-xs text-gray-400 mt-1">Vui lòng tải lên ảnh QR bên dưới</p>
+            <p className="font-medium text-gray-700">{t('admin.qrNoActive')}</p>
+            <p className="text-xs text-gray-400 mt-1">{t('admin.qrHint')}</p>
           </div>
         )}
       </div>
 
       <div className="card p-6 border border-border">
-        <h2 className="font-semibold text-text mb-4">Tải lên ảnh QR mới (Bank QR file)</h2>
+        <h2 className="font-semibold text-text mb-4">{t('admin.qrUploadNew')}</h2>
         <div className="space-y-4">
           <div>
-            <label className="label">Chọn file ảnh QR (PNG, JPG, WEBP - max 5MB)</label>
+            <label className="label">{t('admin.qrChooseFile')} (PNG, JPG, WEBP - max 5MB)</label>
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp"
@@ -146,7 +148,7 @@ export function AdminQR() {
 
           {preview && (
             <div className="text-center py-2">
-              <p className="text-xs font-medium text-text-muted mb-2">Xem trước ảnh QR:</p>
+              <p className="text-xs font-medium text-text-muted mb-2">{t('admin.preview', 'Xem trước ảnh QR:')}</p>
               <img
                 src={preview}
                 alt="Preview"
@@ -167,7 +169,7 @@ export function AdminQR() {
               ) : (
                 <Upload className="w-4 h-4" />
               )}
-              {uploading ? 'Đang tải lên...' : 'Tải lên & Kích hoạt QR'}
+              {uploading ? t('admin.qrUploading') : t('admin.qrUploadAndActivate')}
             </button>
 
             {currentQr && (
@@ -177,7 +179,7 @@ export function AdminQR() {
                 type="button"
               >
                 <Trash2 className="w-4 h-4" />
-                Gỡ QR hiện tại
+                {t('admin.qrDelete')}
               </button>
             )}
           </div>

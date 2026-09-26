@@ -1,12 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { chatApi, orderApi, voucherApi } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../../components/Avatar';
 import { VoucherCard } from '../../components/VoucherCard';
 import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { vi, enUS } from 'date-fns/locale';
 import { Send, Gift, ArrowLeft, ExternalLink, Mail, MessageSquare } from 'lucide-react';
 
 /** Helper to parse SQLite UTC datetime string into local Date object */
@@ -88,6 +89,9 @@ function SafeChatMessage({ content, isMe }: { content: string; isMe: boolean }) 
 export function ChatPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language?.startsWith('en') ? enUS : vi;
+  const isEn = i18n.language?.startsWith('en');
   const queryClient = useQueryClient();
 
   const [newMessage, setNewMessage] = useState('');
@@ -188,18 +192,18 @@ export function ChatPage() {
         await chatApi.sendVoucher(
           Number(id),
           voucher.id,
-          giftNote || '🎁 Kỹ thuật viên gửi tặng bạn voucher ưu đãi cho lần dịch vụ tiếp theo!'
+          giftNote || t('chat.defaultGiftNote')
         );
         queryClient.invalidateQueries({ queryKey: ['order-messages', id] });
         setShowGiftModal(false);
         setGiftNote('');
         inputRef.current?.focus();
       } else {
-        throw new Error('Không tìm thấy thông tin voucher vừa tạo.');
+        throw new Error(t('chat.loadProgramsError'));
       }
     } catch (err: any) {
       console.error('Failed to gift voucher:', err);
-      alert(err.response?.data?.error?.message || 'Không thể gửi voucher. Vui lòng thử lại.');
+      alert(err.response?.data?.error?.message || t('chat.giftError'));
     } finally {
       setGifting(false);
     }
@@ -218,16 +222,16 @@ export function ChatPage() {
   if (!order) {
     return (
       <div className="container max-w-4xl mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-text mb-4">Không tìm thấy đơn hàng</h1>
-        <Link to="/orders" className="btn btn-primary">Quay lại danh sách đơn</Link>
+        <h1 className="text-2xl font-bold text-text mb-4">{t('chat.orderNotFound')}</h1>
+        <Link to="/orders" className="btn btn-primary">{t('chat.backToOrders')}</Link>
       </div>
     );
   }
 
   const otherPersonName =
     user?.role === 'TECHNICIAN'
-      ? order.customer_name || 'Khách hàng'
-      : order.technician_name || 'Kỹ thuật viên';
+      ? order.customer_name || t('orders.customer')
+      : order.technician_name || t('orders.technician');
 
   const backUrl =
     user?.role === 'TECHNICIAN'
@@ -247,7 +251,7 @@ export function ChatPage() {
             <Link
               to={backUrl}
               className="p-2 rounded-xl hover:bg-gray-100 text-text-secondary transition-colors"
-              title="Quay lại chi tiết đơn"
+              title={t('chat.backToOrder')}
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
@@ -256,12 +260,12 @@ export function ChatPage() {
               <div>
                 <h2 className="text-sm sm:text-base font-bold text-text leading-tight">{otherPersonName}</h2>
                 <div className="flex items-center gap-2 text-xs text-text-muted mt-0.5">
-                  <span>Mã đơn: <strong className="text-orange-600 font-mono font-semibold">{order.code}</strong></span>
+                  <span>{t('orders.orderCode')}: <strong className="text-orange-600 font-mono font-semibold">{order.code}</strong></span>
                   <span>•</span>
                   <span className="hidden sm:inline">{order.package_name}</span>
                   <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 font-medium bg-emerald-50 px-1.5 py-0.5 rounded">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Trực tuyến
+                    {t('chat.online')}
                   </span>
                 </div>
               </div>
@@ -275,7 +279,7 @@ export function ChatPage() {
               type="button"
             >
               <Gift className="w-4 h-4 text-orange-600" />
-              <span className="hidden sm:inline font-semibold">Tặng Voucher</span>
+              <span className="hidden sm:inline font-semibold">{t('chat.giftVoucher')}</span>
             </button>
           )}
         </div>
@@ -290,9 +294,9 @@ export function ChatPage() {
               <div className="w-14 h-14 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center mb-3">
                 <MessageSquare className="w-7 h-7" />
               </div>
-              <p className="text-sm font-bold text-gray-700">Khung trò chuyện trực tiếp</p>
+              <p className="text-sm font-bold text-gray-700">{t('chat.directChatTitle')}</p>
               <p className="text-xs text-gray-500 mt-1 max-w-sm">
-                Bạn và kỹ thuật viên có thể trao đổi trực tiếp về tình trạng máy móc, gửi liên kết tham khảo hoặc tặng voucher ưu đãi.
+                {t('chat.directChatDesc')}
               </p>
             </div>
           ) : (
@@ -313,12 +317,12 @@ export function ChatPage() {
                   />
 
                   <div className={`max-w-[85%] sm:max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                    {/* Timestamp & Sender info formatted with Vietnam local time */}
+                    {/* Timestamp & Sender info formatted with local time */}
                     <div className="flex items-center gap-1.5 text-[11px] text-text-muted mb-1 px-1">
                       <span className="font-semibold text-gray-700">{msg.sender_name}</span>
                       <span>•</span>
-                      <span title={format(parsedDate, 'HH:mm:ss, EEEE dd/MM/yyyy', { locale: vi })}>
-                        {format(parsedDate, 'HH:mm • dd/MM/yyyy', { locale: vi })}
+                      <span title={format(parsedDate, 'HH:mm:ss, EEEE dd/MM/yyyy', { locale: dateLocale })}>
+                        {format(parsedDate, 'HH:mm • dd/MM/yyyy', { locale: dateLocale })}
                       </span>
                     </div>
 
@@ -338,7 +342,7 @@ export function ChatPage() {
                         <div className="my-1">
                           <VoucherCard
                             code={msg.voucher_code}
-                            name={msg.voucher_name || 'Voucher quà tặng'}
+                            name={msg.voucher_name || t('voucher.giftVoucher')}
                             discountType={msg.voucher_discount_type || 'percent'}
                             discountValue={msg.voucher_discount_value || 10}
                             status={msg.voucher_status || 'active'}
@@ -373,7 +377,7 @@ export function ChatPage() {
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Nhập tin nhắn (hỗ trợ gửi link website, email)..."
+              placeholder={t('chat.placeholder')}
               className="input flex-1 bg-slate-50 focus:bg-white border-border text-sm py-2.5 rounded-xl transition"
               disabled={sendMutation.isPending}
               autoFocus
@@ -388,7 +392,7 @@ export function ChatPage() {
               ) : (
                 <Send className="w-4 h-4" />
               )}
-              <span className="hidden sm:inline font-medium">Gửi</span>
+              <span className="hidden sm:inline font-medium">{t('chat.send')}</span>
             </button>
           </form>
         </div>
@@ -406,17 +410,17 @@ export function ChatPage() {
           >
             <div className="flex items-center gap-2 mb-4 text-orange-600">
               <Gift className="w-6 h-6" />
-              <h2 className="text-xl font-bold text-text">Tặng Voucher cho khách hàng</h2>
+              <h2 className="text-xl font-bold text-text">{t('chat.giftModalTitle')}</h2>
             </div>
             <p className="text-sm text-text-secondary mb-4">
-              Voucher sẽ được tạo mới và gửi trực tiếp dưới dạng thẻ vé ưu đãi vào khung chat này cho khách.
+              {t('chat.giftModalDesc')}
             </p>
 
             <div className="space-y-4">
               <div>
-                <label className="label">Chọn chương trình ưu đãi</label>
+                <label className="label">{t('chat.selectProgram')}</label>
                 {voucherPrograms.length === 0 ? (
-                  <p className="text-xs text-red-500 py-2">Hiện chưa có chương trình voucher nào đang kích hoạt.</p>
+                  <p className="text-xs text-red-500 py-2">{t('chat.noActiveProgram')}</p>
                 ) : (
                   <select
                     value={selectedProgramId || ''}
@@ -425,7 +429,7 @@ export function ChatPage() {
                   >
                     {voucherPrograms.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.name} ({p.discount_type === 'percent' ? `-${p.discount_value}%` : `-${Number(p.discount_value).toLocaleString('vi-VN')}đ`})
+                        {p.name} ({p.discount_type === 'percent' ? `-${p.discount_value}%` : `-${Number(p.discount_value).toLocaleString(isEn ? 'en-US' : 'vi-VN')}${isEn ? ' VND' : 'đ'}`})
                       </option>
                     ))}
                   </select>
@@ -433,12 +437,12 @@ export function ChatPage() {
               </div>
 
               <div>
-                <label className="label">Lời nhắn đính kèm</label>
+                <label className="label">{t('chat.giftNote')}</label>
                 <textarea
                   rows={2}
                   value={giftNote}
                   onChange={(e) => setGiftNote(e.target.value)}
-                  placeholder="VD: Cảm ơn bạn đã tin tưởng dịch vụ! Gửi tặng bạn voucher ưu đãi cho lần bảo dưỡng tiếp theo."
+                  placeholder={t('chat.giftNotePlaceholder')}
                   className="input"
                 />
               </div>
@@ -449,7 +453,7 @@ export function ChatPage() {
                   onClick={() => setShowGiftModal(false)}
                   className="btn btn-ghost"
                 >
-                  Hủy
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="button"
@@ -462,7 +466,7 @@ export function ChatPage() {
                   ) : (
                     <Send className="w-4 h-4" />
                   )}
-                  Gửi tặng ngay
+                  {t('chat.giftNow')}
                 </button>
               </div>
             </div>

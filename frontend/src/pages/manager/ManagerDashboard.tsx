@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { managerApi } from '../../api/client';
 import {
   ClipboardList,
@@ -23,7 +24,7 @@ import {
 } from 'lucide-react';
 import { Avatar } from '../../components/Avatar';
 import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { vi, enUS } from 'date-fns/locale';
 
 interface AnalyticsData {
   summary: {
@@ -65,6 +66,10 @@ interface AnalyticsData {
 }
 
 export function ManagerDashboard() {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language?.startsWith('en') ? enUS : vi;
+  const isEn = i18n.language?.startsWith('en');
+
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [technicians, setTechnicians] = useState<any[]>([]);
@@ -117,11 +122,11 @@ export function ManagerDashboard() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      setExportFeedback(`Đã xuất báo cáo ${type.toUpperCase()} (${fileFormat.toUpperCase()}) thành công!`);
+      setExportFeedback(t('manager.exportSuccess', { type: type.toUpperCase(), format: fileFormat.toUpperCase() }));
       setTimeout(() => setExportFeedback(null), 4000);
     } catch (err) {
       console.error('Export failed:', err);
-      setExportFeedback('Xuất báo cáo thất bại. Vui lòng thử lại!');
+      setExportFeedback(t('manager.exportFail'));
       setTimeout(() => setExportFeedback(null), 4000);
     } finally {
       setExporting(null);
@@ -133,31 +138,31 @@ export function ManagerDashboard() {
       case 'PENDING':
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-            <Clock className="w-3 h-3" /> Chờ duyệt
+            <Clock className="w-3 h-3" /> {t('status.pending')}
           </span>
         );
       case 'CONFIRMED':
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-            <CheckCircle2 className="w-3 h-3" /> Đã nhận
+            <CheckCircle2 className="w-3 h-3" /> {t('status.confirmed')}
           </span>
         );
       case 'IN_PROGRESS':
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 animate-pulse">
-            <Wrench className="w-3 h-3" /> Đang sửa
+            <Wrench className="w-3 h-3" /> {t('status.in_progress')}
           </span>
         );
       case 'COMPLETED':
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <CheckCircle2 className="w-3 h-3" /> Hoàn thành
+            <CheckCircle2 className="w-3 h-3" /> {t('status.completed')}
           </span>
         );
       case 'CANCELLED':
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-            <AlertCircle className="w-3 h-3" /> Đã hủy
+            <AlertCircle className="w-3 h-3" /> {t('status.cancelled')}
           </span>
         );
       default:
@@ -214,10 +219,10 @@ export function ManagerDashboard() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5">
             <TrendingUp className="w-7 h-7 text-primary" />
-            Bảng điều khiển Quản lý & Vận hành
+            {t('manager.dashboardTitle')}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Tổng hợp dữ liệu doanh thu, phân bổ quỹ đội, hiệu suất KTV và điều phối dịch vụ.
+            {t('manager.dashboardSubtitle')}
           </p>
         </div>
 
@@ -227,14 +232,14 @@ export function ManagerDashboard() {
             className="btn btn-primary text-xs font-semibold px-3.5 py-2.5 shadow-sm"
           >
             <ClipboardList className="w-4 h-4" />
-            Điều phối đơn
+            {t('manager.dispatchOrders')}
           </Link>
           <Link
             to="/manager/settlements"
             className="btn btn-outline text-xs font-semibold px-3.5 py-2.5"
           >
             <Receipt className="w-4 h-4" />
-            Quyết toán KTV
+            {t('manager.techSettlements')}
           </Link>
         </div>
       </div>
@@ -256,16 +261,16 @@ export function ManagerDashboard() {
               <TrendingUp className="w-5 h-5" />
             </div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-orange-800 bg-orange-100 px-2 py-0.5 rounded-full">
-              Doanh thu
+              {t('manager.revenue')}
             </span>
           </div>
           <div className="mt-3">
-            <span className="text-xs font-medium text-gray-500 block">Tổng doanh thu tiếp nhận</span>
+            <span className="text-xs font-medium text-gray-500 block">{t('manager.totalGrossRevenue')}</span>
             <div className="text-2xl font-extrabold text-primary font-mono tracking-tight mt-0.5">
-              {summary.total_revenue.toLocaleString('vi-VN')} <span className="text-sm font-semibold">đ</span>
+              {summary.total_revenue.toLocaleString(isEn ? 'en-US' : 'vi-VN')} <span className="text-sm font-semibold">{isEn ? 'VND' : 'đ'}</span>
             </div>
             <p className="text-[11px] text-gray-400 mt-1">
-              {summary.completed_orders} đơn hoàn thành ({summary.total_orders} tổng đơn)
+              {t('manager.completedOrdersRatio', { completed: summary.completed_orders, total: summary.total_orders })}
             </p>
           </div>
         </div>
@@ -277,16 +282,16 @@ export function ManagerDashboard() {
               <Building2 className="w-5 h-5" />
             </div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
-              Quỹ đội (30%)
+              {t('manager.teamFund')}
             </span>
           </div>
           <div className="mt-3">
-            <span className="text-xs font-medium text-gray-500 block">Quỹ hoạt động IT Supporter</span>
+            <span className="text-xs font-medium text-gray-500 block">{t('manager.teamFundDesc')}</span>
             <div className="text-2xl font-extrabold text-emerald-700 font-mono tracking-tight mt-0.5">
-              {summary.team_fund_balance.toLocaleString('vi-VN')} <span className="text-sm font-semibold">đ</span>
+              {summary.team_fund_balance.toLocaleString(isEn ? 'en-US' : 'vi-VN')} <span className="text-sm font-semibold">{isEn ? 'VND' : 'đ'}</span>
             </div>
             <p className="text-[11px] text-gray-400 mt-1">
-              Phục vụ mua sắm keo tản nhiệt, dụng cụ & duy trì đội
+              {t('manager.teamFundUsage')}
             </p>
           </div>
         </div>
@@ -298,16 +303,16 @@ export function ManagerDashboard() {
               <Wallet className="w-5 h-5" />
             </div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-blue-800 bg-blue-100 px-2 py-0.5 rounded-full">
-              Hoa hồng (70%)
+              {t('manager.commission70')}
             </span>
           </div>
           <div className="mt-3">
-            <span className="text-xs font-medium text-gray-500 block">Tổng thu nhập chia sẻ KTV</span>
+            <span className="text-xs font-medium text-gray-500 block">{t('manager.technicianShareDesc')}</span>
             <div className="text-2xl font-extrabold text-blue-700 font-mono tracking-tight mt-0.5">
-              {summary.total_technician_share.toLocaleString('vi-VN')} <span className="text-sm font-semibold">đ</span>
+              {summary.total_technician_share.toLocaleString(isEn ? 'en-US' : 'vi-VN')} <span className="text-sm font-semibold">{isEn ? 'VND' : 'đ'}</span>
             </div>
             <p className="text-[11px] text-gray-400 mt-1">
-              Hoa hồng tích lũy theo từng ca dịch vụ thành công
+              {t('manager.technicianShareUsage')}
             </p>
           </div>
         </div>
@@ -319,16 +324,16 @@ export function ManagerDashboard() {
               <Receipt className="w-5 h-5" />
             </div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-purple-800 bg-purple-100 px-2 py-0.5 rounded-full">
-              Chờ chi trả
+              {t('manager.pendingPayout')}
             </span>
           </div>
           <div className="mt-3">
-            <span className="text-xs font-medium text-gray-500 block">Số dư KTV chờ quyết toán</span>
+            <span className="text-xs font-medium text-gray-500 block">{t('manager.pendingPayoutDesc')}</span>
             <div className="text-2xl font-extrabold text-purple-700 font-mono tracking-tight mt-0.5">
-              {summary.pending_settlements_total.toLocaleString('vi-VN')} <span className="text-sm font-semibold">đ</span>
+              {summary.pending_settlements_total.toLocaleString(isEn ? 'en-US' : 'vi-VN')} <span className="text-sm font-semibold">{isEn ? 'VND' : 'đ'}</span>
             </div>
             <p className="text-[11px] text-gray-400 mt-1">
-              Cần thực hiện quyết toán chi trả cho kỹ thuật viên
+              {t('manager.pendingPayoutUsage')}
             </p>
           </div>
         </div>
@@ -342,10 +347,10 @@ export function ManagerDashboard() {
             <div>
               <h3 className="font-bold text-gray-900 text-base flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-primary" />
-                Biểu đồ Doanh thu & Dòng tiền theo ngày
+                {t('manager.chartTitle')}
               </h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                Thống kê doanh thu thực tế và phân bổ tỷ trọng Quỹ đội (30%) vs KTV (70%).
+                {t('manager.chartSubtitle')}
               </p>
             </div>
 
@@ -359,7 +364,7 @@ export function ManagerDashboard() {
                     : 'text-gray-500 hover:text-gray-900'
                 }`}
               >
-                7 ngày
+                {t('manager.days7')}
               </button>
               <button
                 onClick={() => setTimeframeDays(14)}
@@ -369,7 +374,7 @@ export function ManagerDashboard() {
                     : 'text-gray-500 hover:text-gray-900'
                 }`}
               >
-                14 ngày
+                {t('manager.days14')}
               </button>
               <button
                 onClick={() => setTimeframeDays(30)}
@@ -379,7 +384,7 @@ export function ManagerDashboard() {
                     : 'text-gray-500 hover:text-gray-900'
                 }`}
               >
-                30 ngày
+                {t('manager.days30')}
               </button>
             </div>
           </div>
@@ -394,9 +399,9 @@ export function ManagerDashboard() {
                   <div key={item.date} className="flex-1 flex flex-col items-center gap-1 h-full justify-end group relative">
                     {/* Tooltip on hover */}
                     <div className="absolute -top-14 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-gray-900 text-white text-[10px] font-medium py-1 px-2 rounded-lg shadow-xl z-20 whitespace-nowrap">
-                      <div className="font-bold text-amber-300">{format(new Date(item.date), 'dd/MM/yyyy')}</div>
-                      <div>Doanh thu: {item.revenue.toLocaleString('vi-VN')} đ</div>
-                      <div className="text-gray-300">({item.order_count} đơn hoàn thành)</div>
+                      <div className="font-bold text-amber-300">{format(new Date(item.date), 'dd/MM/yyyy', { locale: dateLocale })}</div>
+                      <div>{t('manager.revenue')}: {item.revenue.toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}</div>
+                      <div className="text-gray-300">({t('manager.completedOrdersRatio', { completed: item.order_count, total: item.order_count })})</div>
                     </div>
 
                     {/* Bar visual */}
@@ -421,9 +426,9 @@ export function ManagerDashboard() {
 
             {/* Date labels */}
             <div className="flex items-center justify-between text-[10px] text-gray-400 font-mono px-1">
-              <span>{analytics?.revenue_by_date?.[0] ? format(new Date(analytics.revenue_by_date[0].date), 'dd/MM') : ''}</span>
-              <span>{analytics?.revenue_by_date?.[Math.floor((analytics.revenue_by_date.length - 1) / 2)] ? format(new Date(analytics.revenue_by_date[Math.floor((analytics.revenue_by_date.length - 1) / 2)].date), 'dd/MM') : ''}</span>
-              <span>{analytics?.revenue_by_date?.[analytics.revenue_by_date.length - 1] ? format(new Date(analytics.revenue_by_date[analytics.revenue_by_date.length - 1].date), 'dd/MM') : ''}</span>
+              <span>{analytics?.revenue_by_date?.[0] ? format(new Date(analytics.revenue_by_date[0].date), 'dd/MM', { locale: dateLocale }) : ''}</span>
+              <span>{analytics?.revenue_by_date?.[Math.floor((analytics.revenue_by_date.length - 1) / 2)] ? format(new Date(analytics.revenue_by_date[Math.floor((analytics.revenue_by_date.length - 1) / 2)].date), 'dd/MM', { locale: dateLocale }) : ''}</span>
+              <span>{analytics?.revenue_by_date?.[analytics.revenue_by_date.length - 1] ? format(new Date(analytics.revenue_by_date[analytics.revenue_by_date.length - 1].date), 'dd/MM', { locale: dateLocale }) : ''}</span>
             </div>
           </div>
 
@@ -431,7 +436,7 @@ export function ManagerDashboard() {
           <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-100 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-1.5 text-gray-600 font-semibold">
               <Sparkles className="w-4 h-4 text-primary" />
-              <span>Xuất báo cáo tài chính & vận hành:</span>
+              <span>{t('manager.exportToolbarTitle')}</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -441,7 +446,7 @@ export function ManagerDashboard() {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-white border border-emerald-200 rounded-lg hover:bg-emerald-50 transition shadow-2xs disabled:opacity-50"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-                {exporting === 'orders-xlsx' ? 'Đang xuất...' : 'Báo cáo đơn (Excel)'}
+                {exporting === 'orders-xlsx' ? t('manager.exporting') : t('manager.exportOrdersExcel')}
               </button>
               <button
                 onClick={() => handleExport('financial', 'xlsx')}
@@ -449,7 +454,7 @@ export function ManagerDashboard() {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary bg-white border border-orange-200 rounded-lg hover:bg-orange-50 transition shadow-2xs disabled:opacity-50"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 text-primary" />
-                {exporting === 'financial-xlsx' ? 'Đang xuất...' : 'Sổ quỹ & Dòng tiền'}
+                {exporting === 'financial-xlsx' ? t('manager.exporting') : t('manager.exportFinancialExcel')}
               </button>
             </div>
           </div>
@@ -460,10 +465,10 @@ export function ManagerDashboard() {
           <div>
             <h3 className="font-bold text-gray-900 text-base flex items-center gap-2">
               <Package className="w-5 h-5 text-blue-600" />
-              Phân bổ theo Gói dịch vụ
+              {t('manager.packageDistribution')}
             </h3>
             <p className="text-xs text-gray-500 mt-0.5">
-              Tỷ trọng doanh thu và số lượng đơn theo gói.
+              {t('manager.packageDistributionSubtitle')}
             </p>
 
             <div className="space-y-4 mt-5">
@@ -477,7 +482,7 @@ export function ManagerDashboard() {
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-gray-800">{pkg.name}</span>
                       <span className="font-mono font-bold text-primary">
-                        {pkg.total_revenue.toLocaleString('vi-VN')} đ ({percent}%)
+                        {pkg.total_revenue.toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'} ({percent}%)
                       </span>
                     </div>
 
@@ -489,8 +494,8 @@ export function ManagerDashboard() {
                     </div>
 
                     <div className="flex items-center justify-between text-[11px] text-gray-400 font-mono">
-                      <span>Đơn giá: {pkg.price.toLocaleString('vi-VN')} đ</span>
-                      <span>{pkg.order_count} đơn</span>
+                      <span>{t('manager.unitPrice', { price: `${pkg.price.toLocaleString(isEn ? 'en-US' : 'vi-VN')} ${isEn ? 'VND' : 'đ'}` })}</span>
+                      <span>{t('manager.orderCountSuffix', { count: pkg.order_count })}</span>
                     </div>
                   </div>
                 );
@@ -500,7 +505,7 @@ export function ManagerDashboard() {
 
           <div className="pt-4 border-t border-gray-100 text-center">
             <Link to="/manager/packages" className="text-xs font-semibold text-primary hover:underline">
-              Quản lý danh mục & bảng giá gói dịch vụ →
+              {t('manager.managePackagesLink')}
             </Link>
           </div>
         </div>
@@ -511,10 +516,10 @@ export function ManagerDashboard() {
         <div className="p-5 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Award className="w-5 h-5 text-amber-500" />
-            <h3 className="font-bold text-gray-900 text-base">Bảng xếp hạng hiệu suất Kỹ thuật viên</h3>
+            <h3 className="font-bold text-gray-900 text-base">{t('manager.techLeaderboard')}</h3>
           </div>
           <Link to="/manager/technicians" className="text-xs font-semibold text-primary hover:underline">
-            Xem tất cả KTV →
+            {t('manager.viewAllTechs')}
           </Link>
         </div>
 
@@ -522,12 +527,12 @@ export function ManagerDashboard() {
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/80 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                <th className="py-3 px-5">Kỹ thuật viên</th>
-                <th className="py-3 px-4 text-center">Ca hoàn thành</th>
-                <th className="py-3 px-4 text-right">Doanh thu tạo ra</th>
-                <th className="py-3 px-4 text-center">Đánh giá trung bình</th>
-                <th className="py-3 px-4 text-right">Số dư chờ quyết toán</th>
-                <th className="py-3 px-5 text-right">Thao tác</th>
+                <th className="py-3 px-5">{t('manager.techTeam')}</th>
+                <th className="py-3 px-4 text-center">{t('manager.completedJobs')}</th>
+                <th className="py-3 px-4 text-right">{t('manager.generatedRevenue')}</th>
+                <th className="py-3 px-4 text-center">{t('manager.avgRating')}</th>
+                <th className="py-3 px-4 text-right">{t('manager.pendingBalance')}</th>
+                <th className="py-3 px-5 text-right">{t('admin.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -555,11 +560,11 @@ export function ManagerDashboard() {
                   </td>
 
                   <td className="py-3.5 px-4 text-center font-bold text-gray-800">
-                    {tech.completed_jobs} ca
+                    {tech.completed_jobs} {isEn ? 'jobs' : 'ca'}
                   </td>
 
                   <td className="py-3.5 px-4 text-right font-mono font-bold text-primary">
-                    {tech.generated_revenue.toLocaleString('vi-VN')} đ
+                    {tech.generated_revenue.toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
                   </td>
 
                   <td className="py-3.5 px-4 text-center">
@@ -570,7 +575,7 @@ export function ManagerDashboard() {
                   </td>
 
                   <td className="py-3.5 px-4 text-right font-mono font-bold text-purple-700">
-                    {tech.current_balance.toLocaleString('vi-VN')} đ
+                    {tech.current_balance.toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
                   </td>
 
                   <td className="py-3.5 px-5 text-right">
@@ -578,7 +583,7 @@ export function ManagerDashboard() {
                       to={`/manager/settlements`}
                       className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition"
                     >
-                      <Receipt className="w-3 h-3" /> Quyết toán
+                      <Receipt className="w-3 h-3" /> {t('manager.settleNow')}
                     </Link>
                   </td>
                 </tr>
@@ -598,8 +603,8 @@ export function ManagerDashboard() {
             <ClipboardList className="w-4 h-4" />
           </div>
           <div>
-            <span className="text-xs font-bold text-gray-800 block">Đơn hàng</span>
-            <span className="text-[11px] text-gray-500">Phân công & điều phối</span>
+            <span className="text-xs font-bold text-gray-800 block">{t('manager.orders')}</span>
+            <span className="text-[11px] text-gray-500">{t('manager.dispatchShortcutDesc')}</span>
           </div>
         </Link>
 
@@ -611,8 +616,8 @@ export function ManagerDashboard() {
             <Package className="w-4 h-4" />
           </div>
           <div>
-            <span className="text-xs font-bold text-gray-800 block">Gói dịch vụ</span>
-            <span className="text-[11px] text-gray-500">Thiết lập & bảng giá</span>
+            <span className="text-xs font-bold text-gray-800 block">{t('manager.packages')}</span>
+            <span className="text-[11px] text-gray-500">{t('manager.packageShortcutDesc')}</span>
           </div>
         </Link>
 
@@ -624,8 +629,8 @@ export function ManagerDashboard() {
             <Receipt className="w-4 h-4" />
           </div>
           <div>
-            <span className="text-xs font-bold text-gray-800 block">Quyết toán</span>
-            <span className="text-[11px] text-gray-500">Chi trả hoa hồng KTV</span>
+            <span className="text-xs font-bold text-gray-800 block">{t('manager.settlements')}</span>
+            <span className="text-[11px] text-gray-500">{t('manager.settlementShortcutDesc')}</span>
           </div>
         </Link>
 
@@ -637,8 +642,8 @@ export function ManagerDashboard() {
             <MessageSquare className="w-4 h-4" />
           </div>
           <div>
-            <span className="text-xs font-bold text-gray-800 block">Đánh giá</span>
-            <span className="text-[11px] text-gray-500">Kiểm duyệt sao & góp ý</span>
+            <span className="text-xs font-bold text-gray-800 block">{t('manager.reviews')}</span>
+            <span className="text-[11px] text-gray-500">{t('manager.reviewShortcutDesc')}</span>
           </div>
         </Link>
       </div>
@@ -651,13 +656,13 @@ export function ManagerDashboard() {
             <div className="p-5 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ClipboardList className="w-5 h-5 text-primary" />
-                <h3 className="font-bold text-gray-900 text-base">Đơn hàng gần đây</h3>
+                <h3 className="font-bold text-gray-900 text-base">{t('manager.recentOrders')}</h3>
               </div>
               <Link
                 to="/manager/orders"
                 className="text-xs font-semibold text-primary hover:text-primary-hover inline-flex items-center gap-1"
               >
-                Xem tất cả ({summary.total_orders}) <ArrowRight className="w-3.5 h-3.5" />
+                {t('manager.viewAllOrders', { count: summary.total_orders })} <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
@@ -665,18 +670,18 @@ export function ManagerDashboard() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/70 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                    <th className="py-3 px-5">Mã đơn</th>
-                    <th className="py-3 px-4">Khách hàng</th>
-                    <th className="py-3 px-4">KTV phụ trách</th>
-                    <th className="py-3 px-4">Trạng thái</th>
-                    <th className="py-3 px-5 text-right">Thời gian</th>
+                    <th className="py-3 px-5">{t('manager.orderCode')}</th>
+                    <th className="py-3 px-4">{t('manager.customer')}</th>
+                    <th className="py-3 px-4">{t('manager.assignedTech')}</th>
+                    <th className="py-3 px-4">{t('admin.status')}</th>
+                    <th className="py-3 px-5 text-right">{t('orders.time', 'Thời gian')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-xs">
                   {recentOrders.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="py-8 text-center text-gray-400">
-                        Chưa có đơn hàng nào trong hệ thống.
+                        {t('manager.noRecentOrders')}
                       </td>
                     </tr>
                   ) : (
@@ -688,19 +693,22 @@ export function ManagerDashboard() {
                           </Link>
                         </td>
                         <td className="py-3.5 px-4 font-medium text-gray-800">
-                          {order.customer_name || 'Khách vãng lai'}
+                          {order.customer_name || t('manager.walkInCustomer')}
                         </td>
                         <td className="py-3.5 px-4">
                           {order.technician_name ? (
-                            <span className="text-gray-700 font-medium">🛠️ {order.technician_name}</span>
+                            <span className="text-gray-700 font-medium inline-flex items-center gap-1">
+                              <Wrench className="w-3.5 h-3.5 text-orange-600" />
+                              {order.technician_name}
+                            </span>
                           ) : (
-                            <span className="text-gray-400 italic">Chưa chỉ định</span>
+                            <span className="text-gray-400 italic">{t('manager.unassigned')}</span>
                           )}
                         </td>
                         <td className="py-3.5 px-4">{getStatusBadge(order.status)}</td>
                         <td className="py-3.5 px-5 text-right text-gray-500 font-mono text-[11px]">
                           {order.scheduled_date
-                            ? format(new Date(order.scheduled_date), 'dd/MM/yyyy', { locale: vi })
+                            ? format(new Date(order.scheduled_date), 'dd/MM/yyyy', { locale: dateLocale })
                             : '-'}
                         </td>
                       </tr>
@@ -713,7 +721,7 @@ export function ManagerDashboard() {
 
           <div className="p-4 border-t border-gray-100 bg-gray-50/50">
             <Link to="/manager/orders" className="btn btn-outline w-full text-xs font-semibold py-2">
-              Quản lý toàn bộ danh sách đơn hàng
+              {t('manager.manageAllOrdersBtn')}
             </Link>
           </div>
         </div>
@@ -724,20 +732,20 @@ export function ManagerDashboard() {
             <div className="p-5 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-blue-600" />
-                <h3 className="font-bold text-gray-900 text-base">Đội ngũ Kỹ thuật viên</h3>
+                <h3 className="font-bold text-gray-900 text-base">{t('manager.techTeam')}</h3>
               </div>
               <Link
                 to="/manager/technicians"
                 className="text-xs font-semibold text-primary hover:text-primary-hover inline-flex items-center gap-1"
               >
-                Tất cả ({technicians.length}) <ArrowRight className="w-3.5 h-3.5" />
+                {t('manager.allTechCount', { count: technicians.length })} <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
             <div className="p-4 divide-y divide-gray-100">
               {technicians.length === 0 ? (
                 <p className="text-center text-gray-400 py-8 text-xs">
-                  Chưa có kỹ thuật viên nào được đăng ký.
+                  {t('manager.noTechsFound')}
                 </p>
               ) : (
                 technicians.map((tech) => (
@@ -760,7 +768,7 @@ export function ManagerDashboard() {
                         className={`inline-block w-2 h-2 rounded-full ${
                           tech.status === 'ACTIVE' ? 'bg-emerald-500 ring-4 ring-emerald-100' : 'bg-rose-500 ring-4 ring-rose-100'
                         }`}
-                        title={tech.status === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm dừng'}
+                        title={tech.status === 'ACTIVE' ? t('admin.active') : t('admin.inactive')}
                       />
                     </div>
                   </div>
@@ -771,7 +779,7 @@ export function ManagerDashboard() {
 
           <div className="p-4 border-t border-gray-100 bg-gray-50/50">
             <Link to="/manager/technicians" className="btn btn-outline w-full text-xs font-semibold py-2">
-              Xem chi tiết đội ngũ kỹ thuật viên
+              {t('manager.viewTechTeamBtn')}
             </Link>
           </div>
         </div>

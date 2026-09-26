@@ -4,14 +4,16 @@ import { publicApi } from '../../api/client';
 import { useSEO } from '../../hooks/useSEO';
 
 export function PublicOrdersPage() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
+
   useSEO({
-    title: 'Theo Dõi Đơn Tiếp Nhận Trực Tiếp | IT Supporter HaUI',
-    description: 'Bảng theo dõi trạng thái tiếp nhận và xử lý đơn bảo dưỡng máy tính công khai tại IT Supporter HaUI.',
-    keywords: 'theo dõi đơn máy tính haui, tra cứu trạng thái đơn vệ sinh laptop',
+    title: t('orders.publicOrdersTitle'),
+    description: t('orders.publicOrdersDesc'),
+    keywords: t('orders.seoKeywords'),
     canonical: 'https://itsupporter.vn/public-orders',
   });
 
-  const { t } = useTranslation();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -52,7 +54,7 @@ export function PublicOrdersPage() {
         </div>
       ) : orders.length === 0 ? (
         <div className="card p-12 text-center">
-          <p className="text-text-secondary">Chưa có đơn hàng công khai nào</p>
+          <p className="text-text-secondary">{t('orders.noPublicOrders')}</p>
         </div>
       ) : (
         <>
@@ -75,13 +77,13 @@ export function PublicOrdersPage() {
                                           order.status === 'CONFIRMED' ? 'badge-confirmed' :
                                           order.status === 'IN_PROGRESS' ? 'badge-in_progress' :
                                           order.status === 'COMPLETED' ? 'badge-completed' : 'badge-cancelled'}`}>
-                      {order.status === 'PENDING' ? 'Chờ xác nhận' :
-                       order.status === 'CONFIRMED' ? 'Đã xác nhận' :
-                       order.status === 'IN_PROGRESS' ? 'Đang thực hiện' :
-                       order.status === 'COMPLETED' ? 'Hoàn thành' : 'Đã hủy'}
+                      {order.status === 'PENDING' ? t('status.pending') :
+                       order.status === 'CONFIRMED' ? t('status.confirmed') :
+                       order.status === 'IN_PROGRESS' ? t('status.in_progress') :
+                       order.status === 'COMPLETED' ? t('status.completed') : t('status.cancelled')}
                     </span>
-                    <p className="text-text-secondary">{new Date(order.scheduled_date).toLocaleDateString('vi-VN')} {order.scheduled_start}</p>
-                    <p className="text-text-secondary">{order.technician_name || 'Chưa phân công'}</p>
+                    <p className="text-text-secondary">{new Date(order.scheduled_date).toLocaleDateString(isEn ? 'en-US' : 'vi-VN')} {order.scheduled_start}</p>
+                    <p className="text-text-secondary">{order.technician_name || t('orders.unassigned')}</p>
                   </div>
                 </div>
               </div>
@@ -91,7 +93,7 @@ export function PublicOrdersPage() {
           {hasMore && (
             <div className="text-center mt-8">
               <button onClick={() => { setPage(p => p + 1); }} disabled={false} className="btn btn-outline">
-                Tải thêm
+                {t('home.loadMore')}
               </button>
             </div>
           )}

@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { technicianApi } from '../../api/client';
 
 export function TechnicianOrders() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
   const [orders, setOrders] = useState<any[]>([]);
   const [filterStatus, setFilterStatus] = useState('');
 
@@ -26,18 +29,18 @@ export function TechnicianOrders() {
   return (
     <div className="container py-5 sm:py-8 md:py-12 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-text">Đơn hàng của tôi</h1>
+        <h1 className="text-2xl font-bold text-text">{t('orders.myOrders')}</h1>
         <select
           value={filterStatus}
           onChange={e => setFilterStatus(e.target.value)}
           className="input w-auto"
         >
-          <option value="">{'Tất cả trạng thái'}</option>
-          <option value="PENDING">Chờ xác nhận</option>
-          <option value="CONFIRMED">Đã xác nhận</option>
-          <option value="IN_PROGRESS">Đang thực hiện</option>
-          <option value="COMPLETED">Hoàn thành</option>
-          <option value="CANCELLED">Đã hủy</option>
+          <option value="">{t('orders.allStatuses')}</option>
+          <option value="PENDING">{t('status.pending')}</option>
+          <option value="CONFIRMED">{t('status.confirmed')}</option>
+          <option value="IN_PROGRESS">{t('status.in_progress')}</option>
+          <option value="COMPLETED">{t('status.completed')}</option>
+          <option value="CANCELLED">{t('status.cancelled')}</option>
         </select>
       </div>
 
@@ -62,12 +65,14 @@ export function TechnicianOrders() {
                                           order.status === 'CONFIRMED' ? 'badge-confirmed' :
                                           order.status === 'IN_PROGRESS' ? 'badge-in_progress' :
                                           order.status === 'COMPLETED' ? 'badge-completed' : 'badge-cancelled'}`}>
-                  {order.status === 'PENDING' ? 'Chờ xác nhận' :
-                   order.status === 'CONFIRMED' ? 'Đã xác nhận' :
-                   order.status === 'IN_PROGRESS' ? 'Đang thực hiện' :
-                   order.status === 'COMPLETED' ? 'Hoàn thành' : 'Đã hủy'}
+                  {order.status === 'PENDING' ? t('status.pending') :
+                   order.status === 'CONFIRMED' ? t('status.confirmed') :
+                   order.status === 'IN_PROGRESS' ? t('status.in_progress') :
+                   order.status === 'COMPLETED' ? t('status.completed') : t('status.cancelled')}
                 </span>
-                <p className="text-text-secondary">{order.scheduled_date} {order.scheduled_start}</p>
+                <p className="text-text-secondary">
+                  {new Date(order.scheduled_date).toLocaleDateString(isEn ? 'en-US' : 'vi-VN')} {order.scheduled_start}
+                </p>
               </div>
             </div>
           </Link>

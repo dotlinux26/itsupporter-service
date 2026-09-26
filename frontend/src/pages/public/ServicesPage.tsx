@@ -9,14 +9,16 @@ import type { ServicePackage } from '../../types';
 import { useSEO } from '../../hooks/useSEO';
 
 export function ServicesPage() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
+
   useSEO({
-    title: 'Bảng Giá & Gói Dịch Vụ Vệ Sinh Máy Tính Sinh Viên | IT Supporter HaUI',
-    description: 'Bảng giá dịch vụ vệ sinh laptop, tra keo tản nhiệt cao cấp, tối ưu hóa quạt gió và tản nhiệt máy tính giá rẻ bình dân cho sinh viên ĐH Công nghiệp Hà Nội.',
-    keywords: 'bảng giá vệ sinh laptop, gói dịch vụ vệ sinh máy tính, tra keo tản nhiệt mx4 giá rẻ, vệ sinh laptop hà nội, sinh viên haui',
+    title: t('packages.servicesTitle'),
+    description: t('packages.servicesDesc'),
+    keywords: t('packages.servicesKeywords'),
     canonical: 'https://itsupporter.vn/services',
   });
 
-  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [packages, setPackages] = useState<ServicePackage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ export function ServicesPage() {
           {t('nav.services')}
         </h1>
         <p className="text-sm sm:text-base text-slate-500 mt-2">
-          Vệ sinh bụi mịn chuyên sâu, thay keo tản nhiệt cao cấp và tối ưu hệ thống toàn diện cho máy bàn & laptop của bạn.
+          {t('packages.servicesSubtitle')}
         </p>
       </div>
 
@@ -78,9 +80,9 @@ export function ServicesPage() {
                     <h3 className="text-2xl font-bold text-slate-900">{pkg.name}</h3>
                     <div className="text-right">
                       <span className="text-2xl font-extrabold text-orange-600 block">
-                        {pkg.price.toLocaleString('vi-VN')} đ
+                        {pkg.price.toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
                       </span>
-                      <span className="text-xs text-slate-400 font-medium">Trọn gói tại chỗ</span>
+                      <span className="text-xs text-slate-400 font-medium">{t('packages.allInclusiveAtWorkshop')}</span>
                     </div>
                   </div>
 
@@ -120,14 +122,14 @@ export function ServicesPage() {
                 <div className="px-6 md:px-8 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-xs text-slate-500">
                     <Clock className="w-4 h-4 text-slate-400" />
-                    <span>Thời lượng: ~{pkg.duration_minutes || 60} phút</span>
+                    <span>{t('packages.duration', { minutes: pkg.duration_minutes || 60 })}</span>
                   </div>
 
                   <Link
                     to={bookingUrl}
                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-500 text-white text-sm font-bold rounded-xl shadow-sm transition group"
                   >
-                    <span>Đặt lịch ngay</span>
+                    <span>{t('home.bookNow')}</span>
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                   </Link>
                 </div>

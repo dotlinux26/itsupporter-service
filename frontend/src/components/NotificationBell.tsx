@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { notificationApi } from '../api/client';
 import type { NotificationRecord } from '../types';
@@ -15,19 +16,19 @@ import {
 } from 'lucide-react';
 import { parseServerDate, formatVietnamTime } from '../utils/date';
 
-function formatRelativeTime(dateString: string): string {
+function formatRelativeTime(dateString: string, t: (key: string, options?: any) => string): string {
   try {
     const date = parseServerDate(dateString);
     const now = new Date();
     const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (diffSec < 60) return 'Vừa xong';
+    if (diffSec < 60) return t('notifications.justNow');
     const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${diffMin} phút trước`;
+    if (diffMin < 60) return t('notifications.minutesAgo', { count: diffMin });
     const diffHour = Math.floor(diffMin / 60);
-    if (diffHour < 24) return `${diffHour} giờ trước`;
+    if (diffHour < 24) return t('notifications.hoursAgo', { count: diffHour });
     const diffDay = Math.floor(diffHour / 24);
-    if (diffDay < 7) return `${diffDay} ngày trước`;
+    if (diffDay < 7) return t('notifications.daysAgo', { count: diffDay });
 
     return formatVietnamTime(dateString, 'dd/MM/yyyy HH:mm');
   } catch {
@@ -60,6 +61,7 @@ function getNotificationIcon(type: string) {
 export function NotificationBell() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -180,7 +182,7 @@ export function NotificationBell() {
       {/* BELL BUTTON */}
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        aria-label="Thông báo"
+        aria-label={t('notifications.title')}
         className="relative p-2 rounded-full text-slate-600 hover:text-orange-600 hover:bg-orange-50/80 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500/20"
       >
         <Bell className="w-5 h-5" />
@@ -197,10 +199,10 @@ export function NotificationBell() {
           {/* Header */}
           <div className="px-4 py-3.5 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-slate-900">Thông báo</span>
+              <span className="font-bold text-sm text-slate-900">{t('notifications.title')}</span>
               {unreadCount > 0 && (
                 <span className="px-2 py-0.5 text-xs font-semibold bg-orange-100 text-orange-700 rounded-full">
-                  {unreadCount} mới
+                  {t('notifications.newCount', { count: unreadCount })}
                 </span>
               )}
             </div>
@@ -210,7 +212,7 @@ export function NotificationBell() {
                 className="text-xs font-medium text-orange-600 hover:text-orange-700 flex items-center gap-1 transition-colors"
               >
                 <Check className="w-3.5 h-3.5" />
-                Đã đọc tất cả
+                {t('notifications.markAllRead')}
               </button>
             )}
           </div>
@@ -220,16 +222,16 @@ export function NotificationBell() {
             {loading && notifications.length === 0 ? (
               <div className="p-6 text-center space-y-3">
                 <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-xs text-slate-400">Đang tải thông báo...</p>
+                <p className="text-xs text-slate-400">{t('notifications.loading')}</p>
               </div>
             ) : notifications.length === 0 ? (
               <div className="p-8 text-center">
                 <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
                   <Bell className="w-6 h-6" />
                 </div>
-                <p className="text-sm font-semibold text-slate-800">Chưa có thông báo nào</p>
+                <p className="text-sm font-semibold text-slate-800">{t('notifications.noNotifTitle')}</p>
                 <p className="text-xs text-slate-400 mt-1">
-                  Khi có cập nhật đơn hàng hoặc tin nhắn mới, bạn sẽ nhận được thông báo tại đây.
+                  {t('notifications.noNotifDesc')}
                 </p>
               </div>
             ) : (
@@ -254,7 +256,7 @@ export function NotificationBell() {
                         {item.title}
                       </p>
                       <span className="text-[11px] text-slate-400 shrink-0 whitespace-nowrap">
-                        {formatRelativeTime(item.created_at)}
+                        {formatRelativeTime(item.created_at, t)}
                       </span>
                     </div>
                     {item.content && (
@@ -281,7 +283,7 @@ export function NotificationBell() {
                   disabled={loadingMore}
                   className="text-xs font-semibold text-orange-600 hover:text-orange-700 py-1 px-3 rounded-lg hover:bg-orange-100/50 transition-colors disabled:opacity-50"
                 >
-                  {loadingMore ? 'Đang tải thêm...' : 'Tải thêm thông báo cũ hơn'}
+                  {loadingMore ? t('notifications.loadingMore') : t('notifications.loadMoreOlder')}
                 </button>
               </div>
             )}
