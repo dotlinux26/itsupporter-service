@@ -3,10 +3,10 @@ import { Languages } from 'lucide-react';
 
 interface LanguageSwitcherProps {
   className?: string;
-  variant?: 'compact' | 'pill';
+  theme?: 'light' | 'dark';
 }
 
-export function LanguageSwitcher({ className = '', variant = 'pill' }: LanguageSwitcherProps) {
+export function LanguageSwitcher({ className = '', theme = 'light' }: LanguageSwitcherProps) {
   const { i18n } = useTranslation();
   const currentLang = i18n.language?.startsWith('en') ? 'en' : 'vi';
 
@@ -20,56 +20,43 @@ export function LanguageSwitcher({ className = '', variant = 'pill' }: LanguageS
     }
   };
 
-  if (variant === 'compact') {
-    return (
-      <button
-        type="button"
-        onClick={() => switchLanguage(currentLang === 'vi' ? 'en' : 'vi')}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
-          currentLang === 'vi'
-            ? 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
-            : 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100 hover:border-orange-300'
-        } ${className}`}
-        title={currentLang === 'vi' ? 'Switch to English' : 'Chuyển sang Tiếng Việt'}
-        aria-label="Chuyển đổi ngôn ngữ"
-      >
-        <Languages className="w-3.5 h-3.5 text-primary" />
-        <span className="uppercase tracking-wider font-bold">
-          {currentLang.toUpperCase()}
-        </span>
-      </button>
-    );
-  }
+  const isDark = theme === 'dark';
 
   return (
     <div
-      className={`inline-flex items-center gap-0.5 bg-slate-100/90 border border-slate-200/80 rounded-lg p-0.5 text-xs font-semibold select-none ${className}`}
+      className={`inline-flex items-center gap-1.5 text-xs select-none ${className}`}
       role="group"
       aria-label="Chọn ngôn ngữ"
     >
-      <div className="pl-1.5 pr-1 text-slate-400 flex items-center" aria-hidden="true">
-        <Languages className="w-3.5 h-3.5 text-slate-500" />
-      </div>
+      <Languages
+        className={`w-3.5 h-3.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}
+        aria-hidden="true"
+      />
       <button
         type="button"
         onClick={() => switchLanguage('vi')}
-        className={`px-1.5 py-0.5 rounded transition-all text-[11px] font-bold ${
+        className={`transition-colors p-0 text-xs bg-transparent border-none cursor-pointer ${
           currentLang === 'vi'
-            ? 'bg-white text-orange-600 shadow-xs'
-            : 'text-slate-500 hover:text-slate-900'
+            ? 'text-orange-600 font-bold'
+            : isDark
+            ? 'text-slate-500 hover:text-slate-300 font-medium'
+            : 'text-slate-400 hover:text-slate-700 font-medium'
         }`}
         title="Tiếng Việt"
         aria-pressed={currentLang === 'vi'}
       >
         VI
       </button>
+      <span className={isDark ? 'text-slate-700' : 'text-slate-300'}>/</span>
       <button
         type="button"
         onClick={() => switchLanguage('en')}
-        className={`px-1.5 py-0.5 rounded transition-all text-[11px] font-bold ${
+        className={`transition-colors p-0 text-xs bg-transparent border-none cursor-pointer ${
           currentLang === 'en'
-            ? 'bg-white text-orange-600 shadow-xs'
-            : 'text-slate-500 hover:text-slate-900'
+            ? 'text-orange-600 font-bold'
+            : isDark
+            ? 'text-slate-500 hover:text-slate-300 font-medium'
+            : 'text-slate-400 hover:text-slate-700 font-medium'
         }`}
         title="English"
         aria-pressed={currentLang === 'en'}

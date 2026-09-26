@@ -543,7 +543,7 @@ export function Footer() {
             <p>© 2026 {info.team_name} · {info.university}. All rights reserved.</p>
           </div>
           <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-end">
-            <LanguageSwitcher className="bg-slate-900 border-slate-800 text-slate-300" />
+            <LanguageSwitcher theme="dark" />
             <span>·</span>
             <span>
               Phát triển bởi{' '}
