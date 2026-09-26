@@ -99,7 +99,7 @@ export function TechnicianDashboard() {
             Không gian Kỹ thuật viên
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Theo dõi tiến độ sửa chữa, quản lý thu nhập và xuất bản lịch trực ca của bạn.
+            Theo dõi tiến độ vệ sinh & bảo dưỡng, quản lý thu nhập và xuất bản lịch trực ca của bạn.
           </p>
         </div>
 

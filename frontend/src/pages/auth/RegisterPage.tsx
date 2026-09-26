@@ -3,8 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { ArrowLeft } from 'lucide-react';
+import { useSEO } from '../../hooks/useSEO';
 
 export function RegisterPage() {
+  useSEO({
+    title: 'Đăng Ký Tài Khoản | IT Supporter HaUI',
+    description: 'Tạo tài khoản thành viên IT Supporter HaUI để đặt lịch vệ sinh laptop nhanh chóng, tích lũy điểm và nhận ưu đãi sinh viên.',
+    canonical: 'https://itsupporter.vn/register',
+  });
+
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { register } = useAuth();

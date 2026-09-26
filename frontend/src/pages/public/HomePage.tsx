@@ -14,8 +14,16 @@ import {
   Cpu, 
   Gift
 } from 'lucide-react';
+import { useSEO } from '../../hooks/useSEO';
 
 export function HomePage() {
+  useSEO({
+    title: 'IT Supporter HaUI - Vệ Sinh & Bảo Dưỡng Laptop, PC Sinh Viên Giá Rẻ',
+    description: 'Dịch vụ vệ sinh laptop, bảo dưỡng máy tính PC, tra keo tản nhiệt chất lượng cao giá rẻ bình dân cho sinh viên ĐH Công nghiệp Hà Nội. Khách quan sát trực tiếp, an tâm tuyệt đối.',
+    keywords: 'vệ sinh laptop sinh viên, bảo dưỡng laptop giá rẻ, vệ sinh máy tính hà nội, tra keo tản nhiệt laptop, vệ sinh pc sinh viên, it supporter haui, bảo dưỡng máy tính đại học công nghiệp hà nội',
+    canonical: 'https://itsupporter.vn/',
+  });
+
   const location = useLocation();
   const [packages, setPackages] = useState<ServicePackage[]>([]);
   const [technicians, setTechnicians] = useState<TechnicianBrief[]>([]);

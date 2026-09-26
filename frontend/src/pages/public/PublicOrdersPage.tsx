@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { publicApi } from '../../api/client';
+import { useSEO } from '../../hooks/useSEO';
 
 export function PublicOrdersPage() {
+  useSEO({
+    title: 'Theo Dõi Đơn Tiếp Nhận Trực Tiếp | IT Supporter HaUI',
+    description: 'Bảng theo dõi trạng thái tiếp nhận và xử lý đơn bảo dưỡng máy tính công khai tại IT Supporter HaUI.',
+    keywords: 'theo dõi đơn máy tính haui, tra cứu trạng thái đơn vệ sinh laptop',
+    canonical: 'https://itsupporter.vn/public-orders',
+  });
+
   const { t } = useTranslation();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

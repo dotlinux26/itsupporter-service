@@ -7,6 +7,7 @@ import { publicApi } from '../api/client';
 import { ExternalLink, ChevronLeft, ChevronRight, Ticket } from 'lucide-react';
 import { ScrollToTopButton } from './ScrollToTopButton';
 import { NotificationBell } from './NotificationBell';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 export function AppHeader() {
   const { t } = useTranslation();
@@ -165,7 +166,8 @@ export function AppHeader() {
         </nav>
 
         {/* RIGHT ACTIONS */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageSwitcher className="hidden sm:inline-flex" />
           {isAuthenticated ? (
             <div className="flex items-center gap-2.5 sm:gap-3">
               {/* Role badge */}
@@ -327,6 +329,10 @@ export function AppHeader() {
                 </NavLink>
               </div>
             )}
+            <li className="pt-3 mt-2 border-t border-gray-100 px-3 flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-500">Ngôn ngữ / Language:</span>
+              <LanguageSwitcher />
+            </li>
           </ul>
         </div>
       )}
@@ -536,7 +542,9 @@ export function Footer() {
           <div>
             <p>© 2026 {info.team_name} · {info.university}. All rights reserved.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-end">
+            <LanguageSwitcher className="bg-slate-900 border-slate-800 text-slate-300" />
+            <span>·</span>
             <span>
               Phát triển bởi{' '}
               <a href={info.facebook_page} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-slate-200 transition-colors">

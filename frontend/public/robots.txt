@@ -1,0 +1,22 @@
+# IT Supporter HaUI Robots Exclusion File
+User-agent: *
+Allow: /
+Allow: /services
+Allow: /about
+Allow: /terms
+Allow: /booking
+Allow: /public-orders
+Allow: /login
+Allow: /register
+
+# Disallow private user/technician/management dashboards and APIs
+Disallow: /admin/
+Disallow: /manager/
+Disallow: /technician/
+Disallow: /orders/
+Disallow: /profile/
+Disallow: /my-vouchers
+Disallow: /api/
+
+# Sitemap
+Sitemap: /sitemap.xml

@@ -3,8 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { ArrowLeft } from 'lucide-react';
+import { useSEO } from '../../hooks/useSEO';
 
 export function LoginPage() {
+  useSEO({
+    title: 'Đăng Nhập Tài Khoản | IT Supporter HaUI',
+    description: 'Đăng nhập hệ thống IT Supporter HaUI để theo dõi đơn bảo dưỡng, quản lý lịch hẹn và nhận mã giảm giá.',
+    canonical: 'https://itsupporter.vn/login',
+  });
+
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

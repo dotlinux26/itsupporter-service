@@ -1,4 +1,13 @@
+import { useSEO } from '../../hooks/useSEO';
+
 export function TermsPage() {
+  useSEO({
+    title: 'Quy Định Dịch Vụ & Cam Kết Chất Lượng | IT Supporter HaUI',
+    description: 'Quy định đặt lịch, chính sách cam kết đúng giờ (trễ 30 phút miễn phí 100%), quy trình bảo dưỡng vệ sinh máy tính minh bạch của IT Supporter HaUI.',
+    keywords: 'quy định it supporter, cam kết đúng giờ vệ sinh máy tính, chính sách bảo hành vệ sinh laptop haui',
+    canonical: 'https://itsupporter.vn/terms',
+  });
+
   return (
     <div className="container py-5 sm:py-8 md:py-12 max-w-4xl mx-auto">
       <div className="mb-10 text-center sm:text-left">

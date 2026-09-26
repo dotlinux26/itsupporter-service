@@ -171,7 +171,9 @@ function App() {
   const { t } = useTranslation();
 
   useEffect(() => {
-    document.title = t('home.heroTitle');
+    if (!document.title) {
+      document.title = t('home.heroTitle') || 'IT Supporter Service';
+    }
   }, [t]);
 
   return (

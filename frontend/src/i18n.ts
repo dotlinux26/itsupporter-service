@@ -578,15 +578,27 @@ const resources = {
   },
 };
 
+const savedLanguage = typeof window !== 'undefined' ? localStorage.getItem('i18n_lang') || 'vi' : 'vi';
+
 i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'vi',
+    lng: savedLanguage,
     fallbackLng: 'vi',
     interpolation: {
       escapeValue: false,
     },
   });
+
+if (typeof document !== 'undefined') {
+  document.documentElement.lang = savedLanguage;
+}
+
+i18n.on('languageChanged', (lng) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = lng;
+  }
+});
 
 export default i18n;

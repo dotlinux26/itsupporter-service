@@ -15,6 +15,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import type { ServicePackage, TechnicianBrief } from '../../types';
+import { useSEO } from '../../hooks/useSEO';
 
 const SLOTS = [
   '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
@@ -36,6 +37,13 @@ export function isSlotTooSoon(dateStr: string, timeStr: string): boolean {
 }
 
 export function BookingPage() {
+  useSEO({
+    title: 'Đặt Lịch Vệ Sinh Máy Tính Trực Tiếp Phòng 1603 A1 | IT Supporter HaUI',
+    description: 'Đặt lịch hẹn vệ sinh laptop, bảo dưỡng PC trực tiếp tại Phòng 1603 Tòa A1 ĐH Công nghiệp Hà Nội. Chọn khung giờ linh hoạt, kỹ thuật viên tiếp nhận nhanh chóng.',
+    keywords: 'đặt lịch vệ sinh laptop, hẹn bảo dưỡng máy tính, vệ sinh laptop phòng 1603 a1 haui, it supporter booking',
+    canonical: 'https://itsupporter.vn/booking',
+  });
+
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 

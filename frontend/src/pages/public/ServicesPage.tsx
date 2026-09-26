@@ -6,8 +6,16 @@ import { useAuth } from '../../context/AuthContext';
 import { MarkdownRenderer } from '../../components/MarkdownRenderer';
 import { CheckCircle2, ArrowRight, Clock } from 'lucide-react';
 import type { ServicePackage } from '../../types';
+import { useSEO } from '../../hooks/useSEO';
 
 export function ServicesPage() {
+  useSEO({
+    title: 'Bảng Giá & Gói Dịch Vụ Vệ Sinh Máy Tính Sinh Viên | IT Supporter HaUI',
+    description: 'Bảng giá dịch vụ vệ sinh laptop, tra keo tản nhiệt cao cấp, tối ưu hóa quạt gió và tản nhiệt máy tính giá rẻ bình dân cho sinh viên ĐH Công nghiệp Hà Nội.',
+    keywords: 'bảng giá vệ sinh laptop, gói dịch vụ vệ sinh máy tính, tra keo tản nhiệt mx4 giá rẻ, vệ sinh laptop hà nội, sinh viên haui',
+    canonical: 'https://itsupporter.vn/services',
+  });
+
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [packages, setPackages] = useState<ServicePackage[]>([]);

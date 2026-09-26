@@ -1,8 +1,16 @@
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { publicApi } from '../../api/client';
+import { useSEO } from '../../hooks/useSEO';
 
 export function AboutPage() {
+  useSEO({
+    title: 'Về Chúng Tôi - Đội Kỹ Thuật Viên IT Supporter HaUI',
+    description: 'Giới thiệu về Đội Kỹ thuật viên IT Supporter HaUI. Đội ngũ sinh viên nhiệt huyết chuyên vệ sinh, bảo dưỡng laptop và máy tính để bàn chi phí bình dân tại ĐH Công nghiệp Hà Nội.',
+    keywords: 'về it supporter haui, đội kỹ thuật viên haui, vệ sinh máy tính sinh viên, đại học công nghiệp hà nội',
+    canonical: 'https://itsupporter.vn/about',
+  });
+
   const { t } = useTranslation();
   const [info, setInfo] = useState<any>({
     team_name: 'IT Supporter HaUI',
