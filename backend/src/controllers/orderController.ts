@@ -48,6 +48,13 @@ export function listMyOrdersHandler(_req: Request, res: Response, next: NextFunc
   }
 }
 
+function ensureAssignedTechnician(order: OrderRow, user: { id: number; role: string }): void {
+  if (['MANAGER', 'ADMIN'].includes(user.role)) return;
+  if (order.technician_id !== user.id) {
+    throw new AppError('FORBIDDEN', 'Bạn không được phân công xử lý đơn hàng này.', 403);
+  }
+}
+
 export function getOrderDetailHandler(req: Request, res: Response, next: NextFunction): void {
   try {
     const user = getAuthUser(req);
@@ -69,6 +76,10 @@ export function getOrderDetailHandler(req: Request, res: Response, next: NextFun
       next(new AppError('FORBIDDEN', 'Bạn không có quyền xem đơn này.', 403));
       return;
     }
+    if (user.role === 'TECHNICIAN' && order.technician_id && order.technician_id !== user.id) {
+      next(new AppError('FORBIDDEN', 'Bạn không được phân công đơn này.', 403));
+      return;
+    }
     res.json({ data: order });
   } catch (err) {
     next(err);
@@ -84,7 +95,28 @@ export function technicianConfirmHandler(req: Request, res: Response, next: Next
     const order = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as (OrderRow & { actor_name: string }) | undefined;
     if (!order) { next(new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404)); return; }
     if (order.status !== 'PENDING') { next(new AppError('CONFLICT', 'Chỉ duyệt được đơn PENDING.', 409)); return; }
-    getDb().prepare('UPDATE orders SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').run('CONFIRMED', id);
+
+    if (order.technician_id != null && order.technician_id !== user.id && !['MANAGER', 'ADMIN'].includes(user.role)) {
+      next(new AppError('FORBIDDEN', 'Đơn hàng này đã được phân công cho kỹ thuật viên khác.', 403));
+      return;
+    }
+
+    // Atomic claim order: cập nhật technician_id nếu null hoặc thuộc về user, chống race condition
+    const result = getDb().prepare(`
+      UPDATE orders
+      SET status = 'CONFIRMED',
+          technician_id = COALESCE(technician_id, ?),
+          updated_at = datetime('now')
+      WHERE id = ?
+        AND status = 'PENDING'
+        AND (technician_id IS NULL OR technician_id = ?)
+    `).run(user.id, id, user.id);
+
+    if (result.changes !== 1) {
+      next(new AppError('CONFLICT', 'Đơn hàng đã được kỹ thuật viên khác tiếp nhận hoặc trạng thái đã thay đổi.', 409));
+      return;
+    }
+
     logStatusChange(id, 'PENDING', 'CONFIRMED', user.id, 'Kỹ thuật viên nhận đơn');
     try {
       sendOrderNotification(
@@ -108,6 +140,7 @@ export function technicianStartHandler(req: Request, res: Response, next: NextFu
     if (!Number.isInteger(id)) { next(new AppError('VALIDATION_ERROR', 'Mã đơn không hợp lệ.', 400)); return; }
     const order = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow | undefined;
     if (!order) { next(new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404)); return; }
+    ensureAssignedTechnician(order, user);
     if (order.status !== 'CONFIRMED') { next(new AppError('CONFLICT', 'Chỉ bắt đầu được đơn CONFIRMED.', 409)); return; }
 
     const now = new Date();
@@ -171,6 +204,7 @@ export function technicianPenaltyHandler(req: Request, res: Response, next: Next
     if (!Number.isInteger(id)) { next(new AppError('VALIDATION_ERROR', 'Mã đơn không hợp lệ.', 400)); return; }
     const order = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow | undefined;
     if (!order) { next(new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404)); return; }
+    ensureAssignedTechnician(order, user);
 
     const settings = getSystemSettings();
     let penaltyPercent = req.body.penalty_percent !== undefined ? Number(req.body.penalty_percent) : NaN;
@@ -238,6 +272,7 @@ export function technicianExtendHandler(req: Request, res: Response, next: NextF
 
     const order = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow | undefined;
     if (!order) { next(new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404)); return; }
+    ensureAssignedTechnician(order, user);
 
     const newExtendFee = Math.max(0, extendFee);
     const finalAmount = Math.max(0, order.price + newExtendFee - (order.discount || 0) - (order.penalty || 0));
@@ -265,6 +300,7 @@ export function technicianSaleProgramHandler(req: Request, res: Response, next: 
 
     const order = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow | undefined;
     if (!order) { next(new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404)); return; }
+    ensureAssignedTechnician(order, user);
 
     const program = getDb().prepare('SELECT * FROM voucher_programs WHERE id = ? AND is_active = 1').get(programId) as { discount_type: string; discount_value: number; name: string } | undefined;
     if (!program) { next(new AppError('NOT_FOUND', 'Chương trình giảm giá không tồn tại hoặc đã tắt.', 404)); return; }
@@ -303,6 +339,7 @@ export function technicianRedeemVoucherHandler(req: Request, res: Response, next
 
     const order = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow | undefined;
     if (!order) { next(new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404)); return; }
+    ensureAssignedTechnician(order, user);
 
     const voucher = getDb().prepare(`
       SELECT v.*, vp.name AS program_name, vp.discount_type, vp.discount_value, vp.valid_to, vp.is_active AS program_active
@@ -327,15 +364,19 @@ export function technicianRedeemVoucherHandler(req: Request, res: Response, next
     const finalAmount = Math.max(0, order.price + (order.extend_fee || 0) - totalDiscount - (order.penalty || 0));
 
     withTransaction(() => {
-      // Gạch / thu hồi voucher sau khi dùng
-      getDb().prepare(`
+      // Gạch / thu hồi voucher sau khi dùng với atomic conditional update (SEC-06B)
+      const updateRes = getDb().prepare(`
         UPDATE vouchers SET
           status = 'used',
           order_id = ?,
           used_at = datetime('now'),
           updated_at = datetime('now')
-        WHERE id = ?
+        WHERE id = ? AND status = 'active'
       `).run(id, voucher.id);
+
+      if (updateRes.changes !== 1) {
+        throw new AppError('CONFLICT', 'Voucher đã được sử dụng hoặc không còn hiệu lực.', 409);
+      }
 
       getDb().prepare(`
         INSERT INTO voucher_transactions (voucher_id, order_id, discount_amount, type)
@@ -369,6 +410,7 @@ export function technicianPaymentHandler(req: Request, res: Response, next: Next
 
     const order = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow | undefined;
     if (!order) { next(new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404)); return; }
+    ensureAssignedTechnician(order, user);
 
     getDb().prepare(`
       UPDATE orders SET
@@ -393,6 +435,7 @@ export function technicianCompleteHandler(req: Request, res: Response, next: Nex
     if (!Number.isInteger(id)) { next(new AppError('VALIDATION_ERROR', 'Mã đơn không hợp lệ.', 400)); return; }
     const order = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as (OrderRow & { actor_name: string }) | undefined;
     if (!order) { next(new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404)); return; }
+    ensureAssignedTechnician(order, user);
     if (order.status !== 'IN_PROGRESS') { next(new AppError('CONFLICT', 'Chỉ hoàn thành được đơn IN_PROGRESS.', 409)); return; }
     const completion_result = String(req.body.completion_result ?? 'SUCCESS');
     if (!['SUCCESS', 'FAILED', 'CANCELLED'].includes(completion_result)) {
@@ -451,6 +494,10 @@ export function getOrderTimelineHandler(req: Request, res: Response, next: NextF
     if (!order) { next(new AppError('NOT_FOUND', 'Không tìm thấy đơn hàng.', 404)); return; }
     if (order.customer_id !== user.id && !['TECHNICIAN', 'MANAGER', 'ADMIN'].includes(user.role)) {
       next(new AppError('FORBIDDEN', 'Bạn không có quyền xem đơn này.', 403));
+      return;
+    }
+    if (user.role === 'TECHNICIAN' && order.technician_id && order.technician_id !== user.id) {
+      next(new AppError('FORBIDDEN', 'Bạn không được phân công đơn này.', 403));
       return;
     }
     const timeline = getOrderTimeline(id);

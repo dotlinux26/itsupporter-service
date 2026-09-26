@@ -28,7 +28,7 @@ router.get('/validate', authenticate, (req, res, next) => {
   validateVoucherHandler(req, res, next);
 });
 router.post('/redeem', authenticate, redeemVoucherHandler);
-router.post('/:id/void', authenticate, voidVoucherHandler);
+router.post('/:id/void', authenticate, requireRole('ADMIN'), voidVoucherHandler);
 router.get('/my', authenticate, listMyVouchersHandler);
 router.get('/technician', authenticate, requireRole('TECHNICIAN', 'MANAGER', 'ADMIN'), listTechnicianVouchersHandler);
 

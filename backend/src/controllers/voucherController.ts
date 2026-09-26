@@ -62,9 +62,12 @@ export function voidVoucherHandler(req: Request, res: Response, next: NextFuncti
     if (!user) {
       throw new AppError('UNAUTHORIZED', 'Vui lòng đăng nhập', 401);
     }
+    if (user.role !== 'ADMIN') {
+      throw new AppError('FORBIDDEN', 'Chỉ Quản trị viên mới có quyền hủy voucher.', 403);
+    }
     const { id } = req.params;
     voidVoucher(Number(id));
-    res.json({ success: true });
+    res.json({ success: true, message: 'Đã hủy voucher thành công.' });
   } catch (err) {
     next(err);
   }

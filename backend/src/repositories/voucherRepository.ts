@@ -1,5 +1,6 @@
 import { getDb } from '../config/database.js';
 import type { Voucher, VoucherProgram } from '../models/index.js';
+import { AppError } from '../utils/AppError.js';
 
 interface VoucherWithProgram extends Voucher {
   program_name: string;
@@ -101,9 +102,12 @@ export function updateVoucherStatus(
   const now = new Date().toISOString();
   
   if (status === 'used') {
-    db.prepare(
-      `UPDATE vouchers SET status = ?, used_at = ?, order_id = ?, updated_at = datetime('now') WHERE id = ?`
-    ).run('used', new Date().toISOString(), orderId ?? null, id);
+    const res = db.prepare(
+      `UPDATE vouchers SET status = ?, used_at = datetime('now'), order_id = ?, updated_at = datetime('now') WHERE id = ? AND status = 'active'`
+    ).run('used', orderId ?? null, id);
+    if (res.changes !== 1) {
+      throw new AppError('CONFLICT', 'Voucher đã được sử dụng hoặc không còn hiệu lực.', 409);
+    }
   } else if (status === 'voided') {
     db.prepare(
       `UPDATE vouchers SET status = ?, updated_at = datetime('now') WHERE id = ?`

@@ -17,6 +17,17 @@ function resolvePath(p: string | undefined, fallback: string): string {
 
 const isProd = process.env.NODE_ENV === 'production';
 
+if (isProd) {
+  const acc = process.env.JWT_ACCESS_SECRET;
+  const ref = process.env.JWT_REFRESH_SECRET;
+  if (!acc || acc.includes('change_me') || acc.length < 16) {
+    throw new Error('FATAL: JWT_ACCESS_SECRET must be configured with a secure key in production (min 16 chars).');
+  }
+  if (!ref || ref.includes('change_me') || ref.length < 16) {
+    throw new Error('FATAL: JWT_REFRESH_SECRET must be configured with a secure key in production (min 16 chars).');
+  }
+}
+
 const config = {
   env: process.env.NODE_ENV ?? 'development',
   isProd,

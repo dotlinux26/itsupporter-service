@@ -136,7 +136,7 @@ router.get('/technicians', (req, res, next) => {
       const db = getDb();
       const allTechs = db
         .prepare(`
-          SELECT u.id, u.name, u.email, u.phone, u.avatar_url,
+          SELECT u.id, u.name, u.avatar_url,
                  p.bio, p.public_profile,
                  ROUND(COALESCE(AVG(r.rating), 0), 1) AS rating,
                  COUNT(r.id) AS rating_count

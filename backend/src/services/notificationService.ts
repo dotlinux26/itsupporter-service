@@ -29,7 +29,11 @@ export function sendOrderNotification(
   const isParticipant =
     order.customer_id === userId || order.technician_id === userId;
   if (!isParticipant) {
-    throw new AppError('FORBIDDEN', 'Bạn không tham gia đơn này.', 403);
+    // Cho phép Quản lý hoặc Admin nhận thông báo (ví dụ tin nhắn chat trong đơn chưa gán KTV)
+    const recipient = db.prepare('SELECT id, role FROM users WHERE id = ?').get(userId) as { id: number; role: string } | undefined;
+    if (!recipient || !['MANAGER', 'ADMIN'].includes(recipient.role)) {
+      throw new AppError('FORBIDDEN', 'Bạn không tham gia đơn này.', 403);
+    }
   }
 
   return createNotification(userId, orderId, type, title, content);

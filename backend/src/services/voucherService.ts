@@ -113,14 +113,15 @@ export function redeemVoucher(voucherCode: string, customerId: number, orderId: 
     
     let discountAmount = 0;
     if (program.discount_type === 'percent') {
-      discountAmount = Math.round((order.final_amount * program.discount_value) / 100);
+      discountAmount = Math.round((order.price * program.discount_value) / 100);
     } else {
-      discountAmount = Math.min(program.discount_value, order.final_amount);
+      discountAmount = Math.min(program.discount_value, order.price);
     }
     
-    const newFinalAmount = Math.max(0, order.final_amount - discountAmount);
+    const totalDiscount = (order.discount || 0) + discountAmount;
+    const newFinalAmount = Math.max(0, order.price + (order.extend_fee || 0) - totalDiscount - (order.penalty || 0));
     db.prepare('UPDATE orders SET final_amount = ?, discount = ?, updated_at = datetime(\'now\') WHERE id = ?')
-      .run(newFinalAmount, discountAmount, orderId);
+      .run(newFinalAmount, totalDiscount, orderId);
     
     updateVoucherStatus(voucher.id, 'used', orderId);
     

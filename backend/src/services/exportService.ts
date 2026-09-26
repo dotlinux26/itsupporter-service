@@ -131,11 +131,28 @@ export function generateExportData(options: ExportOptions): { buffer: Buffer; mi
       ${where}
       ORDER BY ft.created_at DESC
     `;
-    rows = db.prepare(query).all(...params) as Record<string, unknown>[];
   }
 
+  function sanitizeCellForExport(val: unknown): unknown {
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if (trimmed.length > 0 && ['=', '+', '-', '@', '\t', '\r'].includes(trimmed[0])) {
+        return `'${val}`;
+      }
+    }
+    return val;
+  }
+
+  const sanitizedRows = rows.map((row) => {
+    const cleanRow: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(row)) {
+      cleanRow[key] = sanitizeCellForExport(val);
+    }
+    return cleanRow;
+  });
+
   const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(rows.length > 0 ? rows : [{ 'Thông báo': 'Không có dữ liệu trong khoảng thời gian này' }]);
+  const ws = XLSX.utils.json_to_sheet(sanitizedRows.length > 0 ? sanitizedRows : [{ 'Thông báo': 'Không có dữ liệu trong khoảng thời gian này' }]);
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
   if (options.format === 'csv') {

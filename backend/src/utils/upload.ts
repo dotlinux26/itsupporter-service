@@ -9,11 +9,10 @@ const ALLOWED_IMAGE_MIME = new Set([
   'image/png',
   'image/jpeg',
   'image/webp',
-  'image/svg+xml',
   'image/gif',
 ]);
 
-export const ALLOWED_IMAGE_EXT = new Set(['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif']);
+export const ALLOWED_IMAGE_EXT = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif']);
 
 export function ensureUploadDir(): string {
   fs.mkdirSync(config.uploadDir, { recursive: true });
@@ -44,7 +43,7 @@ function fileFilter(
   cb: multer.FileFilterCallback
 ): void {
   if (!ALLOWED_IMAGE_MIME.has(file.mimetype) || !ALLOWED_IMAGE_EXT.has(path.extname(file.originalname).toLowerCase())) {
-    cb(new BadRequestError('Định dạng ảnh không hợp lệ. Chỉ chấp nhận PNG, JPG, WEBP, SVG, GIF.'));
+    cb(new BadRequestError('Định dạng ảnh không hợp lệ. Chỉ chấp nhận PNG, JPG, WEBP, GIF.'));
     return;
   }
   cb(null, true);

@@ -166,6 +166,10 @@ export const changePasswordController = asyncHandler(async (req, res) => {
   const newHash = await hashPassword(body.newPassword);
   updateUserPassword(user.id, newHash);
 
+  const updatedUser = findUserById(user.id)!;
+  const tokens = authService.issueTokens(updatedUser);
+  setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+
   writeAuditLog({ actorId: user.id, actorEmail: user.email, action: 'CHANGE_PASSWORD', ip: req.ip });
-  ok(res, null, 'Đổi mật khẩu thành công.');
+  ok(res, { user: authService.toPublicUser(updatedUser) }, 'Đổi mật khẩu thành công.');
 });
