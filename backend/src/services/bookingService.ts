@@ -15,6 +15,7 @@ import {
   updateOrder,
 } from '../repositories/orderRepository.js';
 import { sendOrderNotification } from './notificationService.js';
+import { notifyNewOrder } from './telegramService.js';
 
 export type SlotFormat = { start: string; end: string };
 
@@ -86,7 +87,7 @@ export function bookOrder(input: BookingInput): OrderRow {
     throw new AppError('VALIDATION_ERROR', 'Slot không tồn tại trong khung làm việc.', 400);
   }
 
-  return withTransaction(() => {
+  const order = withTransaction(() => {
     const pkg = db
       .prepare('SELECT price FROM service_packages WHERE id = ? AND is_active = 1')
       .get(input.packageId) as { price: number } | undefined;
@@ -145,4 +146,13 @@ export function bookOrder(input: BookingInput): OrderRow {
 
     return db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as OrderRow;
   });
+
+  try {
+    notifyNewOrder(order.id).catch((err) => {
+      console.error('Failed to notify Telegram for new order:', err);
+    });
+  } catch {}
+
+  return order;
 }
+

@@ -17,13 +17,20 @@ const server = app.listen(config.port, () => {
 });
 
 function shutdown(signal: string): void {
-  try {
-    closeDb();
-  } catch {}
+  logger.info({ signal }, 'Shutting down server cleanly...');
   server.close(() => {
-    process.exit(0);
+    try {
+      closeDb();
+    } catch {}
+    process.exitCode = 0;
   });
-  setTimeout(() => process.exit(0), 1000).unref();
+  // Fallback timeout only if server doesn't close within 5s
+  setTimeout(() => {
+    try {
+      closeDb();
+    } catch {}
+    process.exit(0);
+  }, 5000).unref();
 }
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));

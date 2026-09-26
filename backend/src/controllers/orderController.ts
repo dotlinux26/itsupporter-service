@@ -8,12 +8,23 @@ import { settleOrderLedger } from '../services/financeService.js';
 import { bookOrder } from '../services/bookingService.js';
 import { sendOrderNotification } from '../services/notificationService.js';
 import { getSystemSettings } from '../services/settingsService.js';
+import { verifyTurnstile } from '../services/turnstileService.js';
+import { notifyOrderClaimed } from '../services/telegramService.js';
+import logger from '../utils/logger.js';
 
-export function createBookingHandler(req: Request, res: Response, next: NextFunction): void {
+export async function createBookingHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const user = getAuthUser(req);
     if (!user) {
       next(new AppError('UNAUTHORIZED', 'Vui lòng đăng nhập để đặt lịch.', 401));
+      return;
+    }
+
+    const turnstileToken = req.body['cf-turnstile-response'] || req.body.turnstileToken;
+    const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
+    const verifyResult = await verifyTurnstile(turnstileToken, clientIp, 'booking');
+    if (!verifyResult.success) {
+      next(new AppError('VALIDATION_ERROR', verifyResult.error || 'Xác thực Turnstile thất bại. Vui lòng thử lại.', 400));
       return;
     }
 
@@ -127,6 +138,13 @@ export function technicianConfirmHandler(req: Request, res: Response, next: Next
         `Kỹ thuật viên ${user.name} đã tiếp nhận đơn ${order.code}. Hãy liên hệ trực tiếp nếu cần hỗ trợ.`
       );
     } catch {}
+
+    try {
+      notifyOrderClaimed(id, user.name).catch((err) => {
+        logger.error({ err: err?.message, orderId: id }, 'Telegram notifyOrderClaimed error');
+      });
+    } catch {}
+
     const updated = findOrderById(id) as OrderRow;
     res.json({ data: updated });
   } catch (err) { next(err); }

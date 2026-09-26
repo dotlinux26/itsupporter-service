@@ -122,6 +122,8 @@ export const orderApi = {
     requestedTechnicianId?: number | null;
     location: string;
     note?: string | null;
+    'cf-turnstile-response'?: string;
+    turnstileToken?: string;
   }) => api.post('/orders', data),
   listMy: (params?: { limit?: number; offset?: number }) =>
     api.get('/orders', { params }),
@@ -231,6 +233,8 @@ export const managerApi = {
   deleteReview: (id: number) => api.delete(`/manager/reviews/${id}`),
   settings: () => api.get('/manager/settings'),
   updateSettings: (data: any) => api.put('/manager/settings', data),
+  testTelegram: (chatId?: string) => api.post('/manager/telegram/test', { chatId }),
+  detectTelegramChatId: () => api.post('/manager/telegram/detect-chat-id'),
   exportReport: (params: { type: 'orders' | 'settlements' | 'financial'; format: 'xlsx' | 'csv'; from?: string; to?: string; status?: string; technician_id?: number }) =>
     api.get('/manager/export', { params, responseType: 'blob' }),
   finance: {
@@ -276,6 +280,8 @@ export const adminApi = {
   stats: () => api.get('/admin/stats'),
   settings: () => api.get('/admin/settings'),
   updateSettings: (data: Record<string, string | number>) => api.patch('/admin/settings', data),
+  testTelegram: (chatId?: string) => api.post('/admin/telegram/test', { chatId }),
+  detectTelegramChatId: () => api.post('/admin/telegram/detect-chat-id'),
   qr: {
     upload: (file: File) => {
       const formData = new FormData();

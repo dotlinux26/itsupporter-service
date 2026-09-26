@@ -6,6 +6,8 @@ import { getDb } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import { imageUpload } from '../utils/upload.js';
 import { getSystemSettings } from '../services/settingsService.js';
+import { testTelegramConnection, detectTelegramChatId } from '../services/telegramService.js';
+import { telegramRateLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
@@ -180,6 +182,20 @@ router.patch('/settings', authenticate, requireRole('ADMIN'), (req, res, next) =
       warrantyPolicyTitle: 'warranty_policy_title',
       warranty_policy_content: 'warranty_policy_content',
       warrantyPolicyContent: 'warranty_policy_content',
+      turnstile_enabled: 'turnstile_enabled',
+      turnstileEnabled: 'turnstile_enabled',
+      turnstile_site_key: 'turnstile_site_key',
+      turnstileSiteKey: 'turnstile_site_key',
+      turnstile_secret: 'turnstile_secret',
+      turnstileSecret: 'turnstile_secret',
+      telegram_enabled: 'telegram_enabled',
+      telegramEnabled: 'telegram_enabled',
+      telegram_bot_token: 'telegram_bot_token',
+      telegramBotToken: 'telegram_bot_token',
+      telegram_chat_id: 'telegram_chat_id',
+      telegramChatId: 'telegram_chat_id',
+      telegram_api_url: 'telegram_api_url',
+      telegramApiUrl: 'telegram_api_url',
     };
     for (const [key, value] of Object.entries(req.body)) {
       const canonical = keyMap[key];
@@ -190,6 +206,30 @@ router.patch('/settings', authenticate, requireRole('ADMIN'), (req, res, next) =
     res.json({ data: getSystemSettings() });
   } catch (err) { next(err); }
 });
+
+// Admin: POST /telegram/test
+router.post('/telegram/test', authenticate, requireRole('ADMIN'), telegramRateLimiter, async (req, res, next) => {
+  try {
+    const { chatId } = req.body;
+    const result = await testTelegramConnection(chatId);
+    if (!result.success) {
+      throw new AppError('VALIDATION_ERROR', result.message, 400);
+    }
+    res.json({ success: true, message: result.message });
+  } catch (err) { next(err); }
+});
+
+// Admin: POST /telegram/detect-chat-id
+router.post('/telegram/detect-chat-id', authenticate, requireRole('ADMIN'), telegramRateLimiter, async (_req, res, next) => {
+  try {
+    const result = await detectTelegramChatId();
+    if (!result.success) {
+      throw new AppError('VALIDATION_ERROR', result.message, 400);
+    }
+    res.json(result);
+  } catch (err) { next(err); }
+});
+
 
 // Admin/Manager: GET /qr
 router.get('/qr', authenticate, requireRole('ADMIN', 'MANAGER'), (req, res, next) => {

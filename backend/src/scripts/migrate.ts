@@ -26,22 +26,27 @@ export function runMigrations(): void {
     .filter((f) => f.endsWith('.sql'))
     .sort();
 
-  for (const file of files) {
-    if (applied.has(file)) continue;
+  db.pragma('foreign_keys = OFF');
+  try {
+    for (const file of files) {
+      if (applied.has(file)) continue;
 
-    const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
-    const run = db.transaction(() => {
-      db.exec(sql);
-      db.prepare('INSERT INTO schema_migrations (name) VALUES (?)').run(file);
-    });
+      const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
+      const run = db.transaction(() => {
+        db.exec(sql);
+        db.prepare('INSERT INTO schema_migrations (name) VALUES (?)').run(file);
+      });
 
-    try {
-      run();
-      logger.info({ migration: file }, 'Migration applied');
-    } catch (err) {
-      logger.error({ migration: file, err }, 'Migration FAILED');
-      throw err;
+      try {
+        run();
+        logger.info({ migration: file }, 'Migration applied');
+      } catch (err) {
+        logger.error({ migration: file, err }, 'Migration FAILED');
+        throw err;
+      }
     }
+  } finally {
+    db.pragma('foreign_keys = ON');
   }
 
   logger.info('All migrations up to date');

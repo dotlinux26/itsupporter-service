@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { orderApi, publicApi } from '../../api/client';
 import { MarkdownRenderer } from '../../components/MarkdownRenderer';
 import { Avatar } from '../../components/Avatar';
+import { TurnstileWidget } from '../../components/TurnstileWidget';
 import { 
   Calendar as CalendarIcon, 
   Clock, 
@@ -41,8 +42,19 @@ export function BookingPage() {
   const [packages, setPackages] = useState<ServicePackage[]>([]);
   const [technicians, setTechnicians] = useState<TechnicianBrief[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingTechs, setLoadingTechs] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Anti-race condition refs
+  const activeSlotReqRef = useRef<number>(0);
+  const submittingRef = useRef<boolean>(false);
+
+  // Turnstile protection states
+  const [turnstileEnabled, setTurnstileEnabled] = useState<boolean>(true);
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState<string>('0x4AAAAAAFD6cbdGSfQ4qeog');
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const [turnstileResetKey, setTurnstileResetKey] = useState<number>(0);
 
   // Form states
   const initialPackageId = searchParams.get('packageId') ? Number(searchParams.get('packageId')) : 0;
@@ -84,8 +96,19 @@ export function BookingPage() {
       if (!selectedPackageId && activePkgs.length > 0) {
         setSelectedPackageId(activePkgs[0].id);
       }
-      if (infoRes?.data?.data?.workshop_address) {
-        setWorkshopAddress(infoRes.data.data.workshop_address);
+      if (infoRes?.data?.data) {
+        const info = infoRes.data.data;
+        if (info.workshop_address) {
+          setWorkshopAddress(info.workshop_address);
+        }
+        if (info.turnstile_site_key || info.turnstileSiteKey) {
+          setTurnstileSiteKey(info.turnstile_site_key || info.turnstileSiteKey);
+        }
+        if (info.turnstile_enabled !== undefined) {
+          setTurnstileEnabled(Boolean(info.turnstile_enabled));
+        } else if (info.turnstileEnabled !== undefined) {
+          setTurnstileEnabled(Boolean(info.turnstileEnabled));
+        }
       }
     } catch (err) {
       console.error('Failed to load packages:', err);
@@ -95,8 +118,13 @@ export function BookingPage() {
   };
 
   const loadTechniciansForSlot = async (date: string, time: string) => {
+    const reqId = ++activeSlotReqRef.current;
+    setLoadingTechs(true);
     try {
       const res = await publicApi.technicians(date, time);
+      // Chống Race: Bỏ qua response nếu user đã chuyển sang slot khác
+      if (reqId !== activeSlotReqRef.current) return;
+
       const techList = Array.isArray(res.data?.data)
         ? res.data.data
         : Array.isArray(res.data)
@@ -112,9 +140,15 @@ export function BookingPage() {
         setSelectedTechId(null);
       }
     } catch (err) {
-      console.error('Failed to load slot technicians:', err);
-      setTechnicians([]);
-      setSelectedTechId(null);
+      if (reqId === activeSlotReqRef.current) {
+        console.error('Failed to load slot technicians:', err);
+        setTechnicians([]);
+        setSelectedTechId(null);
+      }
+    } finally {
+      if (reqId === activeSlotReqRef.current) {
+        setLoadingTechs(false);
+      }
     }
   };
 
@@ -134,6 +168,7 @@ export function BookingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting || submittingRef.current) return;
     setErrorMessage(null);
 
     if (!selectedPackageId) {
@@ -144,8 +179,13 @@ export function BookingPage() {
       setErrorMessage('Theo quy định, Quý khách cần đặt lịch trước tối thiểu 4 tiếng so với giờ bắt đầu ca dịch vụ.');
       return;
     }
+    if (turnstileEnabled && !turnstileToken) {
+      setErrorMessage('Vui lòng hoàn thành xác thực bảo vệ chống bot (Cloudflare Turnstile) trước khi đặt lịch.');
+      return;
+    }
 
     try {
+      submittingRef.current = true;
       setSubmitting(true);
       const res = await orderApi.create({
         packageId: selectedPackageId,
@@ -154,15 +194,24 @@ export function BookingPage() {
         requestedTechnicianId: selectedTechId || null,
         location: workshopAddress,
         note: note.trim() || null,
+        'cf-turnstile-response': turnstileToken,
+        turnstileToken: turnstileToken,
       });
 
       const orderId = res.data.data.id;
       navigate(`/orders/${orderId}`);
     } catch (err: any) {
       console.error('Booking failed:', err);
+      setTurnstileResetKey((prev) => prev + 1);
+      setTurnstileToken('');
       const msg = err.response?.data?.error?.message || err.response?.data?.message || 'Đặt lịch thất bại. Vui lòng thử lại!';
       setErrorMessage(msg);
+      // Nếu KTV bị xung đột (409 Conflict - đã có người nhận trước), tự động làm mới danh sách KTV khả dụng
+      if (err.response?.status === 409 && selectedDate && selectedTime) {
+        loadTechniciansForSlot(selectedDate, selectedTime);
+      }
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -339,7 +388,12 @@ export function BookingPage() {
               )}
             </div>
 
-            {technicians.length === 0 ? (
+            {loadingTechs ? (
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs flex items-center gap-2.5 animate-pulse">
+                <Clock className="w-4 h-4 text-orange-600 animate-spin" />
+                <span>Đang tải danh sách kỹ thuật viên sẵn sàng cho ca {selectedTime} ngày {selectedDate}...</span>
+              </div>
+            ) : technicians.length === 0 ? (
               <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2.5">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-600" />
                 <span>
@@ -355,6 +409,7 @@ export function BookingPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Option: Auto-dispatch */}
                   <label
+                    onClick={() => setSelectedTechId(null)}
                     className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
                       selectedTechId === null
                         ? 'border-orange-500 bg-orange-50/50 shadow-xs ring-1 ring-orange-500'
@@ -388,6 +443,7 @@ export function BookingPage() {
                   {technicians.map((tech) => (
                     <label
                       key={tech.id}
+                      onClick={() => setSelectedTechId(tech.id)}
                       className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
                         selectedTechId === tech.id
                           ? 'border-orange-500 bg-orange-50/50 shadow-xs ring-1 ring-orange-500'
@@ -466,11 +522,27 @@ export function BookingPage() {
                 </div>
               </div>
 
-              <div className="w-full sm:w-auto">
+              <div className="w-full sm:w-auto flex flex-col items-center sm:items-end gap-3">
+                {turnstileEnabled && (
+                  <div className="bg-white/5 p-2 rounded-xl backdrop-blur-xs flex flex-col items-center border border-white/10">
+                    <TurnstileWidget
+                      siteKey={turnstileSiteKey}
+                      action="booking"
+                      theme="dark"
+                      resetKey={turnstileResetKey}
+                      onVerify={(token) => setTurnstileToken(token)}
+                      onError={() => setTurnstileToken('')}
+                      onExpire={() => setTurnstileToken('')}
+                    />
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  disabled={submitting || isTooSoon}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-orange-600 hover:bg-orange-500 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-md transition-all"
+                  disabled={submitting || isTooSoon || (turnstileEnabled && !turnstileToken) || loadingTechs}
+                  className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-orange-600 hover:bg-orange-500 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-md transition-all ${
+                    submitting ? 'opacity-80 pointer-events-none cursor-wait' : 'cursor-pointer'
+                  }`}
                 >
                   {submitting ? 'Đang khởi tạo đơn...' : 'Xác nhận Đặt Lịch Ngay'}
                   <ArrowRight className="w-4 h-4" />

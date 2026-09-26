@@ -10,7 +10,13 @@ import {
   ShieldCheck,
   Save, 
   CheckCircle2, 
-  ExternalLink 
+  ExternalLink,
+  Send,
+  Bot,
+  Sparkles,
+  RefreshCw,
+  AlertCircle,
+  Shield
 } from 'lucide-react';
 
 export function AdminSettings() {
@@ -18,6 +24,12 @@ export function AdminSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Telegram test & detect state
+  const [testingTelegram, setTestingTelegram] = useState(false);
+  const [telegramTestResult, setTelegramTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [detectingChatId, setDetectingChatId] = useState(false);
+  const [detectedChatResult, setDetectedChatResult] = useState<{ success: boolean; message: string; chatId?: string; title?: string } | null>(null);
 
   useEffect(() => {
     loadSettings();
@@ -50,6 +62,51 @@ export function AdminSettings() {
       alert('Không thể lưu cài đặt. Vui lòng thử lại!');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTestTelegram = async () => {
+    setTestingTelegram(true);
+    setTelegramTestResult(null);
+    try {
+      const res = await adminApi.testTelegram(settings.telegramChatId);
+      setTelegramTestResult({ success: true, message: res.data?.message || 'Bắn tin nhắn test thành công!' });
+    } catch (error: any) {
+      setTelegramTestResult({
+        success: false,
+        message: error.response?.data?.error?.message || error.response?.data?.message || 'Gửi tin nhắn test thất bại.',
+      });
+    } finally {
+      setTestingTelegram(false);
+    }
+  };
+
+  const handleDetectChatId = async () => {
+    setDetectingChatId(true);
+    setDetectedChatResult(null);
+    try {
+      const res = await adminApi.detectTelegramChatId();
+      if (res.data?.data?.chatId) {
+        setSettings((prev: any) => ({ ...prev, telegramChatId: res.data.data.chatId }));
+        setDetectedChatResult({
+          success: true,
+          message: res.data.message,
+          chatId: res.data.data.chatId,
+          title: res.data.data.chatTitle,
+        });
+      } else {
+        setDetectedChatResult({
+          success: false,
+          message: res.data?.message || 'Không tìm thấy Chat ID.',
+        });
+      }
+    } catch (error: any) {
+      setDetectedChatResult({
+        success: false,
+        message: error.response?.data?.error?.message || error.response?.data?.message || 'Lỗi khi quét Chat ID.',
+      });
+    } finally {
+      setDetectingChatId(false);
     }
   };
 
@@ -441,6 +498,178 @@ export function AdminSettings() {
               />
             </div>
           </div>
+        </div>
+
+        {/* SECTION 5: BẢO MẬT & CHỐNG SPAM BOT (CLOUDFLARE TURNSTILE) */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5 text-slate-900 font-bold text-base">
+              <Shield className="w-5 h-5 text-indigo-600" />
+              <span>Bảo vệ chống Bot &amp; Spam (Cloudflare Turnstile)</span>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.turnstileEnabled === true || settings.turnstileEnabled === 'true'}
+                onChange={e => setSettings((prev: any) => ({ ...prev, turnstileEnabled: e.target.checked }))}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              <span className="ml-3 text-xs font-semibold text-slate-700">
+                {settings.turnstileEnabled === true || settings.turnstileEnabled === 'true' ? 'Đang kích hoạt (Bảo vệ)' : 'Tắt bảo vệ (Bypass)'}
+              </span>
+            </label>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-900 leading-relaxed">
+            🛡️ <strong>Chuẩn bảo mật Cloudflare Turnstile:</strong> Hệ thống tự động phân tích hành vi trình duyệt của khách hàng ở chế độ Managed Mode (ngầm) để ngăn chặn 99.9% bot rác và curl script spam đơn hàng mà không làm phiền người dùng thật.
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Turnstile Site Key (Khóa Công Khai)</label>
+              <input
+                type="text"
+                value={settings.turnstileSiteKey ?? '0x4AAAAAAFD6cbdGSfQ4qeog'}
+                onChange={e => setSettings((prev: any) => ({ ...prev, turnstileSiteKey: e.target.value }))}
+                className="input w-full font-mono text-xs"
+                placeholder="0x4AAAAAA..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Turnstile Secret Key (Khóa Bí Mật Server)</label>
+              <input
+                type="password"
+                value={settings.turnstileSecret ?? ''}
+                onChange={e => setSettings((prev: any) => ({ ...prev, turnstileSecret: e.target.value }))}
+                className="input w-full font-mono text-xs"
+                placeholder="0x4AAAAAA..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 6: THÔNG BÁO TỨC THÌ (TELEGRAM BOT DISPATCHER) */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5 text-slate-900 font-bold text-base">
+              <Bot className="w-5 h-5 text-sky-600" />
+              <span>Hệ thống Cảnh báo &amp; Điều phối Telegram Bot (@canh_technician_bot)</span>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.telegramEnabled === true || settings.telegramEnabled === 'true'}
+                onChange={e => setSettings((prev: any) => ({ ...prev, telegramEnabled: e.target.checked }))}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+              <span className="ml-3 text-xs font-semibold text-slate-700">
+                {settings.telegramEnabled === true || settings.telegramEnabled === 'true' ? 'Đang kích hoạt (Bắn tin)' : 'Tắt thông báo'}
+              </span>
+            </label>
+          </div>
+
+          <div className="p-4 rounded-xl bg-sky-50/70 border border-sky-100 text-xs text-sky-950 space-y-2">
+            <div className="font-bold flex items-center gap-1.5 text-sky-800">
+              <Sparkles className="w-4 h-4 text-sky-600" />
+              <span>Hướng dẫn kết nối Telegram Bot trong 1 phút:</span>
+            </div>
+            <ol className="list-decimal list-inside space-y-1 text-slate-600">
+              <li>Mở Telegram và tìm kiếm bot: <a href="https://t.me/canh_technician_bot" target="_blank" rel="noreferrer" className="text-sky-600 font-bold underline inline-flex items-center gap-0.5">@canh_technician_bot <ExternalLink className="w-3 h-3" /></a></li>
+              <li>Thêm <strong>@canh_technician_bot</strong> vào Nhóm làm việc của Kỹ thuật viên &amp; Quản lý.</li>
+              <li>Gõ 1 tin nhắn bất kỳ trong nhóm (ví dụ: <code>xin chào</code>), sau đó bấm nút <strong>"🔍 Tự động phát hiện Chat ID"</strong> bên dưới.</li>
+            </ol>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Telegram Bot Token (HTTP API)</label>
+              <input
+                type="text"
+                value={settings.telegramBotToken ?? ''}
+                onChange={e => setSettings((prev: any) => ({ ...prev, telegramBotToken: e.target.value }))}
+                className="input w-full font-mono text-xs"
+                placeholder="VD: 123456789:ABCdefGhI..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Group / Channel Chat ID</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={settings.telegramChatId ?? ''}
+                  onChange={e => setSettings((prev: any) => ({ ...prev, telegramChatId: e.target.value }))}
+                  className="input flex-1 font-mono text-xs"
+                  placeholder="VD: -1001234567890"
+                />
+                <button
+                  type="button"
+                  onClick={handleDetectChatId}
+                  disabled={detectingChatId}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-100 hover:bg-sky-200 text-sky-800 text-xs font-bold rounded-lg transition disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                  title="Tự động quét Chat ID từ tin nhắn mới nhất"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${detectingChatId ? 'animate-spin' : ''}`} />
+                  <span>{detectingChatId ? 'Đang quét...' : 'Quét Chat ID'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Detect Chat Result Banner */}
+          {detectedChatResult && (
+            <div className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${
+              detectedChatResult.success 
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                : 'bg-rose-50 border-rose-200 text-rose-800'
+            }`}>
+              {detectedChatResult.success ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1 leading-relaxed">
+                {detectedChatResult.message}
+              </div>
+            </div>
+          )}
+
+          {/* Test Telegram Ping Row */}
+          <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-100">
+            <div className="text-xs text-slate-500">
+              Kiểm tra bắn thử tin nhắn mẫu vào nhóm Telegram trước khi lưu cấu hình:
+            </div>
+            <button
+              type="button"
+              onClick={handleTestTelegram}
+              disabled={testingTelegram}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition disabled:opacity-50 cursor-pointer shadow-xs"
+            >
+              <Send className={`w-3.5 h-3.5 ${testingTelegram ? 'animate-pulse' : ''}`} />
+              <span>{testingTelegram ? 'Đang gửi tin test...' : '🔔 Bắn tin nhắn Test'}</span>
+            </button>
+          </div>
+
+          {/* Test Telegram Result Banner */}
+          {telegramTestResult && (
+            <div className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${
+              telegramTestResult.success 
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                : 'bg-rose-50 border-rose-200 text-rose-800'
+            }`}>
+              {telegramTestResult.success ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1 leading-relaxed">
+                {telegramTestResult.message}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* SUBMIT BUTTON */}

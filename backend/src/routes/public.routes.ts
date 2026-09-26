@@ -74,6 +74,10 @@ router.get('/info', (_req, res, next) => {
         warrantyPolicyDays: settings.warrantyPolicyDays,
         warrantyPolicyTitle: settings.warrantyPolicyTitle,
         warrantyPolicyContent: settings.warrantyPolicyContent,
+        turnstile_enabled: settings.turnstileEnabled,
+        turnstile_site_key: settings.turnstileSiteKey,
+        turnstileEnabled: settings.turnstileEnabled,
+        turnstileSiteKey: settings.turnstileSiteKey,
       },
     });
   } catch (err) {

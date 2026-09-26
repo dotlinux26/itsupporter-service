@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/auth.js';
+import { bookingRateLimiter, bookingCooldownLimiter } from '../middleware/rateLimit.js';
 import {
   createBookingHandler,
   getOrderDetailHandler,
@@ -13,7 +14,7 @@ import {
 
 const router = Router();
 
-router.post('/', authenticate, createBookingHandler);
+router.post('/', authenticate, bookingCooldownLimiter, bookingRateLimiter, createBookingHandler);
 router.get('/', authenticate, listMyOrdersHandler);
 router.get('/:id', authenticate, getOrderDetailHandler);
 router.get('/:id/timeline', authenticate, getOrderTimelineHandler);

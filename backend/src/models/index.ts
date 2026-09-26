@@ -39,7 +39,7 @@ export interface ServicePackage {
   updated_at: string;
 }
 
-export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED';
+export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 export type CompletionResult = 'SUCCESS' | 'FAILED' | 'CANCELLED';
 export type PaymentStatus = 'UNPAID' | 'PAID';
 

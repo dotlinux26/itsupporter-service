@@ -8,6 +8,11 @@ import type { OrderRow } from '../models/index.js';
 import { listSettlements, createSettlement, getTeamBalance, getRunBalance } from '../services/financeService.js';
 import { getSystemSettings, setSetting } from '../services/settingsService.js';
 import { getAvailableTechnicians } from '../services/calendarService.js';
+import { testTelegramConnection, detectTelegramChatId, notifyOrderAssigned, notifyOrderCancelled } from '../services/telegramService.js';
+import { sendOrderNotification } from '../services/notificationService.js';
+import { logStatusChange } from '../repositories/orderRepository.js';
+import logger from '../utils/logger.js';
+import { telegramRateLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
@@ -214,9 +219,17 @@ router.get('/reviews', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res,
 });
 
 // Manager: GET /settings
-router.get('/settings', authenticate, requireRole('MANAGER', 'ADMIN'), (_req, res, next) => {
+router.get('/settings', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
   try {
-    const settings = getSystemSettings();
+    const user = getAuthUser(req);
+    const settings = { ...getSystemSettings() };
+    if (user?.role !== 'ADMIN') {
+      // Phân quyền bảo mật: Ẩn secret key hạ tầng đối với Manager
+      settings.turnstileSecret = settings.turnstileSecret ? '••••••••' : '';
+      if (settings.telegramBotToken) {
+        settings.telegramBotToken = `${settings.telegramBotToken.slice(0, 9)}••••••••`;
+      }
+    }
     res.json({ data: settings });
   } catch (err) { next(err); }
 });
@@ -276,7 +289,25 @@ router.put('/settings', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res
       warranty_policy_title: 'warranty_policy_title',
       warrantyPolicyContent: 'warranty_policy_content',
       warranty_policy_content: 'warranty_policy_content',
+      telegramEnabled: 'telegram_enabled',
+      telegram_enabled: 'telegram_enabled',
+      telegramChatId: 'telegram_chat_id',
+      telegram_chat_id: 'telegram_chat_id',
     };
+
+    // Chỉ ADMIN mới có quyền sửa đổi Turnstile Keys, Bot Token & Telegram API URL
+    if (user?.role === 'ADMIN') {
+      keyMap.turnstileEnabled = 'turnstile_enabled';
+      keyMap.turnstile_enabled = 'turnstile_enabled';
+      keyMap.turnstileSiteKey = 'turnstile_site_key';
+      keyMap.turnstile_site_key = 'turnstile_site_key';
+      keyMap.turnstileSecret = 'turnstile_secret';
+      keyMap.turnstile_secret = 'turnstile_secret';
+      keyMap.telegramBotToken = 'telegram_bot_token';
+      keyMap.telegram_bot_token = 'telegram_bot_token';
+      keyMap.telegramApiUrl = 'telegram_api_url';
+      keyMap.telegram_api_url = 'telegram_api_url';
+    }
 
     for (const [prop, dbKey] of Object.entries(keyMap)) {
       if (body[prop] !== undefined) {
@@ -284,10 +315,40 @@ router.put('/settings', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res
       }
     }
 
-    const updated = getSystemSettings();
+    const updated = { ...getSystemSettings() };
+    if (user?.role !== 'ADMIN') {
+      updated.turnstileSecret = updated.turnstileSecret ? '••••••••' : '';
+      if (updated.telegramBotToken) {
+        updated.telegramBotToken = `${updated.telegramBotToken.slice(0, 9)}••••••••`;
+      }
+    }
     res.json({ data: updated, message: 'Cập nhật cài đặt thành công.' });
   } catch (err) { next(err); }
 });
+
+// Manager: POST /telegram/test
+router.post('/telegram/test', authenticate, requireRole('MANAGER', 'ADMIN'), telegramRateLimiter, async (req, res, next) => {
+  try {
+    const { chatId } = req.body;
+    const result = await testTelegramConnection(chatId);
+    if (!result.success) {
+      throw new AppError('VALIDATION_ERROR', result.message, 400);
+    }
+    res.json({ success: true, message: result.message });
+  } catch (err) { next(err); }
+});
+
+// Manager: POST /telegram/detect-chat-id
+router.post('/telegram/detect-chat-id', authenticate, requireRole('MANAGER', 'ADMIN'), telegramRateLimiter, async (_req, res, next) => {
+  try {
+    const result = await detectTelegramChatId();
+    if (!result.success) {
+      throw new AppError('VALIDATION_ERROR', result.message, 400);
+    }
+    res.json(result);
+  } catch (err) { next(err); }
+});
+
 
 // Manager: GET /orders/:id/available-technicians
 router.get('/orders/:id/available-technicians', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
@@ -338,11 +399,49 @@ router.post('/orders/:id/assign', authenticate, requireRole('MANAGER', 'ADMIN'),
     const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as OrderRow | undefined;
     if (!order) throw new AppError('NOT_FOUND', 'Không tìm thấy đơn hàng.', 404);
 
-    const tech = db.prepare('SELECT * FROM users WHERE id = ? AND role = \'TECHNICIAN\' AND is_deleted = 0').get(technicianId);
+    const tech = db.prepare('SELECT * FROM users WHERE id = ? AND role = \'TECHNICIAN\' AND is_deleted = 0').get(technicianId) as { id: number; name: string } | undefined;
     if (!tech) throw new AppError('NOT_FOUND', 'Không tìm thấy kỹ thuật viên hợp lệ.', 404);
+
+    const currentUser = getAuthUser(req);
 
     db.prepare('UPDATE orders SET technician_id = ?, status = CASE WHEN status = \'PENDING\' THEN \'CONFIRMED\' ELSE status END, updated_at = datetime(\'now\') WHERE id = ?').run(technicianId, orderId);
     const updated = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
+
+    // 1. Gửi thông báo in-app cho khách hàng
+    try {
+      sendOrderNotification(
+        order.customer_id,
+        orderId,
+        'ORDER_CONFIRMED',
+        'Đơn đặt lịch đã có kỹ thuật viên tiếp nhận!',
+        `Quản lý đã phân công kỹ thuật viên ${tech.name} phụ trách đơn ${order.code}. Kỹ thuật viên sẽ hỗ trợ bạn đúng giờ hẹn.`
+      );
+    } catch (e: any) {
+      logger.warn({ err: e?.message, orderId }, 'Failed to send in-app notification to customer on assign');
+    }
+
+    // 2. Gửi thông báo in-app cho kỹ thuật viên được phân công
+    try {
+      sendOrderNotification(
+        tech.id,
+        orderId,
+        'ORDER_ASSIGNED',
+        'Bạn có đơn hàng mới được phân công!',
+        `Quản lý ${currentUser?.name || ''} đã phân công bạn phụ trách đơn #${order.code}. Vui lòng kiểm tra chi tiết và chuẩn bị làm việc.`
+      );
+    } catch (e: any) {
+      logger.warn({ err: e?.message, orderId }, 'Failed to send in-app notification to technician on assign');
+    }
+
+    // 3. Bắn thông báo điều phối thời gian thực vào Telegram Group
+    try {
+      notifyOrderAssigned(orderId, tech.name, currentUser?.name).catch((err) => {
+        logger.error({ err: err?.message, orderId }, 'Telegram notifyOrderAssigned error');
+      });
+    } catch (e: any) {
+      logger.warn({ err: e?.message, orderId }, 'Failed to invoke notifyOrderAssigned');
+    }
+
     res.json({ data: updated, message: 'Phân công kỹ thuật viên thành công.' });
   } catch (err) { next(err); }
 });
@@ -360,7 +459,61 @@ router.patch('/orders/:id/status', authenticate, requireRole('MANAGER', 'ADMIN')
     const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as OrderRow | undefined;
     if (!order) throw new AppError('NOT_FOUND', 'Không tìm thấy đơn hàng.', 404);
 
-    db.prepare('UPDATE orders SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').run(status, orderId);
+    const currentUser = getAuthUser(req);
+    const oldStatus = order.status;
+
+    if (status === 'CANCELLED') {
+      db.prepare(`
+        UPDATE orders SET 
+          status = 'CANCELLED', 
+          completion_result = 'CANCELLED',
+          updated_at = datetime('now') 
+        WHERE id = ?
+      `).run(orderId);
+
+      logStatusChange(orderId, oldStatus, 'CANCELLED', currentUser?.id ?? 0, 'Quản lý cập nhật hủy đơn');
+
+      // 1. Thông báo in-app cho khách hàng
+      try {
+        sendOrderNotification(
+          order.customer_id,
+          orderId,
+          'ORDER_CANCELLED',
+          'Đơn đặt lịch đã bị hủy',
+          `Đơn đặt lịch #${order.code} đã được cập nhật trạng thái hủy bởi Quản lý.`
+        );
+      } catch (e: any) {
+        logger.warn({ err: e?.message, orderId }, 'Failed to send in-app notification to customer on cancel');
+      }
+
+      // 2. Thông báo in-app cho KTV nếu đơn đã từng được phân công
+      if (order.technician_id) {
+        try {
+          sendOrderNotification(
+            order.technician_id,
+            orderId,
+            'ORDER_CANCELLED',
+            'Đơn phụ trách đã bị hủy',
+            `Đơn #${order.code} do bạn phụ trách đã được cập nhật trạng thái hủy bởi Quản lý.`
+          );
+        } catch (e: any) {
+          logger.warn({ err: e?.message, orderId }, 'Failed to send in-app notification to tech on cancel');
+        }
+      }
+
+      // 3. Bắn Telegram báo hủy đơn
+      try {
+        notifyOrderCancelled(orderId, currentUser?.name).catch((err) => {
+          logger.error({ err: err?.message, orderId }, 'Telegram notifyOrderCancelled error');
+        });
+      } catch (e: any) {
+        logger.warn({ err: e?.message, orderId }, 'Failed to invoke notifyOrderCancelled');
+      }
+    } else {
+      db.prepare('UPDATE orders SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').run(status, orderId);
+      logStatusChange(orderId, oldStatus, status as any, currentUser?.id ?? 0, 'Quản lý cập nhật trạng thái đơn');
+    }
+
     const updated = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
     res.json({ data: updated, message: 'Cập nhật trạng thái đơn hàng thành công.' });
   } catch (err) { next(err); }

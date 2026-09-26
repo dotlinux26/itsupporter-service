@@ -62,6 +62,21 @@ const config = {
   },
 
   backupDir: resolvePath(process.env.BACKUP_DIR, '../database/backups'),
+
+  turnstile: {
+    enabled: process.env.TURNSTILE_ENABLED === 'true',
+    siteKey: process.env.TURNSTILE_SITE_KEY ?? '',
+    secret: process.env.TURNSTILE_SECRET ?? '',
+    verifyUrl: process.env.TURNSTILE_VERIFY_URL ?? 'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+  },
+
+  telegram: {
+    enabled: process.env.TELEGRAM_BOT_ENABLED === 'true',
+    botToken: process.env.TELEGRAM_BOT_TOKEN ?? '',
+    chatId: process.env.TELEGRAM_CHAT_ID ?? '',
+    apiUrl: process.env.TELEGRAM_API_URL ?? 'https://api.telegram.org',
+  },
 };
+
 
 export default config;
