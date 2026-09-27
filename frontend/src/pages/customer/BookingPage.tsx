@@ -11,6 +11,8 @@ import {
   MapPin, 
   FileText, 
   AlertCircle, 
+  AlertTriangle,
+  Globe,
   ShieldCheck, 
   Sparkles,
   ArrowRight,
@@ -23,14 +25,12 @@ const SLOTS = [
   '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
 ];
 
-export function isSlotTooSoon(dateStr: string, timeStr: string): boolean {
+export function isSlotTooSoon(dateStr: string, timeStr: string, serverTimeOffset = 0): boolean {
   if (!dateStr || !timeStr) return false;
   try {
-    const [h, m] = timeStr.split(':').map(Number);
-    const scheduled = new Date(`${dateStr}T00:00:00`);
-    scheduled.setHours(h, m, 0, 0);
-    const now = new Date();
-    const diffHours = (scheduled.getTime() - now.getTime()) / (1000 * 60 * 60);
+    const scheduled = new Date(`${dateStr}T${timeStr}:00+07:00`);
+    const now = Date.now() + serverTimeOffset;
+    const diffHours = (scheduled.getTime() - now) / (1000 * 60 * 60);
     return diffHours < 4;
   } catch {
     return false;
@@ -80,15 +80,69 @@ export function BookingPage() {
   const [workshopAddress, setWorkshopAddress] = useState<string>('Phòng 1603, Tòa A1, Cơ sở 1 - Đại học Công nghiệp Hà Nội');
   const [note, setNote] = useState<string>('');
 
+  // Server Time & Clock Skew Synchronization
+  const [serverToday, setServerToday] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [serverTimeOffset, setServerTimeOffset] = useState<number>(0);
+  const [currentHanoiTime, setCurrentHanoiTime] = useState<string>('');
+  const [slotStatuses, setSlotStatuses] = useState<Record<string, { available: boolean; bookable: boolean; is_too_soon: boolean; reason?: string | null }>>({});
+
+  const clientTimezone = typeof Intl !== 'undefined' ? (Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Ho_Chi_Minh') : 'Asia/Ho_Chi_Minh';
+  const isDifferentTimezone = Boolean(clientTimezone && !['Asia/Ho_Chi_Minh', 'Asia/Saigon', 'Asia/Bangkok'].includes(clientTimezone));
+  const clockSkewMinutes = Math.round(serverTimeOffset / 60000);
+  const isClockSkewed = Math.abs(clockSkewMinutes) >= 5;
+
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (selectedDate) {
+      loadDateSlots(selectedDate);
+    }
+  }, [selectedDate]);
 
   useEffect(() => {
     if (selectedDate && selectedTime) {
       loadTechniciansForSlot(selectedDate, selectedTime);
     }
   }, [selectedDate, selectedTime]);
+
+  useEffect(() => {
+    const updateTicker = () => {
+      const hanoiDate = new Date(Date.now() + serverTimeOffset);
+      const timeStr = hanoiDate.toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+      setCurrentHanoiTime(timeStr);
+    };
+    updateTicker();
+    const interval = setInterval(updateTicker, 1000);
+    return () => clearInterval(interval);
+  }, [serverTimeOffset, isEn]);
+
+  const loadDateSlots = async (date: string) => {
+    try {
+      const res = await publicApi.slots(date);
+      const list = Array.isArray(res.data?.data) ? res.data.data : [];
+      const map: Record<string, any> = {};
+      list.forEach((s: any) => {
+        map[s.start] = s;
+      });
+      setSlotStatuses(map);
+      if (res.data?.server_timestamp) {
+        setServerTimeOffset(res.data.server_timestamp - Date.now());
+      }
+      if (res.data?.server_today) {
+        setServerToday(res.data.server_today);
+      }
+    } catch (err) {
+      console.error('Failed to load slots for date:', err);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -111,6 +165,12 @@ export function BookingPage() {
         const info = infoRes.data.data;
         if (info.workshop_address) {
           setWorkshopAddress(info.workshop_address);
+        }
+        if (info.server_today) {
+          setServerToday(info.server_today);
+        }
+        if (info.server_timestamp) {
+          setServerTimeOffset(info.server_timestamp - Date.now());
         }
         if (info.turnstile_site_key || info.turnstileSiteKey) {
           setTurnstileSiteKey(info.turnstile_site_key || info.turnstileSiteKey);
@@ -175,7 +235,10 @@ export function BookingPage() {
   };
 
   const selectedPackage = packages.find((p) => p.id === selectedPackageId);
-  const isTooSoon = isSlotTooSoon(selectedDate, selectedTime);
+  const currentSlotInfo = slotStatuses[selectedTime];
+  const isTooSoon = currentSlotInfo?.is_too_soon !== undefined
+    ? currentSlotInfo.is_too_soon
+    : isSlotTooSoon(selectedDate, selectedTime, serverTimeOffset);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -326,6 +389,41 @@ export function BookingPage() {
               <h2 className="text-lg font-bold text-slate-800">{t('booking.step2Title')}</h2>
             </div>
 
+            {/* Live Workshop Intake Time & Skew/Timezone Alerts */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-gradient-to-r from-slate-50 to-orange-50/40 rounded-xl border border-slate-200/80 mb-5">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-orange-600 animate-pulse" />
+                <span className="text-xs font-semibold text-slate-700">{t('booking.workshopClockLabel')}</span>
+                <span className="font-mono font-bold text-orange-600 bg-white px-2.5 py-0.5 rounded-lg border border-orange-200 shadow-2xs text-sm tracking-wide">
+                  {currentHanoiTime || '--:--:--'}
+                </span>
+                <span className="text-[11px] font-medium text-slate-500">{t('booking.hanoiTzLabel')}</span>
+              </div>
+              <div className="text-[11px] text-slate-500 flex items-center gap-1 font-medium">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{t('booking.ruleStandard')} {t('booking.min4Hours')}</span>
+              </div>
+            </div>
+
+            {/* Warning if client machine clock is skewed by >= 5 minutes */}
+            {isClockSkewed && (
+              <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="leading-relaxed">
+                  <span className="font-bold">{isEn ? 'Device Clock Skew Detected:' : 'Phát hiện lệch đồng hồ thiết bị:'}</span>{' '}
+                  {t('booking.clockSkewWarning', { minutes: Math.abs(clockSkewMinutes) })}
+                </div>
+              </div>
+            )}
+
+            {/* Notice if client is outside VN timezone */}
+            {isDifferentTimezone && (
+              <div className="mb-4 p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center gap-2">
+                <Globe className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <span>{t('booking.timezoneNotice', { tz: clientTimezone })}</span>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
@@ -334,7 +432,7 @@ export function BookingPage() {
                 <input
                   type="date"
                   value={selectedDate}
-                  min={new Date().toISOString().slice(0, 10)}
+                  min={serverToday || new Date().toISOString().slice(0, 10)}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
@@ -346,13 +444,24 @@ export function BookingPage() {
                 </label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {SLOTS.map((slot) => {
-                    const slotDisabled = isSlotTooSoon(selectedDate, slot);
+                    const slotInfo = slotStatuses[slot];
+                    const slotTooSoon = slotInfo?.is_too_soon !== undefined
+                      ? slotInfo.is_too_soon
+                      : isSlotTooSoon(selectedDate, slot, serverTimeOffset);
+                    const slotAvailable = slotInfo?.available !== undefined ? slotInfo.available : true;
+                    const slotDisabled = slotTooSoon || !slotAvailable;
                     const isSlotSelected = selectedTime === slot;
+                    const tooltipReason = slotTooSoon
+                      ? t('booking.slotTooSoonReason')
+                      : !slotAvailable
+                      ? t('booking.slotNoTechReason')
+                      : '';
                     return (
                       <button
                         key={slot}
                         type="button"
                         disabled={slotDisabled}
+                        title={tooltipReason}
                         onClick={() => setSelectedTime(slot)}
                         className={`py-2 px-1 text-center rounded-lg text-xs font-medium border transition-all ${
                           slotDisabled

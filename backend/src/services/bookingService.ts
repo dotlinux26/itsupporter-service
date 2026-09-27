@@ -16,6 +16,7 @@ import {
 } from '../repositories/orderRepository.js';
 import { sendOrderNotification } from './notificationService.js';
 import { notifyNewOrder } from './telegramService.js';
+import { toISOWithZone } from '../utils/dateTime.js';
 
 export type SlotFormat = { start: string; end: string };
 
@@ -54,19 +55,16 @@ export function validateBookingInput(input: BookingInput): void {
     input.location = getSystemSettings().workshopAddress || 'Phòng 1603, Tòa A1, Cơ sở 1 - Đại học Công nghiệp Hà Nội';
   }
 
-  // Quy định nghiệp vụ: Đặt lịch trước tối thiểu 4 tiếng so với giờ bắt đầu ca
+  // Quy định nghiệp vụ: Đặt lịch trước tối thiểu 4 tiếng so với giờ bắt đầu ca (theo Giờ chuẩn Việt Nam GMT+7)
   if (input.scheduledDate && input.scheduledStart) {
-    const [year, month, day] = input.scheduledDate.split('-').map(Number);
-    const [hour, minute] = input.scheduledStart.split(':').map(Number);
-    if (year && month && day && !isNaN(hour) && !isNaN(minute)) {
-      const scheduledTime = new Date(year, month - 1, day, hour, minute, 0, 0);
-      const now = new Date();
-      const diffMs = scheduledTime.getTime() - now.getTime();
+    const scheduledTime = toISOWithZone(input.scheduledDate, input.scheduledStart);
+    if (!isNaN(scheduledTime.getTime())) {
+      const diffMs = scheduledTime.getTime() - Date.now();
       const minAdvanceMs = 4 * 60 * 60 * 1000; // 4 hours in ms
       if (diffMs < minAdvanceMs) {
         throw new AppError(
           'VALIDATION_ERROR',
-          'Quý khách cần đặt lịch trước tối thiểu 4 tiếng so với giờ bắt đầu ca dịch vụ.',
+          'Quý khách cần đặt lịch trước tối thiểu 4 tiếng so với giờ bắt đầu ca dịch vụ (theo Giờ chuẩn Việt Nam GMT+7).',
           400
         );
       }

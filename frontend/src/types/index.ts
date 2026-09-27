@@ -161,6 +161,10 @@ export interface DaySlots {
     start: string;
     end: string;
     available: boolean;
+    bookable?: boolean;
+    is_too_soon?: boolean;
+    reason?: 'TOO_SOON_4H' | 'NO_TECHNICIAN' | null;
+    diff_hours?: number;
     technicians: Array<{
       id: number;
       name: string;

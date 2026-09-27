@@ -26,6 +26,9 @@ interface SlotData {
   start: string;
   end: string;
   available: boolean;
+  bookable?: boolean;
+  is_too_soon?: boolean;
+  reason?: 'TOO_SOON_4H' | 'NO_TECHNICIAN' | null;
   technicians: Array<{ id: number; name: string; avatar_url: string | null }>;
 }
 
@@ -33,14 +36,12 @@ interface SlotResponse {
   data: SlotData[];
 }
 
-export function isSlotWithin4Hours(dateStr: string, timeStr: string): boolean {
+export function isSlotWithin4Hours(dateStr: string, timeStr: string, serverOffset = 0): boolean {
   if (!dateStr || !timeStr) return false;
   try {
-    const [h, m] = timeStr.split(':').map(Number);
-    const scheduled = new Date(`${dateStr}T00:00:00`);
-    scheduled.setHours(h, m, 0, 0);
-    const now = new Date();
-    const diffMs = scheduled.getTime() - now.getTime();
+    const scheduled = new Date(`${dateStr}T${timeStr}:00+07:00`);
+    const now = Date.now() + serverOffset;
+    const diffMs = scheduled.getTime() - now;
     return diffMs < 4 * 60 * 60 * 1000;
   } catch {
     return false;
@@ -85,10 +86,17 @@ export function CalendarWidget() {
             const slotData = rawSlots.find((s: SlotData) => s.start === start);
             const startHour = parseInt(start.split(':')[0], 10);
             const fallbackEnd = `${String(startHour + 1).padStart(2, '0')}:00`;
+            const dateStr = format(dayDate, 'yyyy-MM-dd');
+            const isTooSoon = slotData?.is_too_soon !== undefined
+              ? slotData.is_too_soon
+              : isSlotWithin4Hours(dateStr, start);
             return {
               start,
               end: slotData?.end || fallbackEnd,
               available: Boolean(slotData?.available),
+              bookable: slotData?.bookable !== undefined ? slotData.bookable : (!isTooSoon && Boolean(slotData?.available)),
+              is_too_soon: isTooSoon,
+              reason: slotData?.reason,
               technicians: slotData?.technicians || [],
             };
           }),
@@ -108,7 +116,9 @@ export function CalendarWidget() {
 
   const handleSlotClick = (date: string, start: string, technicians: any[]) => {
     if (!technicians.length) return;
-    if (isSlotWithin4Hours(date, start)) return;
+    const day = weekSlots.find((d) => d.date === date);
+    const targetSlot = day?.slots.find((s) => s.start === start);
+    if (targetSlot && (targetSlot.bookable === false || targetSlot.is_too_soon)) return;
 
     if (!isAuthenticated) {
       setSelectedSlot({ date, start, technicians });
@@ -293,25 +303,28 @@ interface SlotCellProps {
 
 function SlotCell({ slot, date, onClick }: SlotCellProps) {
   const { t } = useTranslation();
-  const isTooSoon = isSlotWithin4Hours(date, slot.start);
-  const isAvailable = slot.available && slot.technicians.length > 0;
-
-  if (!isAvailable) {
-    return (
-      <div className="w-full h-full bg-slate-50/50 rounded-lg flex items-center justify-center text-[10px] text-slate-300 font-mono">
-        {slot.start}
-      </div>
-    );
-  }
+  const isTooSoon = slot.is_too_soon !== undefined ? slot.is_too_soon : isSlotWithin4Hours(date, slot.start);
+  const isAvailable = (slot.bookable !== undefined ? (slot.available && !isTooSoon) : slot.available) && slot.technicians.length > 0;
 
   if (isTooSoon) {
     return (
       <div
         className="w-full h-full bg-slate-100/80 rounded-lg p-1 flex flex-col items-center justify-center text-slate-400 cursor-not-allowed border border-slate-200/60"
-        title={t('calendar.tooSoonTitle')}
+        title={t('booking.slotTooSoonReason') || t('calendar.tooSoonTitle')}
       >
         <span className="text-[11px] font-bold line-through">{slot.start}</span>
         <span className="text-[9px] text-amber-600 font-medium">{t('calendar.lockedSoon')}</span>
+      </div>
+    );
+  }
+
+  if (!isAvailable) {
+    return (
+      <div
+        className="w-full h-full bg-slate-50/50 rounded-lg flex items-center justify-center text-[10px] text-slate-300 font-mono"
+        title={t('booking.slotNoTechReason')}
+      >
+        {slot.start}
       </div>
     );
   }

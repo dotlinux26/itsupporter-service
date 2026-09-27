@@ -3,6 +3,7 @@ import { getDb } from '../config/database.js';
 import { buildSlots, getAvailableTechnicians } from '../services/calendarService.js';
 import { getPublicRecentReviews } from '../repositories/notificationReviewRepository.js';
 import { getSystemSettings } from '../services/settingsService.js';
+import { TIME_ZONE, todayInZone, toISOWithZone } from '../utils/dateTime.js';
 
 const router = Router();
 
@@ -78,6 +79,10 @@ router.get('/info', (_req, res, next) => {
         turnstile_site_key: settings.turnstileSiteKey,
         turnstileEnabled: settings.turnstileEnabled,
         turnstileSiteKey: settings.turnstileSiteKey,
+        server_today: todayInZone(),
+        server_time: new Date().toISOString(),
+        server_timestamp: Date.now(),
+        timezone: TIME_ZONE,
       },
     });
   } catch (err) {
@@ -106,16 +111,36 @@ router.get('/packages', (_req, res, next) => {
 // GET /api/public/slots?date=YYYY-MM-DD - Lấy các ca làm việc trong ngày (7h - 19h)
 router.get('/slots', (req, res, next) => {
   try {
-    const date = String(req.query.date ?? new Date().toISOString().slice(0, 10));
+    const serverToday = todayInZone();
+    const date = String(req.query.date ?? serverToday);
     const allSlots = buildSlots();
+    const nowMs = Date.now();
+    const minAdvanceMs = 4 * 60 * 60 * 1000; // 4 hours in ms
 
-    // Map each slot with available technician count and info
+    // Map each slot with available technician count and info + authoritative bookable state
     const data = allSlots.map((slot) => {
       const availableTechs = getAvailableTechnicians(date, slot.start);
+      const scheduledTime = toISOWithZone(date, slot.start);
+      const diffMs = scheduledTime.getTime() - nowMs;
+      const isTooSoon = diffMs < minAdvanceMs;
+      const hasTechs = availableTechs.length > 0;
+      const bookable = hasTechs && !isTooSoon;
+
+      let reason: 'TOO_SOON_4H' | 'NO_TECHNICIAN' | null = null;
+      if (isTooSoon) {
+        reason = 'TOO_SOON_4H';
+      } else if (!hasTechs) {
+        reason = 'NO_TECHNICIAN';
+      }
+
       return {
         start: slot.start,
         end: slot.end,
-        available: availableTechs.length > 0,
+        available: hasTechs,
+        bookable,
+        is_too_soon: isTooSoon,
+        reason,
+        diff_hours: Math.round((diffMs / 3600000) * 10) / 10,
         technicians: availableTechs.map((t) => ({
           id: t.id,
           name: t.name,
@@ -124,7 +149,15 @@ router.get('/slots', (req, res, next) => {
       };
     });
 
-    res.json({ data, date });
+    res.json({
+      data,
+      date,
+      server_today: serverToday,
+      server_time: new Date().toISOString(),
+      server_timestamp: nowMs,
+      timezone: TIME_ZONE,
+      min_advance_hours: 4,
+    });
   } catch (err) {
     next(err);
   }
