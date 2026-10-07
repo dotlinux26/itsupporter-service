@@ -19,6 +19,11 @@ import {
   Trash2,
   Phone,
   Star,
+  Copy,
+  ExternalLink,
+  CreditCard,
+  Upload,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { Avatar } from '../../components/Avatar';
 import { AvatarUploadModal } from '../../components/AvatarUploadModal';
@@ -54,6 +59,11 @@ export function ProfilePage() {
   // --- Technician specific state ---
   const [bio, setBio] = useState('');
   const [publicProfile, setPublicProfile] = useState('');
+  const [alias, setAlias] = useState('');
+  const [bankInfo, setBankInfo] = useState('');
+  const [bankQrPath, setBankQrPath] = useState('');
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [qrUploading, setQrUploading] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTagInput, setCustomTagInput] = useState('');
   const [markdownPreview, setMarkdownPreview] = useState(false);
@@ -81,6 +91,9 @@ export function ProfilePage() {
       setPhone(user.phone ?? '');
       setContactInfo(user.contact_info ?? '');
       setBio(user.bio ?? '');
+      setAlias(user.alias ?? '');
+      setBankInfo(user.bank_info ?? '');
+      setBankQrPath(user.bank_qr_path ?? '');
 
       if (user.public_profile) {
         try {
@@ -128,6 +141,9 @@ export function ProfilePage() {
         contactInfo: contactInfo.trim() || null,
         bio: isTechnician ? bio.trim() || null : undefined,
         publicProfile: profilePayload,
+        alias: isTechnician ? (alias.trim().toLowerCase() || null) : undefined,
+        bankInfo: isTechnician ? (bankInfo.trim() || null) : undefined,
+        bankQrPath: isTechnician ? (bankQrPath || null) : undefined,
       });
       setProfileSuccess(t('profile.profileUpdated'));
       refreshUser();
@@ -139,6 +155,38 @@ export function ProfilePage() {
       );
     } finally {
       setProfileSaving(false);
+    }
+  };
+
+  const handleCopyProfileLink = () => {
+    const base = window.location.origin;
+    const shareUrl = `${base}/ktv/${alias.trim() || user?.id}`;
+    navigator.clipboard.writeText(shareUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  const handleQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setQrUploading(true);
+    setProfileError('');
+    try {
+      const res = await authApi.uploadBankQr(file);
+      const newPath = res.data?.data?.bankQrPath || res.data?.bankQrPath;
+      if (newPath) {
+        setBankQrPath(newPath);
+      }
+      refreshUser();
+      setProfileSuccess(isEn ? 'Bank QR uploaded successfully.' : 'Tải lên ảnh mã QR nhận tiền thành công.');
+    } catch (err: any) {
+      setProfileError(
+        err.response?.data?.error?.message ||
+        err.response?.data?.message ||
+        (isEn ? 'Failed to upload QR image.' : 'Tải lên ảnh QR thất bại.')
+      );
+    } finally {
+      setQrUploading(false);
     }
   };
 
@@ -437,6 +485,112 @@ export function ProfilePage() {
                 <span>{profileSuccess}</span>
               </div>
             )}
+
+            {/* Alias cá nhân hóa cho KTV */}
+            <div className="p-4 bg-orange-50/50 rounded-xl border border-orange-200 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <LinkIcon className="w-4 h-4 text-orange-600" />
+                  <span>{isEn ? 'Custom Public Profile Alias / Handle' : 'Alias đường dẫn trang cá nhân công khai'}</span>
+                </label>
+                {alias && (
+                  <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-mono font-semibold">
+                    @{alias}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-600">
+                {isEn
+                  ? 'Set your unique URL handle to share your technician profile (like Facebook username):'
+                  : 'Đặt định danh duy nhất để chia sẻ trang hồ sơ kỹ thuật viên với khách hàng (giống username Facebook):'}
+              </p>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="flex items-center bg-white border border-gray-300 rounded-xl px-3 py-2 flex-1 focus-within:ring-2 focus-within:ring-orange-500">
+                  <span className="text-xs text-gray-400 font-mono select-none">.../ktv/</span>
+                  <input
+                    type="text"
+                    value={alias}
+                    onChange={(e) => setAlias(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                    placeholder="alex-tech"
+                    className="text-xs font-mono font-bold text-gray-800 bg-transparent outline-none flex-1 ml-1"
+                    maxLength={30}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCopyProfileLink}
+                    className="px-3 py-2 bg-white hover:bg-gray-50 border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 flex items-center justify-center gap-1.5 transition cursor-pointer"
+                    title={isEn ? 'Copy profile link' : 'Sao chép liên kết'}
+                  >
+                    {copiedLink ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-gray-600" />}
+                    <span>{copiedLink ? (isEn ? 'Copied!' : 'Đã chép') : (isEn ? 'Copy' : 'Sao chép')}</span>
+                  </button>
+                  <a
+                    href={`/ktv/${alias || user?.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>{isEn ? 'View Profile' : 'Xem trang'}</span>
+                  </a>
+                </div>
+              </div>
+              <span className="text-[11px] text-gray-500 block">
+                {isEn ? 'Only lowercase letters, numbers, and hyphens (3-30 chars).' : 'Chỉ bao gồm chữ thường a-z, số 0-9 và dấu gạch ngang (3-30 ký tự).'}
+              </span>
+            </div>
+
+            {/* Thông tin nhận thanh toán hoa hồng */}
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+              <label className="text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+                <CreditCard className="w-4 h-4 text-emerald-600" />
+                <span>{isEn ? 'Commission Payout Account (Bank & QR)' : 'Thông tin nhận thanh toán hoa hồng (STK & QR)'}</span>
+              </label>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  {isEn ? 'Bank details (Text format)' : 'Số tài khoản ngân hàng (Mô tả chi tiết)'}
+                </label>
+                <textarea
+                  rows={2}
+                  value={bankInfo}
+                  onChange={(e) => setBankInfo(e.target.value)}
+                  placeholder={isEn ? 'E.g.: MB Bank - 0988123456 - NGUYEN VAN A' : 'VD: MB Bank - 0988123456 - NGUYEN VAN A'}
+                  className="input text-xs w-full resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  {isEn ? 'Personal Payment QR Code' : 'Ảnh mã QR thanh toán cá nhân'}
+                </label>
+                <div className="flex items-center gap-3">
+                  <label className="cursor-pointer px-3.5 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 flex items-center gap-1.5 transition">
+                    <Upload className="w-3.5 h-3.5 text-gray-600" />
+                    <span>{qrUploading ? (isEn ? 'Uploading...' : 'Đang tải...') : (isEn ? 'Upload QR image' : 'Tải ảnh QR lên')}</span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={handleQrUpload}
+                      disabled={qrUploading}
+                      className="hidden"
+                    />
+                  </label>
+                  {bankQrPath && (
+                    <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      {isEn ? 'QR configured' : 'Đã có mã QR'}
+                    </span>
+                  )}
+                </div>
+                {bankQrPath && (
+                  <div className="mt-2 p-1.5 bg-white border border-gray-200 rounded-xl inline-block max-w-[130px]">
+                    <img src={bankQrPath} alt="Bank QR" className="w-full h-auto rounded-lg object-contain" />
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Giới thiệu ngắn Bio */}
             <div>

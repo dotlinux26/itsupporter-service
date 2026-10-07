@@ -12,9 +12,9 @@ import {
 } from '../middleware/auth.js';
 import { writeAuditLog } from '../services/auditService.js';
 import type { LocaleRequest } from '../middleware/locale.js';
-import { updateUserProfile, findUserById, updateUserPassword, updateTechnicianProfile } from '../repositories/userRepository.js';
+import { updateUserProfile, findUserById, updateUserPassword, updateTechnicianProfile, findTechnicianByAlias } from '../repositories/userRepository.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
-import { BadRequestError, NotFoundError } from '../utils/AppError.js';
+import { BadRequestError, NotFoundError, ConflictError } from '../utils/AppError.js';
 import { publicFilePath } from '../utils/upload.js';
 
 const isProd = config.isProd;
@@ -108,6 +108,12 @@ export const updateProfileController = asyncHandler(async (req, res) => {
   
   if (user.role === 'TECHNICIAN') {
     const body = validate(technicianProfileUpdateSchema, req.body);
+    if (body.alias) {
+      const existing = findTechnicianByAlias(body.alias);
+      if (existing && existing.user_id !== user.id) {
+        throw new ConflictError('Alias này đã được kỹ thuật viên khác sử dụng. Vui lòng chọn alias khác.');
+      }
+    }
     updateUserProfile(user.id, {
       name: body.name,
       phone: body.phone,
@@ -117,6 +123,9 @@ export const updateProfileController = asyncHandler(async (req, res) => {
     updateTechnicianProfile(user.id, {
       bio: body.bio,
       publicProfile: body.publicProfile,
+      alias: body.alias,
+      bankInfo: body.bankInfo,
+      bankQrPath: body.bankQrPath,
     });
   } else {
     const body = validate(profileUpdateSchema, req.body);
@@ -130,6 +139,30 @@ export const updateProfileController = asyncHandler(async (req, res) => {
 
   const updated = findUserById(user.id);
   ok(res, authService.toPublicUser(updated!), 'Cập nhật hồ sơ thành công.');
+});
+
+export const uploadBankQrController = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    throw new BadRequestError('Vui lòng chọn file ảnh mã QR hợp lệ (PNG, JPG, WEBP).');
+  }
+  const user = (req as AuthRequest).user!;
+  if (user.role !== 'TECHNICIAN' && user.role !== 'ADMIN') {
+    throw new BadRequestError('Chỉ kỹ thuật viên hoặc quản trị viên mới có thể cập nhật QR thanh toán cá nhân.');
+  }
+  const bankQrPath = publicFilePath(req.file.path);
+
+  updateTechnicianProfile(user.id, { bankQrPath });
+  const updated = findUserById(user.id);
+
+  writeAuditLog({
+    actorId: user.id,
+    actorEmail: user.email,
+    action: 'UPLOAD_BANK_QR',
+    ip: req.ip,
+    metadata: { bankQrPath },
+  });
+
+  ok(res, { bankQrPath, user: authService.toPublicUser(updated!) }, 'Tải lên mã QR thanh toán thành công.');
 });
 
 export const uploadAvatarController = asyncHandler(async (req, res) => {

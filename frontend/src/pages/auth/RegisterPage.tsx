@@ -19,6 +19,7 @@ export function RegisterPage() {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -38,10 +39,15 @@ export function RegisterPage() {
       return;
     }
 
+    if (phone && !/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(phone.replace(/\s+/g, ''))) {
+      setError(isEn ? 'Invalid Vietnamese phone number (10 digits).' : 'Số điện thoại không đúng định dạng (10 chữ số).');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await register(name, email, password);
+      await register(name, email, password, phone.trim() || undefined);
       navigate('/orders', { replace: true });
     } catch (err: any) {
       const msg = err.response?.data?.error?.message 
@@ -103,6 +109,22 @@ export function RegisterPage() {
                 onChange={e => setEmail(e.target.value)}
                 className="input"
                 placeholder="email@itsupporter.vn"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="phone" className="label">
+                {isEn ? 'Phone number' : 'Số điện thoại liên hệ'}
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                className="input"
+                placeholder="0912345678"
               />
             </div>
 

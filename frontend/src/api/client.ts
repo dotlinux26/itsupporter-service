@@ -90,8 +90,8 @@ api.interceptors.response.use(
 export const authApi = {
   login: (email: string, password: string, rememberMe?: boolean) =>
     api.post('/auth/login', { email, password, rememberMe }),
-  register: (name: string, email: string, password: string) =>
-    api.post('/auth/register', { name, email, password }),
+  register: (name: string, email: string, password: string, phone?: string) =>
+    api.post('/auth/register', { name, email, password, phone }),
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
   refresh: () => api.post('/auth/refresh'),
@@ -102,11 +102,21 @@ export const authApi = {
     avatarUrl?: string | null;
     bio?: string | null;
     publicProfile?: string | null;
+    alias?: string | null;
+    bankInfo?: string | null;
+    bankQrPath?: string | null;
   }) => api.patch('/auth/profile', data),
   uploadAvatar: (file: File) => {
     const formData = new FormData();
     formData.append('avatar', file);
     return api.post('/auth/upload-avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  uploadBankQr: (file: File) => {
+    const formData = new FormData();
+    formData.append('qr', file);
+    return api.post('/auth/upload-bank-qr', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
@@ -300,6 +310,7 @@ export const publicApi = {
   slots: (date: string) => api.get('/public/slots', { params: { date } }),
   technicians: (date: string, start?: string) =>
     api.get('/public/technicians', { params: { date, ...(start ? { start } : {}) } }),
+  technicianProfile: (aliasOrId: string) => api.get(`/public/technicians/profile/${aliasOrId}`),
   orders: (params?: { limit?: number; offset?: number }) => api.get('/public/orders', { params }),
   reviews: (params?: { limit?: number; offset?: number }) => api.get('/public/reviews', { params }),
   health: () => api.get('/health'),

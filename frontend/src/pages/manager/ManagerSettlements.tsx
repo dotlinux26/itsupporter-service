@@ -10,6 +10,9 @@ import {
   AlertCircle,
   X,
   Receipt,
+  QrCode,
+  CreditCard,
+  Copy,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi, enUS } from 'date-fns/locale';
@@ -28,6 +31,10 @@ export function ManagerSettlements() {
   const [selectedTechId, setSelectedTechId] = useState<number | ''>('');
   const [notes, setNotes] = useState('');
   const [creating, setCreating] = useState(false);
+
+  // Payment Info Modal state
+  const [paymentModalItem, setPaymentModalItem] = useState<any | null>(null);
+  const [copiedBank, setCopiedBank] = useState(false);
 
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -224,6 +231,7 @@ export function ManagerSettlements() {
                   <th className="py-3 px-4">{isEn ? 'Approver' : 'Người duyệt'}</th>
                   <th className="py-3 px-4">{isEn ? 'Settled Amount' : 'Số tiền kết toán'}</th>
                   <th className="py-3 px-4">{isEn ? 'Audit Notes' : 'Ghi chú đối soát'}</th>
+                  <th className="py-3 px-4 text-center">{isEn ? 'Payment / QR' : 'Thông tin thanh toán'}</th>
                   <th className="py-3 px-4 text-right">{t('orders.dateTime')}</th>
                 </tr>
               </thead>
@@ -245,6 +253,17 @@ export function ManagerSettlements() {
                     <td className="py-3.5 px-4 text-gray-500 max-w-xs truncate">
                       {s.notes || '-'}
                     </td>
+                    <td className="py-3.5 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentModalItem(s)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition cursor-pointer"
+                        title={isEn ? 'View Bank info & QR' : 'Xem thông tin STK & mã QR'}
+                      >
+                        <QrCode className="w-3.5 h-3.5" />
+                        <span>{isEn ? 'Bank / QR' : 'STK & QR'}</span>
+                      </button>
+                    </td>
                     <td className="py-3.5 px-4 text-gray-400 text-right text-[11px]">
                       {s.created_at
                         ? format(new Date(s.created_at), 'dd/MM/yyyy HH:mm', { locale: isEn ? enUS : vi })
@@ -257,6 +276,112 @@ export function ManagerSettlements() {
           </div>
         )}
       </div>
+
+      {/* TECHNICIAN PAYMENT INFO POPUP MODAL */}
+      {paymentModalItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-md w-full overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-bold text-gray-900 text-base">
+                  {isEn ? 'Technician Payout Details' : 'Thông tin chi trả hoa hồng KTV'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setPaymentModalItem(null)}
+                className="p-1 text-gray-400 hover:text-gray-600 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Voucher info summary */}
+              <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-600">{isEn ? 'Technician:' : 'Kỹ thuật viên:'}</span>
+                  <span className="font-bold text-gray-900 text-sm">{paymentModalItem.technician_name}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-600">{isEn ? 'Settlement Code:' : 'Mã phiếu:'}</span>
+                  <span className="font-mono font-bold text-emerald-800">{paymentModalItem.settlement_code || `SETTLE-${paymentModalItem.id}`}</span>
+                </div>
+                <div className="flex justify-between items-center pt-1 border-t border-emerald-200/60">
+                  <span className="text-xs font-bold text-emerald-950 uppercase">{isEn ? 'Amount to transfer:' : 'Số tiền cần chuyển:'}</span>
+                  <span className="text-lg font-black text-emerald-700">
+                    {(paymentModalItem.amount || 0).toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Bank details text description */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    {isEn ? 'Bank Account Details (Text):' : 'Thông tin STK Ngân hàng (Mô tả):'}
+                  </label>
+                  {paymentModalItem.bank_info && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(paymentModalItem.bank_info);
+                        setCopiedBank(true);
+                        setTimeout(() => setCopiedBank(false), 2000);
+                      }}
+                      className="text-xs text-primary hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedBank ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedBank ? (isEn ? 'Copied' : 'Đã sao chép') : (isEn ? 'Copy' : 'Sao chép')}</span>
+                    </button>
+                  )}
+                </div>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 whitespace-pre-wrap leading-relaxed select-all">
+                  {paymentModalItem.bank_info || (
+                    <span className="text-rose-500 italic">
+                      {isEn ? 'Technician has not provided bank account text.' : 'KTV chưa cập nhật thông tin số tài khoản.'}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Bank QR Image */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  {isEn ? 'Bank QR Code:' : 'Mã QR thanh toán ngân hàng:'}
+                </label>
+                {paymentModalItem.bank_qr_path ? (
+                  <div className="p-3 bg-white border border-gray-200 rounded-2xl flex flex-col items-center justify-center space-y-2">
+                    <img
+                      src={paymentModalItem.bank_qr_path}
+                      alt="Bank QR"
+                      className="max-h-56 w-auto rounded-xl object-contain shadow-xs border border-gray-100"
+                    />
+                    <span className="text-[11px] text-gray-400">
+                      {isEn ? 'Scan with banking app to transfer' : 'Quét bằng app ngân hàng để chuyển tiền'}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="p-6 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-xs text-gray-400">
+                    <QrCode className="w-8 h-8 text-gray-300 mx-auto mb-1.5" />
+                    <span>{isEn ? 'No QR code image uploaded by this technician.' : 'KTV chưa tải lên ảnh mã QR thanh toán.'}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setPaymentModalItem(null)}
+                  className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition cursor-pointer"
+                >
+                  {isEn ? 'Close' : 'Đóng'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CREATE SETTLEMENT MODAL */}
       {modalOpen && (

@@ -8,6 +8,8 @@ import { ExternalLink, ChevronLeft, ChevronRight, Ticket, Package, User, LogOut 
 import { ScrollToTopButton } from './ScrollToTopButton';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { BasicInfoModal } from './modals/BasicInfoModal';
+import { TechnicianBankModal } from './modals/TechnicianBankModal';
 
 export function AppHeader() {
   const { t } = useTranslation();
@@ -589,6 +591,8 @@ export function MainLayout({ children }: { children?: React.ReactNode }) {
       </main>
       <Footer />
       <ScrollToTopButton />
+      <BasicInfoModal />
+      <TechnicianBankModal />
     </div>
   );
 }

@@ -277,13 +277,15 @@ export function listSettlements(options: {
   ).c;
   const data = db
     .prepare(
-      `SELECT s.*, u.name AS technician_name
+      `SELECT s.*, u.name AS technician_name,
+              tp.bank_info, tp.bank_qr_path
        FROM settlements s
        LEFT JOIN users u ON u.id = s.technician_id
+       LEFT JOIN technician_profiles tp ON tp.user_id = s.technician_id
        ${whereSql}
        ORDER BY s.created_at DESC, s.id DESC LIMIT ? OFFSET ?`
     )
-    .all(...params, limit, offset) as Array<Settlement & { technician_name?: string }>;
+    .all(...params, limit, offset) as Array<Settlement & { technician_name?: string; bank_info?: string | null; bank_qr_path?: string | null }>;
 
   return { data, total };
 }

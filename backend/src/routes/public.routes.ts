@@ -174,7 +174,7 @@ router.get('/technicians', (req, res, next) => {
       const allTechs = db
         .prepare(`
           SELECT u.id, u.name, u.avatar_url,
-                 p.bio, p.public_profile,
+                 p.bio, p.public_profile, p.alias,
                  ROUND(COALESCE(AVG(r.rating), 0), 1) AS rating,
                  COUNT(r.id) AS rating_count
           FROM users u
@@ -191,6 +191,93 @@ router.get('/technicians', (req, res, next) => {
 
     const availableTechs = getAvailableTechnicians(date, start);
     res.json({ data: availableTechs });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/public/technicians/profile/:aliasOrId - Public Profile KTV
+router.get('/technicians/profile/:aliasOrId', (req, res, next) => {
+  try {
+    const aliasOrId = String(req.params.aliasOrId ?? '').trim();
+    if (!aliasOrId) {
+      res.status(400).json({ error: { message: 'Thiếu định danh kỹ thuật viên.' } });
+      return;
+    }
+
+    const db = getDb();
+    const isNumeric = /^\d+$/.test(aliasOrId);
+
+    const query = `
+      SELECT u.id, u.name, u.avatar_url, u.created_at,
+             p.bio, p.public_profile, p.alias,
+             ROUND(COALESCE(AVG(r.rating), 5.0), 1) AS rating,
+             COUNT(DISTINCT r.id) AS rating_count,
+             (SELECT COUNT(*) FROM orders o WHERE o.technician_id = u.id AND o.status = 'COMPLETED') AS completed_orders_count
+      FROM users u
+      LEFT JOIN technician_profiles p ON p.user_id = u.id
+      LEFT JOIN reviews r ON r.technician_id = u.id
+      WHERE u.role = 'TECHNICIAN' AND u.status = 'ACTIVE' AND u.is_deleted = 0
+        AND (${isNumeric ? 'u.id = ? OR LOWER(p.alias) = LOWER(?)' : 'LOWER(p.alias) = LOWER(?)'})
+      GROUP BY u.id
+      LIMIT 1
+    `;
+
+    const params = isNumeric ? [Number(aliasOrId), aliasOrId] : [aliasOrId];
+    const tech = db.prepare(query).get(...params) as any;
+
+    if (!tech) {
+      res.status(404).json({ error: { message: 'Không tìm thấy kỹ thuật viên.' } });
+      return;
+    }
+
+    // Masking tên khách hàng (vd: Nguyễn V. A.) và KHÔNG lộ email/SĐT (Bảo mật PII)
+    const reviews = db
+      .prepare(`
+        SELECT r.id, r.rating, r.content, r.created_at,
+               c.name AS customer_name,
+               pkg.name AS package_name
+        FROM reviews r
+        JOIN orders o ON o.id = r.order_id
+        JOIN users c ON c.id = r.customer_id
+        JOIN service_packages pkg ON pkg.id = o.package_id
+        WHERE r.technician_id = ?
+        ORDER BY r.created_at DESC
+        LIMIT 20
+      `)
+      .all(tech.id) as Array<{
+        id: number;
+        rating: number;
+        content: string;
+        created_at: string;
+        customer_name: string;
+        package_name: string;
+      }>;
+
+    const maskedReviews = reviews.map((rev) => {
+      const parts = (rev.customer_name || 'Khách hàng').trim().split(/\s+/);
+      let maskedName = rev.customer_name;
+      if (parts.length > 2) {
+        maskedName = `${parts[0]} ${parts.slice(1, -1).map((p) => p[0].toUpperCase() + '.').join(' ')} ${parts[parts.length - 1]}`;
+      } else if (parts.length === 2) {
+        maskedName = `${parts[0]} ${parts[1][0].toUpperCase()}.`;
+      }
+      return {
+        id: rev.id,
+        rating: rev.rating,
+        content: rev.content,
+        created_at: rev.created_at,
+        customer_name: maskedName,
+        package_name: rev.package_name,
+      };
+    });
+
+    res.json({
+      data: {
+        ...tech,
+        reviews: maskedReviews,
+      },
+    });
   } catch (err) {
     next(err);
   }

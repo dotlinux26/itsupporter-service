@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { managerApi, publicApi } from '../../api/client';
+import { managerApi, publicApi, orderApi } from '../../api/client';
 import { Avatar } from '../../components/Avatar';
+import { OrderTimeline } from '../../components/OrderTimeline';
 import {
   FileSpreadsheet,
   FileText,
@@ -15,6 +16,15 @@ import {
   Zap,
   Sparkles,
   Wrench,
+  Clock,
+  ShieldAlert,
+  Receipt,
+  DollarSign,
+  Phone,
+  Mail,
+  MapPin,
+  Tag,
+  ExternalLink,
 } from 'lucide-react';
 
 export function ManagerOrders() {
@@ -35,7 +45,33 @@ export function ManagerOrders() {
   const [candidatesLoading, setCandidatesLoading] = useState(false);
   const [assignLoading, setAssignLoading] = useState(false);
 
+  // Order Detail & Invoice Modal state
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedOrderDetail, setSelectedOrderDetail] = useState<any | null>(null);
+  const [orderTimeline, setOrderTimeline] = useState<any[]>([]);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const openOrderDetail = async (orderId: number) => {
+    setDetailModalOpen(true);
+    setLoadingDetail(true);
+    setSelectedOrderDetail(null);
+    setOrderTimeline([]);
+    try {
+      const [res, timeRes] = await Promise.all([
+        orderApi.get(orderId),
+        orderApi.timeline(orderId).catch(() => ({ data: { data: [] } })),
+      ]);
+      setSelectedOrderDetail(res.data?.data || null);
+      setOrderTimeline(timeRes.data?.data || []);
+    } catch (err) {
+      console.error('Failed to load order detail:', err);
+      showFeedback('error', isEn ? 'Failed to load order invoice details.' : 'Không thể tải chi tiết hóa đơn đơn hàng.');
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
 
   useEffect(() => {
     loadTechnicians();
@@ -379,8 +415,16 @@ export function ManagerOrders() {
                 {filteredOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-orange-50/20 transition-colors">
                     {/* Code */}
-                    <td className="py-3.5 px-4 font-mono font-bold text-primary">
-                      {order.code}
+                    <td className="py-3.5 px-4 font-mono font-bold">
+                      <button
+                        type="button"
+                        onClick={() => openOrderDetail(order.id)}
+                        className="text-primary hover:underline hover:text-primary-hover inline-flex items-center gap-1 group font-mono font-bold"
+                        title={isEn ? 'View invoice & full details' : 'Xem hóa đơn & chi tiết đơn hàng'}
+                      >
+                        <span>{order.code}</span>
+                        <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
                     </td>
 
                     {/* Customer */}
@@ -465,14 +509,25 @@ export function ManagerOrders() {
 
                     {/* Actions */}
                     <td className="py-3.5 px-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => openAssignModal(order)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-orange-50 hover:text-orange-600 transition"
-                      >
-                        <UserCheck className="w-3.5 h-3.5" />
-                        <span>{order.technician_id ? t('manager.reassignTech') : t('manager.assignTech')}</span>
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => openOrderDetail(order.id)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition shadow-sm"
+                          title={isEn ? 'View invoice & full details' : 'Xem chi tiết & hóa đơn'}
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>{isEn ? 'Invoice' : 'Hóa đơn'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openAssignModal(order)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-lg hover:bg-orange-50 hover:text-orange-600 transition"
+                        >
+                          <UserCheck className="w-3.5 h-3.5" />
+                          <span>{order.technician_id ? t('manager.reassignTech') : t('manager.assignTech')}</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -618,6 +673,308 @@ export function ManagerOrders() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ORDER DETAIL & INVOICE MODAL (TRANSPARENCY & SETTLEMENT) */}
+      {detailModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/70">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-blue-100 text-blue-700 rounded-xl">
+                  <Receipt className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-gray-900 text-base">
+                      {isEn ? 'Order Invoice & Full Details' : 'Hóa đơn & Chi tiết toàn bộ đơn hàng'}
+                    </h3>
+                    {selectedOrderDetail && (
+                      <span className="font-mono text-xs font-bold text-primary bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-md">
+                        {selectedOrderDetail.code}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    IT Supporter • {isEn ? 'Full Transparency Service Invoice' : 'Chứng từ minh bạch dịch vụ'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setDetailModalOpen(false);
+                  setSelectedOrderDetail(null);
+                }}
+                className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {loadingDetail ? (
+                <div className="py-16 text-center space-y-3">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                  <p className="text-sm text-gray-500 font-medium">
+                    {isEn ? 'Loading invoice details...' : 'Đang tải hóa đơn chi tiết...'}
+                  </p>
+                </div>
+              ) : selectedOrderDetail ? (
+                <>
+                  {/* Status Banner */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                    <div>
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">
+                        {isEn ? 'Status & Payment' : 'Trạng thái & Thanh toán'}
+                      </span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                            selectedOrderDetail.status === 'COMPLETED'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : selectedOrderDetail.status === 'IN_PROGRESS'
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : selectedOrderDetail.status === 'CONFIRMED'
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
+                              : selectedOrderDetail.status === 'CANCELLED'
+                              ? 'bg-rose-50 text-rose-700 border-rose-200'
+                              : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                          }`}
+                        >
+                          {selectedOrderDetail.status}
+                        </span>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                            selectedOrderDetail.payment_status === 'PAID'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-gray-100 text-gray-700 border-gray-200'
+                          }`}
+                        >
+                          {selectedOrderDetail.payment_status === 'PAID'
+                            ? (isEn ? '✓ Paid' : '✓ Đã thanh toán')
+                            : (isEn ? 'Unpaid' : 'Chưa thu tiền')}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-xs font-semibold text-gray-500 block">
+                        {isEn ? 'Scheduled Slot' : 'Lịch hẹn thực hiện'}
+                      </span>
+                      <span className="text-xs font-bold text-gray-800 flex items-center justify-end gap-1 mt-0.5">
+                        <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                        {selectedOrderDetail.scheduled_date} ({selectedOrderDetail.scheduled_start})
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Financial Invoice Breakdown */}
+                  <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-4 h-4 text-emerald-600" />
+                        <h4 className="text-sm font-bold text-gray-900">
+                          {isEn ? 'Financial Invoice Statement' : 'Bảng kê chi phí & Quyết toán'}
+                        </h4>
+                      </div>
+                      <span className="text-xs text-gray-500 font-medium">
+                        {selectedOrderDetail.payment_method || (isEn ? 'Standard' : 'Tiền mặt / Chuyển khoản')}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-gray-600 font-medium">
+                          {isEn ? 'Service Package:' : 'Gói dịch vụ:'} <strong>{selectedOrderDetail.package_name}</strong>
+                        </span>
+                        <span className="font-semibold text-gray-900">
+                          {(selectedOrderDetail.package_price ?? selectedOrderDetail.price ?? 0).toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
+                        </span>
+                      </div>
+
+                      {Number(selectedOrderDetail.discount_amount) > 0 && (
+                        <div className="flex justify-between items-center py-1 text-emerald-600">
+                          <span className="flex items-center gap-1">
+                            <Tag className="w-3.5 h-3.5" />
+                            {isEn ? 'Discount / Voucher' : 'Giảm trừ khuyến mãi'}
+                            {selectedOrderDetail.voucher_code ? ` (${selectedOrderDetail.voucher_code})` : ''}:
+                          </span>
+                          <span className="font-semibold">
+                            -{Number(selectedOrderDetail.discount_amount).toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
+                          </span>
+                        </div>
+                      )}
+
+                      {Number(selectedOrderDetail.penalty_amount) > 0 && (
+                        <div className="flex justify-between items-center py-1 text-rose-600">
+                          <span className="flex items-center gap-1">
+                            <ShieldAlert className="w-3.5 h-3.5" />
+                            {isEn ? 'Surcharge / Penalty fee:' : 'Phụ phí / Phạt phát sinh:'}
+                          </span>
+                          <span className="font-semibold">
+                            +{Number(selectedOrderDetail.penalty_amount).toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="pt-2 border-t border-gray-100 flex justify-between items-center text-sm font-bold">
+                        <span className="text-gray-900">
+                          {isEn ? 'Final Settlement Total:' : 'Tổng tiền quyết toán:'}
+                        </span>
+                        <span className="text-lg text-primary font-black">
+                          {(selectedOrderDetail.final_amount ?? selectedOrderDetail.price ?? 0).toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Device Condition & Customer Note */}
+                  <div className="p-4 bg-amber-50/40 border border-amber-200/80 rounded-xl space-y-2">
+                    <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                      {isEn ? 'Device Condition & Notes' : 'Tình trạng máy & Ghi chú khách hàng'}
+                    </h4>
+                    <div className="text-xs text-gray-800 bg-white p-3 rounded-lg border border-amber-100 whitespace-pre-wrap">
+                      {selectedOrderDetail.note || (isEn ? 'No notes provided' : 'Không có ghi chú thêm.')}
+                    </div>
+                    {selectedOrderDetail.location && (
+                      <div className="flex items-center gap-1.5 text-xs text-gray-600 pt-1">
+                        <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                        <span><strong>{isEn ? 'Location:' : 'Địa chỉ phục vụ:'}</strong> {selectedOrderDetail.location}</span>
+                      </div>
+                    )}
+                    {selectedOrderDetail.completion_notes && (
+                      <div className="pt-2 border-t border-amber-100 text-xs">
+                        <span className="font-bold text-gray-700 block mb-0.5">
+                          {isEn ? 'Technician completion report:' : 'Báo cáo nghiệm thu của KTV:'}
+                        </span>
+                        <p className="text-gray-600 italic bg-white p-2.5 rounded-lg border border-gray-100">
+                          {selectedOrderDetail.completion_notes}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Parties Information (Customer vs Technician) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Customer Info */}
+                    <div className="p-4 border border-gray-200 rounded-xl bg-gray-50/50 space-y-2">
+                      <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
+                        {isEn ? 'Customer Information' : 'Thông tin Khách hàng'}
+                      </span>
+                      <div className="font-bold text-sm text-gray-900">{selectedOrderDetail.customer_name}</div>
+                      <div className="space-y-1 text-xs text-gray-600">
+                        {selectedOrderDetail.customer_phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-3.5 h-3.5 text-gray-400" />
+                            <a href={`tel:${selectedOrderDetail.customer_phone}`} className="text-primary hover:underline font-mono">
+                              {selectedOrderDetail.customer_phone}
+                            </a>
+                          </div>
+                        )}
+                        {selectedOrderDetail.customer_email && (
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-3.5 h-3.5 text-gray-400" />
+                            <a href={`mailto:${selectedOrderDetail.customer_email}`} className="hover:underline">
+                              {selectedOrderDetail.customer_email}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Technician Info */}
+                    <div className="p-4 border border-gray-200 rounded-xl bg-gray-50/50 space-y-2">
+                      <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">
+                        {isEn ? 'Assigned Technician' : 'Kỹ thuật viên phụ trách'}
+                      </span>
+                      {selectedOrderDetail.technician_name ? (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Avatar name={selectedOrderDetail.technician_name} src={selectedOrderDetail.technician_avatar_url} size={32} />
+                            <div>
+                              <div className="font-bold text-sm text-gray-900">{selectedOrderDetail.technician_name}</div>
+                              {selectedOrderDetail.technician_bio && (
+                                <p className="text-[11px] text-gray-500 line-clamp-1">{selectedOrderDetail.technician_bio}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="space-y-1 text-xs text-gray-600">
+                            {selectedOrderDetail.technician_phone && (
+                              <div className="flex items-center gap-2">
+                                <Phone className="w-3.5 h-3.5 text-gray-400" />
+                                <a href={`tel:${selectedOrderDetail.technician_phone}`} className="text-primary hover:underline font-mono">
+                                  {selectedOrderDetail.technician_phone}
+                                </a>
+                              </div>
+                            )}
+                            {selectedOrderDetail.technician_email && (
+                              <div className="flex items-center gap-2">
+                                <Mail className="w-3.5 h-3.5 text-gray-400" />
+                                <span className="text-gray-700">{selectedOrderDetail.technician_email}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-400 py-3 italic">
+                          {isEn ? 'No technician assigned yet' : 'Chưa được phân công KTV'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Order Timeline */}
+                  {orderTimeline.length > 0 && (
+                    <div className="p-4 border border-gray-200 rounded-xl space-y-3">
+                      <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-gray-500" />
+                        {isEn ? 'Order Event Timeline' : 'Nhật ký tiến trình thực hiện'}
+                      </h4>
+                      <OrderTimeline
+                        timeline={orderTimeline}
+                        createdAt={selectedOrderDetail.created_at}
+                        orderStatus={selectedOrderDetail.status}
+                        startedAt={selectedOrderDetail.started_at}
+                        completedAt={selectedOrderDetail.completed_at}
+                        completionResult={selectedOrderDetail.completion_result}
+                      />
+                    </div>
+                  )}
+                </>
+              ) : null}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between px-6 py-3.5 border-t border-gray-100 bg-gray-50/50">
+              <span className="text-[11px] text-gray-400">
+                IT Supporter Service Management v2.0
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl transition shadow-sm"
+                >
+                  {isEn ? 'Print / Export' : 'In / Lưu chứng từ'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDetailModalOpen(false);
+                    setSelectedOrderDetail(null);
+                  }}
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-primary hover:bg-primary-hover rounded-xl transition shadow-sm"
+                >
+                  {t('common.close', isEn ? 'Close' : 'Đóng')}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

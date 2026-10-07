@@ -34,16 +34,25 @@ export interface PublicUser {
   created_at: string;
   bio?: string | null;
   public_profile?: string | null;
+  alias?: string | null;
+  bank_info?: string | null;
+  bank_qr_path?: string | null;
 }
 
 export function toPublicUser(user: User): PublicUser {
   let bio: string | null = null;
   let public_profile: string | null = null;
+  let alias: string | null = null;
+  let bank_info: string | null = null;
+  let bank_qr_path: string | null = null;
   if (user.role === 'TECHNICIAN') {
     const techProf = userRepo.getTechnicianProfile(user.id);
     if (techProf) {
       bio = techProf.bio;
       public_profile = techProf.public_profile;
+      alias = techProf.alias;
+      bank_info = techProf.bank_info;
+      bank_qr_path = techProf.bank_qr_path;
     }
   }
   return {
@@ -58,6 +67,9 @@ export function toPublicUser(user: User): PublicUser {
     created_at: user.created_at,
     bio,
     public_profile,
+    alias,
+    bank_info,
+    bank_qr_path,
   };
 }
 

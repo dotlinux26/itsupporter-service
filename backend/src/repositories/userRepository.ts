@@ -126,10 +126,24 @@ export function listUsers(options: {
   return { data, total };
 }
 
-export function getTechnicianProfile(userId: number): { bio: string | null; public_profile: string | null } | undefined {
+export interface TechnicianProfileRecord {
+  bio: string | null;
+  public_profile: string | null;
+  alias: string | null;
+  bank_info: string | null;
+  bank_qr_path: string | null;
+}
+
+export function getTechnicianProfile(userId: number): TechnicianProfileRecord | undefined {
   return getDb()
-    .prepare('SELECT bio, public_profile FROM technician_profiles WHERE user_id = ?')
-    .get(userId) as { bio: string | null; public_profile: string | null } | undefined;
+    .prepare('SELECT bio, public_profile, alias, bank_info, bank_qr_path FROM technician_profiles WHERE user_id = ?')
+    .get(userId) as TechnicianProfileRecord | undefined;
+}
+
+export function findTechnicianByAlias(alias: string): (TechnicianProfileRecord & { user_id: number }) | undefined {
+  return getDb()
+    .prepare('SELECT user_id, alias, bio, public_profile, bank_info, bank_qr_path FROM technician_profiles WHERE LOWER(alias) = LOWER(?)')
+    .get(alias) as (TechnicianProfileRecord & { user_id: number }) | undefined;
 }
 
 export function ensureTechnicianProfile(userId: number): void {
@@ -140,17 +154,33 @@ export function ensureTechnicianProfile(userId: number): void {
 
 export function updateTechnicianProfile(
   userId: number,
-  patch: { bio?: string | null; publicProfile?: string | null }
+  patch: {
+    bio?: string | null;
+    publicProfile?: string | null;
+    alias?: string | null;
+    bankInfo?: string | null;
+    bankQrPath?: string | null;
+  }
 ): void {
   const db = getDb();
   ensureTechnicianProfile(userId);
   const current = getTechnicianProfile(userId);
 
   db.prepare(
-    `UPDATE technician_profiles SET bio = ?, public_profile = ?, updated_at = datetime('now') WHERE user_id = ?`
+    `UPDATE technician_profiles
+     SET bio = ?,
+         public_profile = ?,
+         alias = ?,
+         bank_info = ?,
+         bank_qr_path = ?,
+         updated_at = datetime('now')
+     WHERE user_id = ?`
   ).run(
     patch.bio !== undefined ? patch.bio : current?.bio ?? null,
     patch.publicProfile !== undefined ? patch.publicProfile : current?.public_profile ?? null,
+    patch.alias !== undefined ? patch.alias : current?.alias ?? null,
+    patch.bankInfo !== undefined ? patch.bankInfo : current?.bank_info ?? null,
+    patch.bankQrPath !== undefined ? patch.bankQrPath : current?.bank_qr_path ?? null,
     userId
   );
 }

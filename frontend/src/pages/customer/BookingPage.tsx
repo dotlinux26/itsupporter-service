@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Globe,
   ShieldCheck, 
+  ShieldAlert,
   Sparkles,
   ArrowRight,
 } from 'lucide-react';
@@ -71,13 +72,14 @@ export function BookingPage() {
   const initialPackageId = searchParams.get('packageId') ? Number(searchParams.get('packageId')) : 0;
   const initialDate = searchParams.get('date') || new Date().toISOString().slice(0, 10);
   const initialTime = searchParams.get('time') || '09:00';
-  const initialTechId = searchParams.get('technicianId') ? Number(searchParams.get('technicianId')) : null;
+  const initialTechId = searchParams.get('technicianId') || searchParams.get('techId') ? Number(searchParams.get('technicianId') || searchParams.get('techId')) : null;
 
   const [selectedPackageId, setSelectedPackageId] = useState<number>(initialPackageId);
   const [selectedDate, setSelectedDate] = useState<string>(initialDate);
   const [selectedTime, setSelectedTime] = useState<string>(initialTime);
   const [selectedTechId, setSelectedTechId] = useState<number | null>(initialTechId);
   const [workshopAddress, setWorkshopAddress] = useState<string>('Phòng 1603, Tòa A1, Cơ sở 1 - Đại học Công nghiệp Hà Nội');
+  const [warrantyStatus, setWarrantyStatus] = useState<'EXPIRED' | 'UNDER_WARRANTY' | 'UNKNOWN'>('EXPIRED');
   const [note, setNote] = useState<string>('');
 
   // Server Time & Clock Skew Synchronization
@@ -258,6 +260,24 @@ export function BookingPage() {
       return;
     }
 
+    if (!note.trim() || note.trim().length < 5) {
+      setErrorMessage(
+        isEn
+          ? 'Please enter device condition notes (minimum 5 characters).'
+          : 'Vui lòng cung cấp ghi chú mô tả tình trạng máy và các dấu hiệu lỗi (tối thiểu 5 ký tự).'
+      );
+      return;
+    }
+
+    const warrantyLabel =
+      warrantyStatus === 'EXPIRED'
+        ? 'Đã hết bảo hành (Đồng ý để KTV kiểm tra tháo máy)'
+        : warrantyStatus === 'UNDER_WARRANTY'
+        ? 'Còn bảo hành chính hãng (Lưu ý giữ tem niêm phong)'
+        : 'Không rõ / Máy cũ (Ủy quyền KTV kiểm tra)';
+
+    const finalNote = `[Tình trạng bảo hành: ${warrantyLabel}] - ${note.trim()}`;
+
     try {
       submittingRef.current = true;
       setSubmitting(true);
@@ -267,7 +287,7 @@ export function BookingPage() {
         scheduledStart: selectedTime,
         requestedTechnicianId: selectedTechId || null,
         location: workshopAddress,
-        note: note.trim() || null,
+        note: finalNote,
         'cf-turnstile-response': turnstileToken,
         turnstileToken: turnstileToken,
       });
@@ -613,17 +633,115 @@ export function BookingPage() {
                 </div>
               </div>
 
+              {/* Warranty Status Selector */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-slate-500" /> {t('booking.noteLabel')}
+                  <ShieldAlert className="w-4 h-4 text-orange-600" />
+                  <span>{isEn ? 'Device Warranty Status (Required)' : 'Tình trạng bảo hành thiết bị (Bắt buộc)'}</span>
+                  <span className="text-rose-500">*</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <label
+                    onClick={() => setWarrantyStatus('EXPIRED')}
+                    className={`p-3 rounded-xl border cursor-pointer transition flex items-start gap-2.5 ${
+                      warrantyStatus === 'EXPIRED'
+                        ? 'border-orange-500 bg-orange-50/70 shadow-xs ring-1 ring-orange-500'
+                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="warranty"
+                      checked={warrantyStatus === 'EXPIRED'}
+                      onChange={() => setWarrantyStatus('EXPIRED')}
+                      className="mt-0.5 text-orange-600 focus:ring-orange-500"
+                    />
+                    <div>
+                      <div className="font-bold text-xs text-slate-800">
+                        {isEn ? 'Out of Warranty' : 'Đã hết bảo hành'}
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                        {isEn ? 'Consents to disassemble machine for hardware inspection' : 'Đồng ý để KTV tháo ốc mở máy kiểm tra phần cứng'}
+                      </p>
+                    </div>
+                  </label>
+
+                  <label
+                    onClick={() => setWarrantyStatus('UNDER_WARRANTY')}
+                    className={`p-3 rounded-xl border cursor-pointer transition flex items-start gap-2.5 ${
+                      warrantyStatus === 'UNDER_WARRANTY'
+                        ? 'border-orange-500 bg-orange-50/70 shadow-xs ring-1 ring-orange-500'
+                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="warranty"
+                      checked={warrantyStatus === 'UNDER_WARRANTY'}
+                      onChange={() => setWarrantyStatus('UNDER_WARRANTY')}
+                      className="mt-0.5 text-orange-600 focus:ring-orange-500"
+                    />
+                    <div>
+                      <div className="font-bold text-xs text-slate-800">
+                        {isEn ? 'Under Warranty' : 'Còn bảo hành hãng'}
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                        {isEn ? 'Keep warranty seals intact, check software/exterior' : 'Lưu ý giữ tem niêm phong, ưu tiên kiểm tra ngoài'}
+                      </p>
+                    </div>
+                  </label>
+
+                  <label
+                    onClick={() => setWarrantyStatus('UNKNOWN')}
+                    className={`p-3 rounded-xl border cursor-pointer transition flex items-start gap-2.5 ${
+                      warrantyStatus === 'UNKNOWN'
+                        ? 'border-orange-500 bg-orange-50/70 shadow-xs ring-1 ring-orange-500'
+                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="warranty"
+                      checked={warrantyStatus === 'UNKNOWN'}
+                      onChange={() => setWarrantyStatus('UNKNOWN')}
+                      className="mt-0.5 text-orange-600 focus:ring-orange-500"
+                    />
+                    <div>
+                      <div className="font-bold text-xs text-slate-800">
+                        {isEn ? 'Unknown / Old Device' : 'Không rõ / Máy cũ'}
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                        {isEn ? 'Authorizes technician diagnostic inspection' : 'Xác nhận ủy quyền kỹ thuật cho KTV kiểm tra'}
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Device Notes */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-slate-500" />
+                  <span>{isEn ? 'Device condition & Symptoms (Required)' : 'Tình trạng máy & Mô tả hiện trạng (Bắt buộc)'}</span>
+                  <span className="text-rose-500">*</span>
                 </label>
                 <textarea
-                  rows={2}
-                  placeholder={t('booking.notePlaceholder')}
+                  rows={3}
+                  required
+                  placeholder={
+                    isEn
+                      ? 'E.g.: Dell XPS 13, heating up quickly, fans noisy, warranty seals intact...'
+                      : 'VD: Laptop Dell Inspiron 5510, máy nóng quạt kêu to, tem ốc còn nguyên...'
+                  }
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
+                <span className="text-[11px] text-slate-500 mt-1 block">
+                  {isEn
+                    ? 'Please specify machine model, error symptoms, and seal condition (min 5 characters).'
+                    : 'Vui lòng ghi rõ đời máy/model, dấu hiệu lỗi và tình trạng tem mác dán trên máy (tối thiểu 5 ký tự).'}
+                </span>
               </div>
             </div>
           </div>

@@ -55,6 +55,18 @@ export function validateBookingInput(input: BookingInput): void {
     input.location = getSystemSettings().workshopAddress || 'Phòng 1603, Tòa A1, Cơ sở 1 - Đại học Công nghiệp Hà Nội';
   }
 
+  // Kiểm tra số điện thoại khách hàng (Bắt buộc phải có SĐT mới được đặt lịch)
+  const db = getDb();
+  const customer = db.prepare('SELECT phone FROM users WHERE id = ?').get(input.customerId) as { phone: string | null } | undefined;
+  if (!customer?.phone || !customer.phone.trim()) {
+    throw new AppError('VALIDATION_ERROR', 'Quý khách vui lòng cập nhật số điện thoại liên hệ trước khi đặt lịch dịch vụ.', 400);
+  }
+
+  // Bắt buộc ghi chú tình trạng máy và bảo hành
+  if (!input.note || !input.note.trim() || input.note.trim().length < 5) {
+    throw new AppError('VALIDATION_ERROR', 'Vui lòng cung cấp ghi chú mô tả tình trạng máy và xác nhận tình trạng bảo hành (tối thiểu 5 ký tự).', 400);
+  }
+
   // Quy định nghiệp vụ: Đặt lịch trước tối thiểu 4 tiếng so với giờ bắt đầu ca (theo Giờ chuẩn Việt Nam GMT+7)
   if (input.scheduledDate && input.scheduledStart) {
     const scheduledTime = toISOWithZone(input.scheduledDate, input.scheduledStart);

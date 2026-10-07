@@ -12,6 +12,7 @@ import { ServicesPage } from './pages/public/ServicesPage';
 import { AboutPage } from './pages/public/AboutPage';
 import { TermsPage } from './pages/public/TermsPage';
 import { PublicOrdersPage } from './pages/public/PublicOrdersPage';
+import { TechnicianPublicProfilePage } from './pages/public/TechnicianPublicProfilePage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 
@@ -112,6 +113,7 @@ function AppRoutes() {
         <Route path="about" element={<AboutPage />} />
         <Route path="terms" element={<TermsPage />} />
         <Route path="public-orders" element={<PublicOrdersPage />} />
+        <Route path="ktv/:alias" element={<TechnicianPublicProfilePage />} />
         <Route path="login" element={<PublicOnly><LoginPage /></PublicOnly>} />
         <Route path="register" element={<PublicOnly><RegisterPage /></PublicOnly>} />
 

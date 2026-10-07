@@ -9,6 +9,9 @@ export interface User {
   contact_info: string | null;
   bio?: string | null;
   public_profile?: string | null;
+  alias?: string | null;
+  bank_info?: string | null;
+  bank_qr_path?: string | null;
   created_at: string;
   updated_at: string;
 }

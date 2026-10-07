@@ -60,7 +60,9 @@ if (isMain) {
   try {
     runMigrations();
     console.log('Migrations completed.');
-  } finally {
-    closeDb();
+    process.exit(0);
+  } catch (err) {
+    console.error('Migration failed:', err);
+    process.exit(1);
   }
 }

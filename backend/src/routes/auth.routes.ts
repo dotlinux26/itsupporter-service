@@ -8,6 +8,7 @@ import {
   registerController,
   updateProfileController,
   uploadAvatarController,
+  uploadBankQrController,
 } from '../controllers/authController.js';
 import { authenticate } from '../middleware/auth.js';
 import { authRateLimiter, loginRateLimiter } from '../middleware/rateLimit.js';
@@ -22,6 +23,7 @@ router.post('/logout', authenticate, logoutController);
 router.get('/me', authenticate, meController);
 router.patch('/profile', authenticate, updateProfileController);
 router.post('/upload-avatar', authenticate, imageUpload.single('avatar'), uploadAvatarController);
+router.post('/upload-bank-qr', authenticate, imageUpload.single('qr'), uploadBankQrController);
 router.post('/change-password', authenticate, changePasswordController);
 
 export default router;

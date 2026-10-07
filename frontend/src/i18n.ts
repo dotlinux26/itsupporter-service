@@ -373,6 +373,7 @@ const resources = {
         satisfactionLevel: 'Mức độ hài lòng:',
         reviewDetailLabel: 'Nhận xét chi tiết (Thái độ phục vụ, chuyên môn, tốc độ...):',
         reviewDetailPlaceholder: 'Hãy chia sẻ cảm nhận thực tế của bạn...',
+        submitReviewBtn: 'Gửi đánh giá',
         chatBannerDesc: 'Trò chuyện trực tiếp, gửi ảnh máy hoặc nhận Voucher từ Kỹ thuật viên',
         openChatBtn: 'Mở Chat →',
         noPublicOrders: 'Chưa có đơn hàng công khai nào',
