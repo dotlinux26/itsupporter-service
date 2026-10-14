@@ -27,6 +27,7 @@ app.disable('x-powered-by');
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: false,
   })
 );
 app.use(

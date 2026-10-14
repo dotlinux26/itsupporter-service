@@ -385,6 +385,43 @@ function escapeXml(unsafe: string): string {
   });
 }
 
+function wrapSvgText(text: string, maxCharsPerLine = 68, maxLines = 2): string[] {
+  const words = text.trim().split(/\s+/);
+  const lines: string[] = [];
+  let current = '';
+
+  for (const word of words) {
+    const test = current ? `${current} ${word}` : word;
+    if (test.length <= maxCharsPerLine) {
+      current = test;
+    } else {
+      if (lines.length < maxLines - 1) {
+        lines.push(current);
+        current = word;
+      } else {
+        break;
+      }
+    }
+  }
+
+  if (current) {
+    lines.push(current);
+  }
+
+  const totalWordsInLines = lines.join(' ').split(/\s+/).length;
+  if (totalWordsInLines < words.length && lines.length > 0) {
+    let last = lines[lines.length - 1];
+    if (!last.endsWith('...')) {
+      if (last.length > maxCharsPerLine - 3) {
+        last = last.slice(0, maxCharsPerLine - 3).trim();
+      }
+      lines[lines.length - 1] = `${last}...`;
+    }
+  }
+
+  return lines;
+}
+
 async function renderTechnicianOgPng(rawAliasOrId: string): Promise<Buffer> {
   const aliasOrId = String(rawAliasOrId || '').replace(/[./]+$/, '').trim();
   const db = getDb();
@@ -413,7 +450,7 @@ async function renderTechnicianOgPng(rawAliasOrId: string): Promise<Buffer> {
   const ratingCount = Number(tech?.rating_count || 0);
   const completedCount = Number(tech?.completed_orders_count || 0);
   const rawBio = tech?.bio || 'Đội ngũ kỹ thuật viên sinh viên nhiệt huyết, được đào tạo bài bản về vệ sinh và bảo dưỡng phần cứng PC/Laptop tại Đại học Công nghiệp Hà Nội.';
-  const bio = escapeXml(rawBio.length > 140 ? rawBio.slice(0, 140) + '...' : rawBio);
+  const bioLines = wrapSvgText(rawBio, 68, 2);
 
   let avatarBase64 = '';
   if (tech?.avatar_url && tech.avatar_url.startsWith('/uploads/')) {
@@ -460,10 +497,10 @@ async function renderTechnicianOgPng(rawAliasOrId: string): Promise<Buffer> {
     <circle cx="240" cy="315" r="150" fill="#1e293b" />
     <image href="${avatarBase64}" x="90" y="165" width="300" height="300" preserveAspectRatio="xMidYMid slice" clip-path="url(#avatarClip)" />
 
-    <!-- Badge dưới avatar -->
-    <g transform="translate(130, 490)">
-      <rect width="220" height="42" rx="21" fill="#ea580c" />
-      <text x="110" y="26" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">✓ KỸ THUẬT VIÊN CHÍNH THỨC</text>
+    <!-- Badge dưới avatar: Centered at cx=240, width=260, text never overflows -->
+    <g transform="translate(110, 480)">
+      <rect width="260" height="40" rx="20" fill="#ea580c" />
+      <text x="130" y="25" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle" letter-spacing="0.5">✓ KỸ THUẬT VIÊN CHÍNH THỨC</text>
     </g>
 
     <!-- Right Side: Info (Phai Ho Ten & Thong Tin) -->
@@ -496,9 +533,9 @@ async function renderTechnicianOgPng(rawAliasOrId: string): Promise<Buffer> {
       ${completedCount} <tspan font-size="15" fill="#94a3b8" font-weight="normal">ca bảo dưỡng thành công</tspan>
     </text>
 
-    <!-- Bio snippet -->
-    <text x="450" y="445" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="18" fill="#cbd5e1">
-      ${bio}
+    <!-- Bio snippet: Auto-wrapped into 2 lines with proper ellipsis -->
+    <text x="450" y="438" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="17" fill="#cbd5e1">
+      ${bioLines.map((line, idx) => `<tspan x="450" dy="${idx === 0 ? 0 : 25}">${escapeXml(line)}</tspan>`).join('')}
     </text>
 
     <!-- Footer Bar -->

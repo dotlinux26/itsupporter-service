@@ -122,6 +122,7 @@ export function handleTechnicianPublicHtml(req: Request, res: Response): void {
       }
     }
 
+    res.removeHeader('Content-Security-Policy');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300');
     res.send(html);
@@ -137,11 +138,13 @@ export function handleTechnicianPublicHtml(req: Request, res: Response): void {
       ].find((p) => fs.existsSync(p));
 
       if (fallbackPath) {
+        res.removeHeader('Content-Security-Policy');
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.sendFile(fallbackPath);
         return;
       }
     } catch {}
+    res.removeHeader('Content-Security-Policy');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send('<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>IT Supporter HaUI</title></head><body><div id="root"></div></body></html>');
   }
