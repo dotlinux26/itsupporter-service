@@ -1,4 +1,26 @@
 # IT Supporter HaUI Robots Exclusion File
+
+# Allow Facebook & Meta Scrapers (Facebook Sharing Debugger, Instagram, Messenger, WhatsApp)
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Facebot
+Allow: /
+
+# Allow Other Social Media Crawlers
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+# General Search Engine Rules
 User-agent: *
 Allow: /
 Allow: /services
@@ -11,7 +33,7 @@ Allow: /account-recovery
 Allow: /login
 Allow: /register
 
-# Disallow private user/technician/management dashboards and APIs
+# Disallow private dashboards and sensitive APIs
 Disallow: /admin/
 Disallow: /manager/
 Disallow: /technician/

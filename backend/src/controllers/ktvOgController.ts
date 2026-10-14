@@ -125,6 +125,7 @@ export function handleTechnicianPublicHtml(req: Request, res: Response): void {
     res.removeHeader('Content-Security-Policy');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300');
+    res.setHeader('X-Robots-Tag', 'all, max-image-preview:large');
     res.send(html);
   } catch (err) {
     logger.error({ err }, 'Error handling technician public HTML');
