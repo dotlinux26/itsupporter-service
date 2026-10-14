@@ -185,9 +185,6 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
                     Bảo mật chuẩn
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Thay thế Email để né chặn Port 25 - Không lo thất lạc mã OTP
-                </p>
               </div>
             </div>
           </div>
@@ -241,7 +238,7 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
 
                     <div className="flex-1 space-y-2 text-xs w-full">
                       <p className="text-slate-400 leading-relaxed">
-                        Mở Google Authenticator $\rightarrow$ bấm <b>(+)</b> $\rightarrow$ <b>Quét mã QR</b>.
+                        Mở Google Authenticator → bấm <b>(+)</b> → <b>Quét mã QR</b>.
                         Dòng mã hiển thị sẽ có tên: <code className="text-orange-300 bg-orange-950/60 px-1.5 py-0.5 rounded font-mono">KhoiPhuc_MatKhau</code>
                       </p>
                       <div>

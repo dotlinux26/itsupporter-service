@@ -189,7 +189,7 @@ export const AuthenticatorGuideModal: React.FC<AuthenticatorGuideModalProps> = (
                 <div>
                   <h4 className="font-semibold text-white">Thêm tài khoản</h4>
                   <p className="text-slate-400 text-xs mt-0.5">
-                    Bấm dấu <b>(+)</b> $\rightarrow$ <b>Quét mã QR</b>. Cấp quyền truy cập Camera cho ứng dụng khi được hỏi.
+                    Bấm dấu <b>(+)</b> → <b>Quét mã QR</b>. Cấp quyền truy cập Camera cho ứng dụng khi được hỏi.
                   </p>
                 </div>
               </div>
@@ -227,7 +227,7 @@ export const AuthenticatorGuideModal: React.FC<AuthenticatorGuideModalProps> = (
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Cách 1: Bật "Đặt giờ tự động" trên điện thoại
                   </p>
                   <p className="text-xs text-slate-400 pl-6">
-                    Vào <b>Cài đặt (Settings)</b> $\rightarrow$ <b>Ngày & Giờ (Date & Time)</b> $\rightarrow$ Bật công tắc <b>"Đặt tự động" (Set Automatically)</b>.
+                    Vào <b>Cài đặt (Settings)</b> → <b>Ngày & Giờ (Date & Time)</b> → Bật công tắc <b>"Đặt tự động" (Set Automatically)</b>.
                   </p>
                 </div>
 
@@ -236,7 +236,7 @@ export const AuthenticatorGuideModal: React.FC<AuthenticatorGuideModalProps> = (
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Cách 2: Đồng bộ giờ trong Google Authenticator (Android)
                   </p>
                   <p className="text-xs text-slate-400 pl-6">
-                    Mở Google Authenticator $\rightarrow$ bấm menu <b>3 chấm</b> ở góc trên $\rightarrow$ <b>Cài đặt (Settings)</b> $\rightarrow$ <b>Khắc phục sự cố về thời gian cho các mã</b> $\rightarrow$ <b>Đồng bộ hóa ngay (Sync now)</b>.
+                    Mở Google Authenticator → bấm menu <b>3 chấm</b> ở góc trên → <b>Cài đặt (Settings)</b> → <b>Khắc phục sự cố về thời gian cho các mã</b> → <b>Đồng bộ hóa ngay (Sync now)</b>.
                   </p>
                 </div>
               </div>
