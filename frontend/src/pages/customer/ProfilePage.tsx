@@ -338,7 +338,7 @@ export function ProfilePage() {
       </div>
 
       {/* TABS NAVIGATION */}
-      <div className="flex border-b border-border gap-2">
+      <div className="flex border-b border-border gap-1 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0">
         {tabs.map((tItem) => (
           <button
             key={tItem.key}
@@ -349,10 +349,10 @@ export function ProfilePage() {
               setPwError('');
               setPwSuccess('');
             }}
-            className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
+            className={`flex items-center gap-2 px-3.5 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition-all flex-shrink-0 ${
               tab === tItem.key
-                ? 'border-primary text-primary bg-orange-50/40 rounded-t-lg'
-                : 'border-transparent text-gray-500 hover:text-gray-900'
+                ? 'border-primary text-primary bg-orange-50/50 rounded-t-lg font-bold'
+                : 'border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50/50 rounded-t-lg'
             }`}
           >
             {tItem.icon}

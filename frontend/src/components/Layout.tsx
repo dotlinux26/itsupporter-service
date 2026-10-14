@@ -175,20 +175,20 @@ export function AppHeader() {
         <div className="flex items-center gap-2 sm:gap-3">
           <LanguageSwitcher className="hidden sm:inline-flex" />
           {isAuthenticated ? (
-            <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3">
               {/* Role badge */}
               {user?.role === 'ADMIN' && (
-                <NavLink to="/admin" className="text-xs font-bold px-2.5 py-1 bg-purple-50 text-purple-700 rounded-lg border border-purple-200 hover:bg-purple-100">
+                <NavLink to="/admin" className="text-[11px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 bg-purple-50 text-purple-700 rounded-lg border border-purple-200 hover:bg-purple-100 whitespace-nowrap">
                   {t('nav.roleAdmin')}
                 </NavLink>
               )}
               {user?.role === 'MANAGER' && (
-                <NavLink to="/manager" className="text-xs font-bold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg border border-blue-200 hover:bg-blue-100">
+                <NavLink to="/manager" className="text-[11px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 bg-blue-50 text-blue-700 rounded-lg border border-blue-200 hover:bg-blue-100 whitespace-nowrap">
                   {t('nav.roleManager')}
                 </NavLink>
               )}
               {user?.role === 'TECHNICIAN' && (
-                <NavLink to="/technician" className="text-xs font-bold px-2.5 py-1 bg-amber-50 text-amber-700 rounded-lg border border-amber-200 hover:bg-amber-100">
+                <NavLink to="/technician" className="text-[11px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 bg-amber-50 text-amber-700 rounded-lg border border-amber-200 hover:bg-amber-100 whitespace-nowrap">
                   {t('nav.roleTechnician')}
                 </NavLink>
               )}
@@ -216,15 +216,15 @@ export function AppHeader() {
               <NotificationBell />
 
               {/* Profile link */}
-              <NavLink to="/profile" className="flex items-center gap-2 hover:opacity-80 transition" title={user?.name}>
+              <NavLink to="/profile" className="flex items-center gap-2 hover:opacity-80 transition shrink-0" title={user?.name}>
                 <Avatar name={user?.name || ''} email={user?.email || ''} src={user?.avatar_url} size={32} />
                 <span className="hidden xl:block text-xs font-semibold text-slate-700 max-w-[100px] truncate">{user?.name}</span>
               </NavLink>
 
-              {/* Logout button */}
+              {/* Logout button: hidden on mobile (< sm) because the hamburger menu has the logout button */}
               <button
                 onClick={() => logout()}
-                className="btn btn-ghost text-xs text-slate-500 hover:text-red-600 px-2"
+                className="btn btn-ghost text-xs text-slate-500 hover:text-red-600 px-2 hidden sm:inline-flex"
                 title={t('nav.logout')}
               >
                 {t('nav.logout')}

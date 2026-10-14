@@ -47,21 +47,21 @@ export const AuthenticatorGuideModal: React.FC<AuthenticatorGuideModalProps> = (
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-800/50">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-800 bg-slate-800/50">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20 shrink-0">
               <Smartphone className="w-5 h-5" />
             </div>
-            <div>
-              <h3 className="text-lg font-bold text-white">Hướng dẫn cài đặt Google Authenticator</h3>
-              <p className="text-xs text-slate-400">Bảo mật mã xác thực tài khoản</p>
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-lg font-bold text-white truncate">Hướng dẫn cài đặt Google Authenticator</h3>
+              <p className="text-[11px] sm:text-xs text-slate-400">Bảo mật mã xác thực tài khoản</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className="p-1.5 sm:p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -69,7 +69,7 @@ export const AuthenticatorGuideModal: React.FC<AuthenticatorGuideModalProps> = (
 
         {/* Video demonstration embed / popup if activated */}
         {showVideo && (
-          <div className="p-4 bg-slate-950 border-b border-slate-800 animate-slide-down">
+          <div className="p-3 sm:p-4 bg-slate-950 border-b border-slate-800 animate-slide-down">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-orange-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Play className="w-3.5 h-3.5 fill-current" /> Video hướng dẫn nhanh (1 phút)
@@ -94,10 +94,10 @@ export const AuthenticatorGuideModal: React.FC<AuthenticatorGuideModalProps> = (
         )}
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-800 bg-slate-950/40 px-6 pt-3 gap-2">
+        <div className="flex border-b border-slate-800 bg-slate-950/40 px-3 sm:px-6 pt-2.5 sm:pt-3 gap-1 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap">
           <button
             onClick={() => setActiveTab('android')}
-            className={`pb-3 px-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${
+            className={`pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs sm:text-sm font-medium border-b-2 transition-all flex items-center gap-1.5 sm:gap-2 shrink-0 ${
               activeTab === 'android'
                 ? 'border-orange-500 text-orange-400 font-semibold'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -107,7 +107,7 @@ export const AuthenticatorGuideModal: React.FC<AuthenticatorGuideModalProps> = (
           </button>
           <button
             onClick={() => setActiveTab('ios')}
-            className={`pb-3 px-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${
+            className={`pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs sm:text-sm font-medium border-b-2 transition-all flex items-center gap-1.5 sm:gap-2 shrink-0 ${
               activeTab === 'ios'
                 ? 'border-orange-500 text-orange-400 font-semibold'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -117,7 +117,7 @@ export const AuthenticatorGuideModal: React.FC<AuthenticatorGuideModalProps> = (
           </button>
           <button
             onClick={() => setActiveTab('sync')}
-            className={`pb-3 px-3 text-sm font-medium border-b-2 transition-all flex items-center gap-2 ${
+            className={`pb-2.5 sm:pb-3 px-2.5 sm:px-3 text-xs sm:text-sm font-medium border-b-2 transition-all flex items-center gap-1.5 sm:gap-2 shrink-0 ${
               activeTab === 'sync'
                 ? 'border-orange-500 text-orange-400 font-semibold'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -128,7 +128,7 @@ export const AuthenticatorGuideModal: React.FC<AuthenticatorGuideModalProps> = (
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-5 text-sm text-slate-300">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3.5 sm:p-6 space-y-4 sm:space-y-5 text-sm text-slate-300">
           {activeTab === 'android' && (
             <div className="space-y-4">
               <div className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60">

@@ -168,20 +168,20 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-        <div className="relative w-full max-w-xl bg-slate-900 border-2 border-orange-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+        <div className="relative w-full max-w-xl bg-slate-900 border-2 border-orange-500/40 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
           {/* Header */}
-          <div className="bg-gradient-to-r from-orange-600/20 via-amber-600/20 to-orange-600/10 border-b border-orange-500/20 px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-orange-500 text-slate-950 font-black shadow-lg shadow-orange-500/30">
-                <ShieldAlert className="w-6 h-6" />
+          <div className="bg-gradient-to-r from-orange-600/20 via-amber-600/20 to-orange-600/10 border-b border-orange-500/20 px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-orange-500 text-slate-950 font-black shadow-lg shadow-orange-500/30 shrink-0">
+                <ShieldAlert className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-white tracking-wide">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <h3 className="text-sm sm:text-base font-bold text-white tracking-wide truncate">
                     Bắt buộc thiết lập Khôi phục mật khẩu (TOTP)
                   </h3>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30 shrink-0">
                     Bảo mật chuẩn
                   </span>
                 </div>
@@ -190,10 +190,10 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-5 text-sm text-slate-300">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-3.5 sm:p-6 space-y-4 sm:space-y-5 text-sm text-slate-300">
             {/* Warning banner */}
-            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 sm:gap-3">
+              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0 mt-0.5" />
               <div className="text-xs leading-relaxed text-amber-200">
                 <b>Khuyến cáo an toàn:</b> Hệ thống không sử dụng Email để cấp lại mật khẩu. Bạn bắt buộc cài đặt ứng dụng <b>Google Authenticator</b> để có thể tự khôi phục mật khẩu khi bị quên.
               </div>
@@ -205,48 +205,48 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
                 <p className="text-xs font-medium">Đang sinh mã hóa và bộ mã dự phòng bảo mật...</p>
               </div>
             ) : setupData ? (
-              <div className="space-y-5">
+              <div className="space-y-4 sm:space-y-5">
                 {/* Step 1: Scan QR */}
-                <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-3">
-                  <div className="flex items-center justify-between">
+                <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
-                      <QrCode className="w-4 h-4" /> Bước 1: Quét mã vào Google Authenticator
+                      <QrCode className="w-4 h-4 shrink-0" /> Bước 1: Quét mã vào Google Authenticator
                     </span>
                     <button
                       type="button"
                       onClick={() => setShowGuideModal(true)}
-                      className="text-xs text-orange-400 hover:text-orange-300 underline font-medium flex items-center gap-1"
+                      className="text-xs text-orange-400 hover:text-orange-300 underline font-medium flex items-center gap-1 shrink-0"
                     >
-                      <HelpCircle className="w-3.5 h-3.5" /> Hướng dẫn & Video
+                      <HelpCircle className="w-3.5 h-3.5" /> Hướng dẫn
                     </button>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
+                  <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 bg-slate-900/80 p-3 sm:p-3.5 rounded-xl border border-slate-800">
                     {setupData.qrCodeDataUrl ? (
                       <div className="p-2 bg-white rounded-xl shrink-0 shadow-md">
                         <img
                           src={setupData.qrCodeDataUrl}
                           alt="Recovery QR"
-                          className="w-32 h-32 block"
+                          className="w-28 h-28 sm:w-32 sm:h-32 block"
                         />
                       </div>
                     ) : (
-                      <div className="w-32 h-32 bg-slate-800 flex items-center justify-center rounded-xl text-xs text-slate-500">
+                      <div className="w-28 h-28 sm:w-32 sm:h-32 bg-slate-800 flex items-center justify-center rounded-xl text-xs text-slate-500">
                         Lỗi tải QR
                       </div>
                     )}
 
-                    <div className="flex-1 space-y-2 text-xs w-full">
+                    <div className="flex-1 space-y-2 text-xs w-full min-w-0">
                       <p className="text-slate-400 leading-relaxed">
                         Mở Google Authenticator → bấm <b>(+)</b> → <b>Quét mã QR</b>.
-                        Dòng mã hiển thị sẽ có tên: <code className="text-orange-300 bg-orange-950/60 px-1.5 py-0.5 rounded font-mono">KhoiPhuc_MatKhau</code>
+                        Dòng mã hiển thị sẽ có tên: <code className="text-orange-300 bg-orange-950/60 px-1.5 py-0.5 rounded font-mono break-all">KhoiPhuc_MatKhau</code>
                       </p>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-[11px] text-slate-500 block mb-1">
                           Hoặc nhập khóa bí mật (nếu không quét được):
                         </span>
-                        <div className="flex items-center gap-1.5 bg-slate-950 p-2 rounded-lg border border-slate-800">
-                          <code className="text-[11px] font-mono text-emerald-400 tracking-wider break-all flex-1 select-all">
+                        <div className="flex items-center gap-1.5 bg-slate-950 p-2 rounded-lg border border-slate-800 min-w-0">
+                          <code className="text-[11px] font-mono text-emerald-400 tracking-wider break-all flex-1 select-all min-w-0">
                             {setupData.secret}
                           </code>
                           <button
@@ -264,15 +264,15 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
                 </div>
 
                 {/* Step 2: Backup codes */}
-                <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-3">
-                  <div className="flex items-center justify-between">
+                <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
-                      <Key className="w-4 h-4" /> Bước 2: Lưu trữ 8 mã dự phòng (Backup Codes)
+                      <Key className="w-4 h-4 shrink-0" /> Bước 2: Lưu trữ 8 mã dự phòng
                     </span>
                     <button
                       type="button"
                       onClick={() => triggerDownload(setupData.backupCodes)}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs font-semibold transition-colors"
+                      className="self-start sm:self-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs font-semibold transition-colors shrink-0"
                     >
                       {hasDownloadedCodes ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Download className="w-3.5 h-3.5" />}
                       <span>{hasDownloadedCodes ? 'Đã tải .txt (Tải lại)' : 'Tải file .txt'}</span>
@@ -283,11 +283,11 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
                     File <b className="text-white">itsupporter-recovery-codes.txt</b> đã được tải xuống tự động. Mỗi mã dùng được 1 lần khi không có điện thoại:
                   </p>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 bg-slate-950/80 p-2 sm:p-3 rounded-xl border border-slate-800">
                     {setupData.backupCodes.map((code, idx) => (
                       <div
                         key={idx}
-                        className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-center font-mono text-xs font-bold text-amber-300 tracking-wider"
+                        className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-center font-mono text-[11px] sm:text-xs font-bold text-amber-300 tracking-wider truncate"
                       >
                         {code}
                       </div>
@@ -296,15 +296,15 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
                 </div>
 
                 {/* Step 3: Trial verification */}
-                <form onSubmit={handleVerify} className="p-4 rounded-2xl bg-orange-950/20 border border-orange-500/30 space-y-3">
+                <form onSubmit={handleVerify} className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-orange-950/20 border border-orange-500/30 space-y-3">
                   <span className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4" /> Bước 3: Xác minh thử lần 1 để kích hoạt
+                    <ShieldCheck className="w-4 h-4 shrink-0" /> Bước 3: Xác minh thử lần 1 để kích hoạt
                   </span>
                   <p className="text-xs text-slate-400">
                     Nhập 6 chữ số đang hiển thị trên dòng <b className="text-white">KhoiPhuc_MatKhau</b> để hoàn tất:
                   </p>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2.5">
                     <input
                       type="text"
                       inputMode="numeric"
@@ -313,16 +313,16 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
                       value={verifyCode}
                       onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, ''))}
                       placeholder="000000"
-                      className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-center text-xl font-mono tracking-[0.4em] font-bold text-white focus:outline-none focus:border-orange-500"
+                      className="w-full sm:flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-center text-xl font-mono tracking-[0.25em] sm:tracking-[0.4em] font-bold text-white focus:outline-none focus:border-orange-500"
                       autoFocus
                     />
                     <button
                       type="submit"
                       disabled={submitting || verifyCode.length !== 6}
-                      className="px-6 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-bold text-xs uppercase tracking-wider shadow-lg shadow-orange-500/20 transition-all flex items-center gap-2"
+                      className="w-full sm:w-auto px-6 py-2.5 sm:py-3 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-bold text-xs uppercase tracking-wider shadow-lg shadow-orange-500/20 transition-all flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
                     >
                       {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                      Kích hoạt ngay
+                      <span>Kích hoạt ngay</span>
                     </button>
                   </div>
 
@@ -355,10 +355,10 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
           </div>
 
           {/* Footer with 15-second countdown lock button */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-800 bg-slate-950/60">
-            <div className="text-xs text-slate-500">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 sm:px-6 py-3.5 sm:py-4 border-t border-slate-800 bg-slate-950/60">
+            <div className="text-xs text-slate-500 text-center sm:text-left">
               {countdown > 0 ? (
-                <span className="flex items-center gap-1.5 text-amber-400/90 font-medium">
+                <span className="flex items-center justify-center sm:justify-start gap-1.5 text-amber-400/90 font-medium">
                   <Clock className="w-3.5 h-3.5 animate-pulse" /> Nút bỏ qua mở sau {countdown}s
                 </span>
               ) : (
@@ -370,7 +370,7 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
               type="button"
               onClick={onClose}
               disabled={countdown > 0}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              className={`w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold transition-all text-center whitespace-nowrap shrink-0 ${
                 countdown > 0
                   ? 'bg-slate-800/50 text-slate-600 border border-slate-800 cursor-not-allowed'
                   : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700'
