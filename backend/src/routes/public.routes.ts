@@ -564,6 +564,10 @@ router.post('/recovery-requests', accountRecoveryRateLimiter, async (req, res, n
       throw new AppError('VALIDATION_ERROR', 'Vui lòng điền đầy đủ các thông tin bắt buộc: Tài khoản/Email, Họ tên, SĐT liên hệ và Lý do.', 400);
     }
 
+    if (reason.trim().length > 1000) {
+      throw new AppError('VALIDATION_ERROR', 'Mô tả lý do không được vượt quá 1000 ký tự.', 400);
+    }
+
     // Strict validation: No links, no HTML in any text fields
     assertSafePlainText(usernameOrEmail, 'Tài khoản cần cứu', true);
     assertSafePlainText(fullName, 'Họ và tên', false);

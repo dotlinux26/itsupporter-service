@@ -62,6 +62,11 @@ export const AccountRecoveryPage: React.FC = () => {
       return;
     }
 
+    if (reason.trim().length > 1000) {
+      setErrorMsg('Mô tả lý do không được vượt quá 1000 ký tự.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await publicApi.submitRecoveryRequest({
@@ -207,12 +212,19 @@ export const AccountRecoveryPage: React.FC = () => {
                   <label className="text-xs font-semibold text-slate-300">
                     Mô tả lý do & Hoàn cảnh mất quyền truy cập <span className="text-rose-400">*</span>:
                   </label>
-                  <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                    <Lock className="w-3 h-3" /> Cấm nhập đường link
-                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> Cấm nhập đường link
+                    </span>
+                    <span className="text-slate-600 text-[10px]">|</span>
+                    <span className={`text-[11px] font-mono ${reason.length >= 1000 ? 'text-rose-400 font-bold' : reason.length > 900 ? 'text-amber-400' : 'text-slate-400'}`}>
+                      {reason.length}/1000
+                    </span>
+                  </div>
                 </div>
                 <textarea
                   rows={4}
+                  maxLength={1000}
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="Ví dụ: Em bị mất điện thoại vào ngày hôm qua, chưa kịp sao lưu file mã dự phòng ra máy tính. Em là sinh viên lớp K16 CNTT..."
