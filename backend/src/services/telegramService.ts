@@ -51,16 +51,12 @@ function getSafeTelegramApiUrl(rawUrl?: string): string {
   }
 }
 
-import { Agent } from 'undici';
+import dns from 'node:dns';
 
-// Ép Undici Agent sử dụng thuần IPv4 (family: 4) để tránh Happy Eyeballs race IPv6 timeout trên môi trường Linux
-const telegramAgent = new Agent({
-  connect: {
-    autoSelectFamily: false,
-    family: 4,
-    timeout: 15000,
-  },
-});
+// Ép phân giải DNS ưu tiên thuần IPv4 để tránh Happy Eyeballs race IPv6 timeout trên môi trường Linux VPS
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {}
 
 /**
  * Gửi tin nhắn HTML qua Telegram Bot API
@@ -100,8 +96,7 @@ export async function sendTelegramMessage(
           disable_web_page_preview: true,
         }),
         signal: AbortSignal.timeout(15000),
-        dispatcher: telegramAgent,
-      } as any);
+      });
 
       const data = (await response.json()) as {
         ok: boolean;
@@ -408,8 +403,7 @@ export async function detectTelegramChatId(): Promise<{
     const response = await fetch(endpoint, {
       method: 'GET',
       signal: AbortSignal.timeout(6000),
-      dispatcher: telegramAgent,
-    } as any);
+    });
 
     const body = (await response.json()) as {
       ok: boolean;
