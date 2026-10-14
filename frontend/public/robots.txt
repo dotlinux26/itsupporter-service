@@ -1,24 +1,20 @@
 # IT Supporter HaUI Robots Exclusion File
 
-# Allow Facebook & Meta Scrapers (Facebook Sharing Debugger, Instagram, Messenger, WhatsApp)
+# Allow Facebook, Meta, Zalo & Social Media Crawlers
 User-agent: facebookexternalhit
-Allow: /
-
+User-agent: facebookexternalhit/1.1
 User-agent: Facebot
-Allow: /
-
-# Allow Other Social Media Crawlers
+User-agent: meta-externalagent
+User-agent: meta-externalfetcher
+User-agent: Zalo
+User-agent: ZaloPC
 User-agent: Twitterbot
-Allow: /
-
 User-agent: LinkedInBot
-Allow: /
-
 User-agent: TelegramBot
-Allow: /
-
+User-agent: Discordbot
 User-agent: Applebot
 Allow: /
+Allow: /api/public/
 
 # General Search Engine Rules
 User-agent: *
@@ -32,6 +28,7 @@ Allow: /ktv/
 Allow: /account-recovery
 Allow: /login
 Allow: /register
+Allow: /api/public/
 
 # Disallow private dashboards and sensitive APIs
 Disallow: /admin/
@@ -40,8 +37,12 @@ Disallow: /technician/
 Disallow: /orders/
 Disallow: /profile/
 Disallow: /my-vouchers
-Disallow: /api/
+Disallow: /api/admin/
+Disallow: /api/manager/
+Disallow: /api/technician/
+Disallow: /api/auth/
+Disallow: /api/orders/
+Disallow: /api/vouchers/
 
-# Host & Sitemap
-Host: https://itsupporter.io.vn
+# Sitemap
 Sitemap: https://itsupporter.io.vn/sitemap.xml
