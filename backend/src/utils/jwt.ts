@@ -49,3 +49,22 @@ export function verifyRefreshToken(token: string): RefreshTokenPayload {
   }
   return decoded;
 }
+
+export interface Temp2FATokenPayload {
+  sub: string;
+  uid: number;
+  type: '2fa_temp';
+}
+
+export function signTemp2FAToken(userId: number): string {
+  const payload: Temp2FATokenPayload = { sub: String(userId), uid: userId, type: '2fa_temp' };
+  return jwt.sign(payload, config.jwt.accessSecret, { expiresIn: '5m' });
+}
+
+export function verifyTemp2FAToken(token: string): Temp2FATokenPayload {
+  const decoded = jwt.verify(token, config.jwt.accessSecret) as Temp2FATokenPayload;
+  if (decoded.type !== '2fa_temp') {
+    throw new Error('Wrong token type');
+  }
+  return decoded;
+}

@@ -1,5 +1,5 @@
 import { getDb } from '../config/database.js';
-import type { Role, User } from '../models/index.js';
+import type { Role, User, AccountRecoveryRequest } from '../models/index.js';
 
 export interface CreateUserInput {
   email: string;
@@ -41,6 +41,14 @@ export function findUserById(id: number): User | undefined {
 export function findUserForAuth(email: string): User | undefined {
   return getDb().prepare('SELECT * FROM users WHERE email = ?').get(email) as User | undefined;
 }
+
+export function findUserByIdentifier(identifier: string): User | undefined {
+  const clean = identifier.trim().toLowerCase();
+  return getDb().prepare(
+    'SELECT * FROM users WHERE (LOWER(email) = ? OR phone = ? OR LOWER(name) = ?) AND is_deleted = 0'
+  ).get(clean, identifier.trim(), clean) as User | undefined;
+}
+
 
 export function updateUserProfile(
   id: number,
@@ -120,7 +128,11 @@ export function listUsers(options: {
 
   const total = (db.prepare(`SELECT COUNT(*) AS c FROM users ${whereSql}`).get(...params) as { c: number }).c;
   const data = db
-    .prepare(`SELECT * FROM users ${whereSql} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`)
+    .prepare(
+      `SELECT id, email, name, phone, role, avatar_url, contact_info, status, is_deleted, created_at, updated_at,
+              is_recovery_enabled, is_2fa_enabled, last_totp_used_at
+       FROM users ${whereSql} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`
+    )
     .all(...params, limit, offset) as User[];
 
   return { data, total };
@@ -183,4 +195,120 @@ export function updateTechnicianProfile(
     patch.bankQrPath !== undefined ? patch.bankQrPath : current?.bank_qr_path ?? null,
     userId
   );
+}
+
+export function updateUserRecovery(
+  id: number,
+  enabled: number,
+  secret?: string | null,
+  backupCodes?: string | null
+): void {
+  getDb()
+    .prepare(
+      `UPDATE users SET is_recovery_enabled = ?, recovery_secret = ?, recovery_backup_codes = ?, updated_at = datetime('now') WHERE id = ?`
+    )
+    .run(enabled, secret ?? null, backupCodes ?? null, id);
+}
+
+export function updateUserRecoveryBackupCodes(id: number, backupCodesJson: string): void {
+  getDb()
+    .prepare(
+      `UPDATE users SET recovery_backup_codes = ?, updated_at = datetime('now') WHERE id = ?`
+    )
+    .run(backupCodesJson, id);
+}
+
+export function updateUser2FA(
+  id: number,
+  enabled: number,
+  secret?: string | null,
+  backupCodes?: string | null
+): void {
+  getDb()
+    .prepare(
+      `UPDATE users SET is_2fa_enabled = ?, two_factor_secret = ?, two_factor_backup_codes = ?, updated_at = datetime('now') WHERE id = ?`
+    )
+    .run(enabled, secret ?? null, backupCodes ?? null, id);
+}
+
+export function updateUser2FABackupCodes(id: number, backupCodesJson: string): void {
+  getDb()
+    .prepare(
+      `UPDATE users SET two_factor_backup_codes = ?, updated_at = datetime('now') WHERE id = ?`
+    )
+    .run(backupCodesJson, id);
+}
+
+export interface CreateRecoveryRequestInput {
+  userId?: number | null;
+  usernameOrEmail: string;
+  fullName: string;
+  contactPhone: string;
+  contactEmail?: string | null;
+  reason: string;
+  evidenceUrl?: string | null;
+}
+
+export function createRecoveryRequest(input: CreateRecoveryRequestInput): number {
+  const db = getDb();
+  const result = db.prepare(`
+    INSERT INTO account_recovery_requests (user_id, username_or_email, full_name, contact_phone, contact_email, reason, evidence_url)
+    VALUES (@userId, @usernameOrEmail, @fullName, @contactPhone, @contactEmail, @reason, @evidenceUrl)
+  `).run({
+    userId: input.userId ?? null,
+    usernameOrEmail: input.usernameOrEmail,
+    fullName: input.fullName,
+    contactPhone: input.contactPhone,
+    contactEmail: input.contactEmail ?? null,
+    reason: input.reason,
+    evidenceUrl: input.evidenceUrl ?? null,
+  });
+  return Number(result.lastInsertRowid);
+}
+
+export function listRecoveryRequests(options: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}): { data: AccountRecoveryRequest[]; total: number } {
+  const db = getDb();
+  const page = options.page ?? 1;
+  const limit = Math.min(options.limit ?? 20, 50);
+  const offset = (page - 1) * limit;
+
+  const where: string[] = [];
+  const params: unknown[] = [];
+
+  if (options.status) {
+    where.push('status = ?');
+    params.push(options.status);
+  }
+
+  const whereSql = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
+  const total = (
+    db.prepare(`SELECT COUNT(*) as c FROM account_recovery_requests ${whereSql}`).get(...params) as { c: number }
+  ).c;
+
+  const data = db.prepare(
+    `SELECT * FROM account_recovery_requests ${whereSql} ORDER BY created_at DESC LIMIT ? OFFSET ?`
+  ).all(...params, limit, offset) as AccountRecoveryRequest[];
+
+  return { data, total };
+}
+
+export function findRecoveryRequestById(id: number): AccountRecoveryRequest | undefined {
+  return getDb().prepare('SELECT * FROM account_recovery_requests WHERE id = ?').get(id) as AccountRecoveryRequest | undefined;
+}
+
+export function resolveRecoveryRequest(
+  id: number,
+  status: 'APPROVED' | 'REJECTED',
+  adminNotes?: string | null,
+  resolvedBy?: number | null
+): void {
+  getDb().prepare(`
+    UPDATE account_recovery_requests
+    SET status = ?, admin_notes = ?, resolved_at = datetime('now'), resolved_by = ?
+    WHERE id = ?
+  `).run(status, adminNotes ?? null, resolvedBy ?? null, id);
 }

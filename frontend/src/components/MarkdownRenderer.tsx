@@ -51,7 +51,27 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
               {children}
             </code>
           ),
+          img: ({ node, ...props }) => (
+            <img className="max-w-full h-auto rounded-xl shadow-md my-3 border border-slate-200" loading="lazy" alt={props.alt || 'Hình ảnh'} {...props} />
+          ),
+          a: ({ node, href, children, ...props }) => {
+            const isSafe = href && !/^\s*(javascript|data|vbscript):/i.test(href);
+            const safeHref = isSafe ? href : '#';
+            const isExternal = safeHref.startsWith('http') || safeHref.startsWith('//');
+            return (
+              <a
+                href={safeHref}
+                target={isExternal ? '_blank' : undefined}
+                rel={isExternal ? 'noopener noreferrer' : undefined}
+                className="text-orange-600 hover:text-orange-700 underline font-medium"
+                {...props}
+              >
+                {children}
+              </a>
+            );
+          },
         }}
+
       >
         {content}
       </ReactMarkdown>

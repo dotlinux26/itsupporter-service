@@ -15,6 +15,8 @@ import { PublicOrdersPage } from './pages/public/PublicOrdersPage';
 import { TechnicianPublicProfilePage } from './pages/public/TechnicianPublicProfilePage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
+import { ForgotPasswordPage } from './pages/public/ForgotPasswordPage';
+import { AccountRecoveryPage } from './pages/public/AccountRecoveryPage';
 
 // Authenticated pages
 import { OrdersPage } from './pages/customer/OrdersPage';
@@ -37,6 +39,7 @@ import { ManagerPackages } from './pages/manager/ManagerPackages';
 import { ManagerSettlements } from './pages/manager/ManagerSettlements';
 import { ManagerReviews } from './pages/manager/ManagerReviews';
 import { ManagerSettings } from './pages/manager/ManagerSettings';
+import { ManagerAuditLogs } from './pages/manager/ManagerAuditLogs';
 
 // Admin pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -47,6 +50,7 @@ import { AdminQR } from './pages/admin/AdminQR';
 
 import { MyVouchersPage } from './pages/customer/MyVouchersPage';
 import { AdminVouchers } from './pages/admin/AdminVouchers';
+import { AdminRecoveryRequests } from './pages/admin/AdminRecoveryRequests';
 
 // Error pages
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -116,6 +120,8 @@ function AppRoutes() {
         <Route path="ktv/:alias" element={<TechnicianPublicProfilePage />} />
         <Route path="login" element={<PublicOnly><LoginPage /></PublicOnly>} />
         <Route path="register" element={<PublicOnly><RegisterPage /></PublicOnly>} />
+        <Route path="forgot-password" element={<PublicOnly><ForgotPasswordPage /></PublicOnly>} />
+        <Route path="account-recovery" element={<AccountRecoveryPage />} />
 
         {/* Customer authenticated routes */}
         <Route element={<ProtectedRoute allowedRoles={['GUEST']} />}>
@@ -149,16 +155,19 @@ function AppRoutes() {
           <Route path="manager/settlements" element={<ManagerSettlements />} />
           <Route path="manager/reviews" element={<ManagerReviews />} />
           <Route path="manager/settings" element={<ManagerSettings />} />
+          <Route path="manager/audit-logs" element={<ManagerAuditLogs />} />
         </Route>
 
         {/* Admin routes */}
         <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
           <Route path="admin" element={<AdminDashboard />} />
           <Route path="admin/users" element={<AdminUsers />} />
+          <Route path="admin/recovery-requests" element={<AdminRecoveryRequests />} />
           <Route path="admin/stats" element={<AdminStats />} />
           <Route path="admin/settings" element={<AdminSettings />} />
           <Route path="admin/vouchers" element={<AdminVouchers />} />
           <Route path="admin/qr" element={<AdminQR />} />
+          <Route path="admin/audit-logs" element={<ManagerAuditLogs />} />
         </Route>
 
         {/* 404 */}

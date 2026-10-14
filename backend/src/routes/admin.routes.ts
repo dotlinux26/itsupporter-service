@@ -11,7 +11,17 @@ import { telegramRateLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
+import crypto from 'node:crypto';
 import { hashPassword } from '../utils/password.js';
+import { writeAuditLog } from '../services/auditService.js';
+import {
+  listRecoveryRequests,
+  findRecoveryRequestById,
+  resolveRecoveryRequest,
+  updateUserPassword,
+  updateUser2FA,
+  updateUserRecovery,
+} from '../repositories/userRepository.js';
 
 // Admin: GET /users?role=...&status=...&q=...
 router.get('/users', authenticate, requireRole('ADMIN'), (req, res, next) => {
@@ -25,12 +35,13 @@ router.get('/users', authenticate, requireRole('ADMIN'), (req, res, next) => {
       const q = `%${String(req.query.q).trim()}%`;
       params.push(q, q, q);
     }
-    const sql = `SELECT id, name, email, phone, role, status, avatar_url, contact_info, created_at, updated_at
+    const sql = `SELECT id, name, email, phone, role, status, avatar_url, contact_info, created_at, updated_at, is_recovery_enabled, is_2fa_enabled
                  FROM users ${where} ORDER BY id DESC LIMIT 200`;
-    const users = getDb().prepare(sql).all(...params) as Array<{ id: number; name: string; email: string; phone: string; role: string; status: string; avatar_url: string | null; contact_info: string | null; created_at: string; updated_at: string }>;
+    const users = getDb().prepare(sql).all(...params);
     res.json({ data: users });
   } catch (err) { next(err); }
 });
+
 
 // Admin: PATCH /users/:id/status (activate/disable)
 router.patch('/users/:id/status', authenticate, requireRole('ADMIN'), (req, res, next) => {
@@ -41,9 +52,23 @@ router.patch('/users/:id/status', authenticate, requireRole('ADMIN'), (req, res,
       throw new AppError('VALIDATION_ERROR', 'Trạng thái phải là ACTIVE hoặc DISABLED.', 400);
     }
     const db = getDb();
-    const user = db.prepare('SELECT * FROM users WHERE id = ? AND is_deleted = 0').get(id) as { id: number; status: string } | undefined;
+    const user = db.prepare('SELECT * FROM users WHERE id = ? AND is_deleted = 0').get(id) as { id: number; name: string; email: string; status: string } | undefined;
     if (!user) throw new AppError('NOT_FOUND', 'Không tìm thấy người dùng.', 404);
+    
+    const admin = getAuthUser(req);
+    const oldStatus = user.status;
     db.prepare('UPDATE users SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').run(status, id);
+
+    writeAuditLog({
+      actorId: admin?.id,
+      actorEmail: admin?.email,
+      action: 'ADMIN_UPDATE_USER_STATUS',
+      targetType: 'USER',
+      targetId: id,
+      ip: req.ip,
+      metadata: { target_name: user.name, target_email: user.email, old_status: oldStatus, new_status: status },
+    });
+
     const updated = db.prepare('SELECT id, name, email, role, status, updated_at FROM users WHERE id = ?').get(id);
     res.json({ data: updated });
   } catch (err) { next(err); }
@@ -58,14 +83,27 @@ router.patch('/users/:id/role', authenticate, requireRole('ADMIN'), (req, res, n
       throw new AppError('VALIDATION_ERROR', 'Vai trò không hợp lệ.', 400);
     }
     const db = getDb();
-    const user = db.prepare('SELECT * FROM users WHERE id = ? AND is_deleted = 0').get(id) as { id: number; role: string } | undefined;
+    const user = db.prepare('SELECT * FROM users WHERE id = ? AND is_deleted = 0').get(id) as { id: number; name: string; email: string; role: string } | undefined;
     if (!user) throw new AppError('NOT_FOUND', 'Không tìm thấy người dùng.', 404);
+    
+    const admin = getAuthUser(req);
+    const oldRole = user.role;
     db.prepare('UPDATE users SET role = ?, updated_at = datetime(\'now\') WHERE id = ?').run(role, id);
     
     // If upgraded to technician, ensure technician_profile exists
     if (role === 'TECHNICIAN') {
       db.prepare('INSERT OR IGNORE INTO technician_profiles (user_id) VALUES (?)').run(id);
     }
+
+    writeAuditLog({
+      actorId: admin?.id,
+      actorEmail: admin?.email,
+      action: 'ADMIN_UPDATE_USER_ROLE',
+      targetType: 'USER',
+      targetId: id,
+      ip: req.ip,
+      metadata: { target_name: user.name, target_email: user.email, old_role: oldRole, new_role: role },
+    });
 
     const updated = db.prepare('SELECT id, name, email, role, status, updated_at FROM users WHERE id = ?').get(id);
     res.json({ data: updated });
@@ -81,11 +119,24 @@ router.post('/users/:id/reset-password', authenticate, requireRole('ADMIN'), asy
       throw new AppError('VALIDATION_ERROR', 'Mật khẩu mới phải có ít nhất 8 ký tự.', 400);
     }
     const db = getDb();
-    const user = db.prepare('SELECT * FROM users WHERE id = ? AND is_deleted = 0').get(id) as { id: number } | undefined;
+    const user = db.prepare('SELECT * FROM users WHERE id = ? AND is_deleted = 0').get(id) as { id: number; name: string; email: string } | undefined;
     if (!user) throw new AppError('NOT_FOUND', 'Không tìm thấy người dùng.', 404);
     
+    const admin = getAuthUser(req);
     const hash = await hashPassword(newPassword);
     db.prepare('UPDATE users SET password_hash = ?, updated_at = datetime(\'now\') WHERE id = ?').run(hash, id);
+
+    // SECURITY: NEVER log plaintext passwords into audit log metadata!
+    writeAuditLog({
+      actorId: admin?.id,
+      actorEmail: admin?.email,
+      action: 'ADMIN_RESET_PASSWORD',
+      targetType: 'USER',
+      targetId: id,
+      ip: req.ip,
+      metadata: { target_name: user.name, target_email: user.email, note: 'Mật khẩu đã được đặt lại bởi Admin' },
+    });
+
     res.json({ message: 'Đặt lại mật khẩu thành công.' });
   } catch (err) { next(err); }
 });
@@ -95,12 +146,24 @@ router.delete('/users/:id', authenticate, requireRole('ADMIN'), (req, res, next)
   try {
     const id = Number(req.params.id);
     const db = getDb();
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as { id: number; role: string } | undefined;
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as { id: number; name: string; email: string; role: string } | undefined;
     if (!user) throw new AppError('NOT_FOUND', 'Không tìm thấy người dùng.', 404);
     if (user.role === 'ADMIN') {
       throw new AppError('FORBIDDEN', 'Không thể xóa tài khoản Admin.', 403);
     }
+    const admin = getAuthUser(req);
     db.prepare('UPDATE users SET is_deleted = 1, status = \'DISABLED\', updated_at = datetime(\'now\') WHERE id = ?').run(id);
+
+    writeAuditLog({
+      actorId: admin?.id,
+      actorEmail: admin?.email,
+      action: 'ADMIN_DELETE_USER',
+      targetType: 'USER',
+      targetId: id,
+      ip: req.ip,
+      metadata: { target_name: user.name, target_email: user.email, role: user.role },
+    });
+
     res.json({ message: 'Đã xóa người dùng thành công.' });
   } catch (err) { next(err); }
 });
@@ -196,13 +259,32 @@ router.patch('/settings', authenticate, requireRole('ADMIN'), (req, res, next) =
       telegramChatId: 'telegram_chat_id',
       telegram_api_url: 'telegram_api_url',
       telegramApiUrl: 'telegram_api_url',
+      about_markdown: 'about_markdown',
+      aboutMarkdown: 'about_markdown',
+      terms_markdown: 'terms_markdown',
+      termsMarkdown: 'terms_markdown',
+      totp_guide_markdown: 'totp_guide_markdown',
+      totpGuideMarkdown: 'totp_guide_markdown',
     };
+
+    const updatedKeys: string[] = [];
     for (const [key, value] of Object.entries(req.body)) {
       const canonical = keyMap[key];
       if (canonical && value !== undefined && value !== null) {
         db.prepare('INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES (?, ?, datetime(\'now\'))').run(canonical, String(value));
+        updatedKeys.push(canonical);
       }
     }
+    const admin = getAuthUser(req);
+    writeAuditLog({
+      actorId: admin?.id,
+      actorEmail: admin?.email,
+      action: 'ADMIN_UPDATE_SETTINGS',
+      targetType: 'SYSTEM_SETTINGS',
+      targetId: 'GLOBAL',
+      ip: req.ip,
+      metadata: { updated_keys: updatedKeys },
+    });
     res.json({ data: getSystemSettings() });
   } catch (err) { next(err); }
 });
@@ -262,7 +344,18 @@ router.post('/qr', authenticate, requireRole('ADMIN'), imageUpload.single('qr'),
     const result = db
       .prepare('INSERT INTO qr_configs (path, uploaded_by, description, is_active) VALUES (?, ?, ?, 1)')
       .run(publicPath, user.id, req.body.description || 'QR thanh toán ngân hàng chính thức');
-    const qr = db.prepare('SELECT * FROM qr_configs WHERE id = ?').get(result.lastInsertRowid);
+    const qr = db.prepare('SELECT * FROM qr_configs WHERE id = ?').get(result.lastInsertRowid) as { id: number; path: string; description: string };
+    
+    writeAuditLog({
+      actorId: user.id,
+      actorEmail: user.email,
+      action: 'ADMIN_UPLOAD_QR',
+      targetType: 'QR_CONFIG',
+      targetId: qr.id,
+      ip: req.ip,
+      metadata: { path: qr.path, description: qr.description },
+    });
+
     res.status(201).json({ data: qr });
   } catch (err) { next(err); }
 });
@@ -272,9 +365,209 @@ router.delete('/qr/:id', authenticate, requireRole('ADMIN'), (req, res, next) =>
   try {
     const id = Number(req.params.id);
     const db = getDb();
+    const qr = db.prepare('SELECT * FROM qr_configs WHERE id = ?').get(id) as { id: number; path: string } | undefined;
     db.prepare('DELETE FROM qr_configs WHERE id = ?').run(id);
+
+    const admin = getAuthUser(req);
+    writeAuditLog({
+      actorId: admin?.id,
+      actorEmail: admin?.email,
+      action: 'ADMIN_DELETE_QR',
+      targetType: 'QR_CONFIG',
+      targetId: id,
+      ip: req.ip,
+      metadata: { deleted_path: qr?.path },
+    });
+
     res.json({ success: true });
   } catch (err) { next(err); }
 });
+
+// Admin: POST /users/:id/reset-totp - Reset 2FA or Recovery TOTP or Both
+router.post('/users/:id/reset-totp', authenticate, requireRole('ADMIN'), (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const type = String(req.body.type || 'ALL').toUpperCase(); // '2FA', 'RECOVERY', 'ALL'
+    const db = getDb();
+    const user = db.prepare('SELECT id, name, email FROM users WHERE id = ? AND is_deleted = 0').get(id) as { id: number; name: string; email: string } | undefined;
+    if (!user) throw new AppError('NOT_FOUND', 'Không tìm thấy người dùng.', 404);
+
+    if (type === '2FA' || type === 'ALL') {
+      updateUser2FA(id, 0, null, null);
+    }
+    if (type === 'RECOVERY' || type === 'ALL') {
+      updateUserRecovery(id, 0, null, null);
+    }
+
+    const admin = getAuthUser(req);
+    writeAuditLog({
+      actorId: admin?.id,
+      actorEmail: admin?.email,
+      action: 'ADMIN_RESET_USER_TOTP',
+      targetType: 'USER',
+      targetId: id,
+      ip: req.ip,
+      metadata: { target_name: user.name, target_email: user.email, reset_type: type },
+    });
+
+    res.json({ success: true, message: `Đã reset cấu hình TOTP (${type}) cho người dùng thành công.` });
+  } catch (err) { next(err); }
+});
+
+router.post('/users/:id/reset-2fa', authenticate, requireRole('ADMIN'), (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const db = getDb();
+    const user = db.prepare('SELECT id, name, email FROM users WHERE id = ? AND is_deleted = 0').get(id) as { id: number; name: string; email: string } | undefined;
+    if (!user) throw new AppError('NOT_FOUND', 'Không tìm thấy người dùng.', 404);
+
+    updateUser2FA(id, 0, null, null);
+
+    const admin = getAuthUser(req);
+    writeAuditLog({
+      actorId: admin?.id,
+      actorEmail: admin?.email,
+      action: 'ADMIN_RESET_USER_2FA',
+      targetType: 'USER',
+      targetId: id,
+      ip: req.ip,
+      metadata: { target_name: user.name, target_email: user.email },
+    });
+
+    res.json({ success: true, message: 'Đã tắt và đặt lại xác thực 2 bước (2FA) cho người dùng thành công.' });
+  } catch (err) { next(err); }
+});
+
+router.post('/users/:id/reset-recovery', authenticate, requireRole('ADMIN'), (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const db = getDb();
+    const user = db.prepare('SELECT id, name, email FROM users WHERE id = ? AND is_deleted = 0').get(id) as { id: number; name: string; email: string } | undefined;
+    if (!user) throw new AppError('NOT_FOUND', 'Không tìm thấy người dùng.', 404);
+
+    updateUserRecovery(id, 0, null, null);
+
+    const admin = getAuthUser(req);
+    writeAuditLog({
+      actorId: admin?.id,
+      actorEmail: admin?.email,
+      action: 'ADMIN_RESET_USER_RECOVERY',
+      targetType: 'USER',
+      targetId: id,
+      ip: req.ip,
+      metadata: { target_name: user.name, target_email: user.email },
+    });
+
+    res.json({ success: true, message: 'Đã hủy kích hoạt tính năng khôi phục mật khẩu TOTP cho người dùng thành công.' });
+  } catch (err) { next(err); }
+});
+
+// Admin: GET /recovery-requests - List account recovery requests
+router.get('/recovery-requests', authenticate, requireRole('ADMIN'), (req, res, next) => {
+  try {
+    const status = req.query.status ? String(req.query.status) : undefined;
+    const page = req.query.page ? Number(req.query.page) : 1;
+    const limit = req.query.limit ? Number(req.query.limit) : 20;
+
+    const result = listRecoveryRequests({ status, page, limit });
+    res.json(result);
+  } catch (err) { next(err); }
+});
+
+// Admin: POST /recovery-requests/:id/approve - 1-Click Approve Helpdesk Request
+router.post('/recovery-requests/:id/approve', authenticate, requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const { adminNotes } = req.body;
+    const request = findRecoveryRequestById(id);
+    if (!request) throw new AppError('NOT_FOUND', 'Không tìm thấy yêu cầu cứu trợ.', 404);
+
+    const admin = getAuthUser(req)!;
+    let temporaryPassword = '';
+
+    if (request.user_id) {
+      // Generate temporary secure password (e.g., ITSupporter@8392)
+      temporaryPassword = `ITSupporter@${crypto.randomInt(1000, 9999)}`;
+      const hash = await hashPassword(temporaryPassword);
+      updateUserPassword(request.user_id, hash);
+      // Reset 2FA and Recovery so user can login and re-configure
+      updateUser2FA(request.user_id, 0, null, null);
+      updateUserRecovery(request.user_id, 0, null, null);
+    }
+
+    resolveRecoveryRequest(id, 'APPROVED', adminNotes || 'Đã duyệt và cấp mật khẩu tạm qua Helpdesk', admin.id);
+
+    writeAuditLog({
+      actorId: admin.id,
+      actorEmail: admin.email,
+      action: 'ADMIN_APPROVE_RECOVERY_REQUEST',
+      targetType: 'ACCOUNT_RECOVERY_REQUEST',
+      targetId: id,
+      ip: req.ip,
+      metadata: {
+        request_id: id,
+        username_or_email: request.username_or_email,
+        user_id: request.user_id,
+        admin_notes: adminNotes,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Đã phê duyệt yêu cầu khôi phục tài khoản thành công.',
+      temporaryPassword,
+    });
+  } catch (err) { next(err); }
+});
+
+// Admin: POST /recovery-requests/:id/reject
+router.post('/recovery-requests/:id/reject', authenticate, requireRole('ADMIN'), (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const { adminNotes } = req.body;
+    const request = findRecoveryRequestById(id);
+    if (!request) throw new AppError('NOT_FOUND', 'Không tìm thấy yêu cầu cứu trợ.', 404);
+
+    const admin = getAuthUser(req)!;
+    resolveRecoveryRequest(id, 'REJECTED', adminNotes || 'Từ chối yêu cầu cứu trợ', admin.id);
+
+    writeAuditLog({
+      actorId: admin.id,
+      actorEmail: admin.email,
+      action: 'ADMIN_REJECT_RECOVERY_REQUEST',
+      targetType: 'ACCOUNT_RECOVERY_REQUEST',
+      targetId: id,
+      ip: req.ip,
+      metadata: {
+        request_id: id,
+        username_or_email: request.username_or_email,
+        admin_notes: adminNotes,
+      },
+    });
+
+    res.json({ success: true, message: 'Đã từ chối yêu cầu cứu trợ.' });
+  } catch (err) { next(err); }
+});
+
+// Admin/Manager: POST /uploads/markdown-image or /upload-image (Markdown Editor paste/drop)
+router.post(
+  ['/uploads/markdown-image', '/upload-image'],
+  authenticate,
+  requireRole('ADMIN', 'MANAGER'),
+  imageUpload.single('image'),
+  (req, res, next) => {
+    try {
+      if (!req.file) {
+        throw new AppError('VALIDATION_ERROR', 'Vui lòng chọn hoặc dán hình ảnh hợp lệ.', 400);
+      }
+      const publicUrl = `/uploads/${req.file.filename}`;
+      res.status(201).json({
+        success: true,
+        url: publicUrl,
+        filename: req.file.filename,
+      });
+    } catch (err) { next(err); }
+  }
+);
 
 export default router;

@@ -122,7 +122,20 @@ export const authApi = {
   },
   changePassword: (currentPassword: string, newPassword: string) =>
     api.post('/auth/change-password', { currentPassword, newPassword }),
+  login2FA: (tempToken: string, code: string, rememberMe?: boolean) =>
+    api.post('/auth/login/2fa', { tempToken, code, rememberMe }),
+  setupRecovery: () => api.get('/auth/recovery/setup'),
+  confirmRecovery: (token: string, secret: string, backupCodes: string[]) =>
+    api.post('/auth/recovery/confirm', { token, secret, backupCodes }),
+  setup2FA: () => api.get('/auth/2fa/setup'),
+  confirm2FA: (token: string, secret: string, backupCodes: string[]) =>
+    api.post('/auth/2fa/confirm', { token, secret, backupCodes }),
+  disable2FA: (tokenOrPassword: string) =>
+    api.post('/auth/2fa/disable', { tokenOrPassword }),
+  forgotPasswordTotp: (identifier: string, code: string, newPassword: string) =>
+    api.post('/auth/forgot-password/totp', { identifier, code, newPassword }),
 };
+
 
 export const orderApi = {
   create: (data: {
@@ -213,10 +226,10 @@ export const managerApi = {
     api.get('/manager/analytics', { params }),
   orderAvailableTechnicians: (orderId: number) =>
     api.get(`/manager/orders/${orderId}/available-technicians`),
-  assignTechnician: (orderId: number, technicianId: number) =>
-    api.post(`/manager/orders/${orderId}/assign`, { technician_id: technicianId }),
-  updateOrderStatus: (orderId: number, status: string) =>
-    api.patch(`/manager/orders/${orderId}/status`, { status }),
+  assignTechnician: (orderId: number, technicianId: number, confirm_text?: string) =>
+    api.post(`/manager/orders/${orderId}/assign`, { technician_id: technicianId, confirm_text }),
+  updateOrderStatus: (orderId: number, status: string, notes?: string, confirm_text?: string) =>
+    api.patch(`/manager/orders/${orderId}/status`, { status, notes, confirm_text }),
   technicians: () => api.get('/manager/technicians'),
   packages: () => api.get('/manager/packages'),
   createPackage: (data: {
@@ -239,6 +252,10 @@ export const managerApi = {
   settlements: (params?: { limit?: number; offset?: number }) => api.get('/manager/settlements', { params }),
   createSettlement: (technicianId: number, notes?: string) =>
     api.post('/manager/settlements', { technician_id: technicianId, notes }),
+  updateSettlementPayoutStatus: (id: number, payout_status: 'PENDING' | 'TRANSFERRED') =>
+    api.patch(`/manager/settlements/${id}/payout-status`, { payout_status }),
+  auditLogs: (params?: { page?: number; limit?: number; action?: string; target_type?: string; search?: string }) =>
+    api.get('/manager/audit-logs', { params }),
   reviews: () => api.get('/manager/reviews'),
   deleteReview: (id: number) => api.delete(`/manager/reviews/${id}`),
   settings: () => api.get('/manager/settings'),
@@ -292,6 +309,23 @@ export const adminApi = {
   updateSettings: (data: Record<string, string | number>) => api.patch('/admin/settings', data),
   testTelegram: (chatId?: string) => api.post('/admin/telegram/test', { chatId }),
   detectTelegramChatId: () => api.post('/admin/telegram/detect-chat-id'),
+  resetUserTotp: (id: number, type: '2FA' | 'RECOVERY' | 'ALL') =>
+    api.post(`/admin/users/${id}/reset-totp`, { type }),
+  resetUser2FA: (id: number) => api.post(`/admin/users/${id}/reset-2fa`),
+  resetUserRecovery: (id: number) => api.post(`/admin/users/${id}/reset-recovery`),
+  recoveryRequests: (params?: { status?: string; page?: number; limit?: number }) =>
+    api.get('/admin/recovery-requests', { params }),
+  approveRecoveryRequest: (id: number, adminNotes?: string) =>
+    api.post(`/admin/recovery-requests/${id}/approve`, { adminNotes }),
+  rejectRecoveryRequest: (id: number, adminNotes?: string) =>
+    api.post(`/admin/recovery-requests/${id}/reject`, { adminNotes }),
+  uploadMarkdownImage: (file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post('/admin/uploads/markdown-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   qr: {
     upload: (file: File) => {
       const formData = new FormData();
@@ -313,6 +347,13 @@ export const publicApi = {
   technicianProfile: (aliasOrId: string) => api.get(`/public/technicians/profile/${aliasOrId}`),
   orders: (params?: { limit?: number; offset?: number }) => api.get('/public/orders', { params }),
   reviews: (params?: { limit?: number; offset?: number }) => api.get('/public/reviews', { params }),
+  submitRecoveryRequest: (data: {
+    usernameOrEmail: string;
+    fullName: string;
+    contactPhone: string;
+    contactEmail?: string;
+    reason: string;
+  }) => api.post('/public/recovery-requests', data),
   health: () => api.get('/health'),
   activeQr: () => api.get('/admin/qr/active'),
 };

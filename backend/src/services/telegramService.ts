@@ -11,7 +11,9 @@ export function escapeHtml(str?: string | null): string {
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 /**
@@ -492,3 +494,35 @@ export async function detectTelegramChatId(): Promise<{
     };
   }
 }
+
+/**
+ * Gửi thông báo Telegram khi có yêu cầu khôi phục / cứu trợ tài khoản (Helpdesk)
+ */
+export async function notifyAccountRecoveryRequest(req: {
+  id: number;
+  usernameOrEmail: string;
+  fullName: string;
+  contactPhone: string;
+  contactEmail?: string;
+  reason: string;
+  evidenceUrl?: string;
+}): Promise<void> {
+  const text = [
+    `🚨 <b>YÊU CẦU CỨU TRỢ TÀI KHOẢN (HELPDESK)</b>`,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `📋 <b>Mã yêu cầu:</b> #REC-${req.id}`,
+    `👤 <b>Tài khoản cần cứu:</b> <code>${escapeHtml(req.usernameOrEmail)}</code>`,
+    `📝 <b>Họ và tên:</b> <b>${escapeHtml(req.fullName)}</b>`,
+    `📞 <b>Số điện thoại liên hệ:</b> <code>${escapeHtml(req.contactPhone)}</code>`,
+    req.contactEmail ? `✉️ <b>Email liên hệ:</b> ${escapeHtml(req.contactEmail)}` : '',
+    `💬 <b>Lý do:</b> <i>${escapeHtml(req.reason)}</i>`,
+    req.evidenceUrl ? `📎 <b>Minh chứng:</b> ${escapeHtml(req.evidenceUrl)}` : '',
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `⚡ <i>Quản trị viên vui lòng truy cập Quản trị -> Cứu trợ tài khoản để xác minh và phê duyệt.</i>`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  await sendTelegramMessage(text);
+}
+

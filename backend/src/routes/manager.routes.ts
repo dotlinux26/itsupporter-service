@@ -5,12 +5,13 @@ import { getAuthUser } from '../middleware/auth.js';
 import { getDb } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import type { OrderRow } from '../models/index.js';
-import { listSettlements, createSettlement, getTeamBalance, getRunBalance } from '../services/financeService.js';
+import { listSettlements, createSettlement, updateSettlementPayoutStatus, getTeamBalance, getRunBalance } from '../services/financeService.js';
 import { getSystemSettings, setSetting } from '../services/settingsService.js';
 import { getAvailableTechnicians } from '../services/calendarService.js';
 import { testTelegramConnection, detectTelegramChatId, notifyOrderAssigned, notifyOrderCancelled } from '../services/telegramService.js';
 import { sendOrderNotification } from '../services/notificationService.js';
 import { logStatusChange } from '../repositories/orderRepository.js';
+import { writeAuditLog, queryAuditLogs } from '../services/auditService.js';
 import logger from '../utils/logger.js';
 import { telegramRateLimiter } from '../middleware/rateLimit.js';
 
@@ -395,6 +396,18 @@ router.post('/orders/:id/assign', authenticate, requireRole('MANAGER', 'ADMIN'),
   try {
     const orderId = Number(req.params.id);
     const technicianId = Number(req.body.technician_id || req.body.technicianId);
+    
+    // Double Check: Bắt buộc nhập chuỗi "tôi xác nhận" (chuẩn hóa NFC)
+    const confirmText = String(req.body.confirm_text || req.body.confirmText || '');
+    const isConfirmed = confirmText
+      .normalize('NFC')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLowerCase() === 'tôi xác nhận'.normalize('NFC');
+    if (!isConfirmed) {
+      throw new AppError('VALIDATION_ERROR', 'Vui lòng nhập đúng cụm từ "tôi xác nhận" để thực hiện điều phối kỹ thuật viên.', 400);
+    }
+
     const db = getDb();
     const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as OrderRow | undefined;
     if (!order) throw new AppError('NOT_FOUND', 'Không tìm thấy đơn hàng.', 404);
@@ -403,9 +416,26 @@ router.post('/orders/:id/assign', authenticate, requireRole('MANAGER', 'ADMIN'),
     if (!tech) throw new AppError('NOT_FOUND', 'Không tìm thấy kỹ thuật viên hợp lệ.', 404);
 
     const currentUser = getAuthUser(req);
+    const oldTechId = order.technician_id;
 
     db.prepare('UPDATE orders SET technician_id = ?, status = CASE WHEN status = \'PENDING\' THEN \'CONFIRMED\' ELSE status END, updated_at = datetime(\'now\') WHERE id = ?').run(technicianId, orderId);
     const updated = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
+
+    // Ghi Audit Log cho thao tác điều phối/đổi KTV
+    writeAuditLog({
+      actorId: currentUser?.id,
+      actorEmail: currentUser?.email,
+      action: oldTechId ? 'ORDER_REASSIGN_TECHNICIAN' : 'ORDER_ASSIGN_TECHNICIAN',
+      targetType: 'ORDER',
+      targetId: orderId,
+      ip: req.ip,
+      metadata: {
+        order_code: order.code,
+        old_technician_id: oldTechId,
+        new_technician_id: technicianId,
+        new_technician_name: tech.name,
+      },
+    });
 
     // 1. Gửi thông báo in-app cho khách hàng
     try {
@@ -455,6 +485,18 @@ router.patch('/orders/:id/status', authenticate, requireRole('MANAGER', 'ADMIN')
     if (!valid.includes(status)) {
       throw new AppError('VALIDATION_ERROR', 'Trạng thái đơn hàng không hợp lệ.', 400);
     }
+
+    // Double Check: Bắt buộc nhập chuỗi "tôi xác nhận" (chuẩn hóa NFC)
+    const confirmText = String(req.body.confirm_text || req.body.confirmText || '');
+    const isConfirmed = confirmText
+      .normalize('NFC')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLowerCase() === 'tôi xác nhận'.normalize('NFC');
+    if (!isConfirmed) {
+      throw new AppError('VALIDATION_ERROR', 'Vui lòng nhập đúng cụm từ "tôi xác nhận" để thay đổi trạng thái đơn hàng.', 400);
+    }
+
     const db = getDb();
     const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as OrderRow | undefined;
     if (!order) throw new AppError('NOT_FOUND', 'Không tìm thấy đơn hàng.', 404);
@@ -513,6 +555,21 @@ router.patch('/orders/:id/status', authenticate, requireRole('MANAGER', 'ADMIN')
       db.prepare('UPDATE orders SET status = ?, updated_at = datetime(\'now\') WHERE id = ?').run(status, orderId);
       logStatusChange(orderId, oldStatus, status as any, currentUser?.id ?? 0, 'Quản lý cập nhật trạng thái đơn');
     }
+
+    // Ghi Audit Log cho thao tác đổi trạng thái
+    writeAuditLog({
+      actorId: currentUser?.id,
+      actorEmail: currentUser?.email,
+      action: 'ORDER_UPDATE_STATUS',
+      targetType: 'ORDER',
+      targetId: orderId,
+      ip: req.ip,
+      metadata: {
+        order_code: order.code,
+        old_status: oldStatus,
+        new_status: status,
+      },
+    });
 
     const updated = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
     res.json({ data: updated, message: 'Cập nhật trạng thái đơn hàng thành công.' });
@@ -591,7 +648,79 @@ router.post('/settlements', authenticate, requireRole('MANAGER', 'ADMIN'), (req,
     const authUser = getAuthUser(req);
     const managerId = authUser ? authUser.id : 1;
     const result = createSettlement(technicianId, managerId, notes);
+
+    writeAuditLog({
+      actorId: authUser?.id,
+      actorEmail: authUser?.email,
+      action: 'SETTLEMENT_CREATE',
+      targetType: 'SETTLEMENT',
+      targetId: result.id,
+      ip: req.ip,
+      metadata: {
+        settlement_code: result.settlement_code,
+        technician_id: technicianId,
+        amount: result.amount,
+        notes: notes ?? null,
+      },
+    });
+
     res.json({ data: result, message: 'Tạo phiếu quyết toán thành công.' });
+  } catch (err) { next(err); }
+});
+
+// Manager: PATCH /settlements/:id/payout-status (update payout status: PENDING / TRANSFERRED)
+router.patch('/settlements/:id/payout-status', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const payoutStatus = String(req.body.payout_status || req.body.payoutStatus || '').toUpperCase();
+    if (!['PENDING', 'TRANSFERRED'].includes(payoutStatus)) {
+      throw new AppError('VALIDATION_ERROR', 'Trạng thái chuyển khoản phải là PENDING hoặc TRANSFERRED.', 400);
+    }
+    const currentUser = getAuthUser(req)!;
+    const updated = updateSettlementPayoutStatus(id, payoutStatus as 'PENDING' | 'TRANSFERRED', currentUser.id);
+
+    writeAuditLog({
+      actorId: currentUser.id,
+      actorEmail: currentUser.email,
+      action: 'SETTLEMENT_PAYOUT_STATUS_CHANGE',
+      targetType: 'SETTLEMENT',
+      targetId: id,
+      ip: req.ip,
+      metadata: {
+        settlement_code: updated.settlement_code,
+        technician_id: updated.technician_id,
+        amount: updated.amount,
+        payout_status: payoutStatus,
+      },
+    });
+
+    res.json({
+      data: updated,
+      message: payoutStatus === 'TRANSFERRED' ? 'Đã đánh dấu đã chuyển khoản hoa hồng thành công.' : 'Đã chuyển trạng thái về chưa chuyển.',
+    });
+  } catch (err) { next(err); }
+});
+
+// Manager: GET /audit-logs (activity log history)
+router.get('/audit-logs', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
+  try {
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
+    const offset = (page - 1) * limit;
+    const action = req.query.action ? String(req.query.action) : undefined;
+    const targetType = req.query.target_type || req.query.targetType ? String(req.query.target_type || req.query.targetType) : undefined;
+    const search = req.query.search || req.query.q ? String(req.query.search || req.query.q) : undefined;
+
+    const result = queryAuditLogs({ limit, offset, action, targetType, search });
+    res.json({
+      data: result.data,
+      pagination: {
+        page,
+        limit,
+        total: result.total,
+        totalPages: Math.ceil(result.total / limit),
+      },
+    });
   } catch (err) { next(err); }
 });
 

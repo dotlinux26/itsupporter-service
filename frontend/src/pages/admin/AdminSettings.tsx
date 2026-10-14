@@ -17,8 +17,82 @@ import {
   Sparkles,
   RefreshCw,
   AlertCircle,
-  Shield
+  Shield,
+  FileText
 } from 'lucide-react';
+import { MarkdownEditorWithUpload } from '../../components/MarkdownEditorWithUpload';
+
+const DEFAULT_ABOUT_MD = `# Về chúng tôi - IT Supporter HaUI
+
+Đội ngũ kỹ thuật viên sinh viên nhiệt huyết, được đào tạo bài bản về vệ sinh và bảo dưỡng phần cứng PC/Laptop tại Đại học Công nghiệp Hà Nội.
+
+### Giới thiệu dịch vụ
+IT Supporter HaUI là dịch vụ vệ sinh, bảo trì máy tính chuyên nghiệp, giúp khách hàng dễ dàng đặt lịch trước online và mang máy tới phòng làm việc để kỹ thuật viên kiểm tra & xử lý trực tiếp.
+
+### Đội ngũ & Vận hành
+Dự án được xây dựng và vận hành bởi Đội IT Supporter HaUI (Đại học Công nghiệp Hà Nội) - tập hợp các kỹ thuật viên sinh viên nhiệt huyết, được đào tạo bài bản về kỹ thuật máy tính, quy trình tháo lắp chống tĩnh điện và bảo trì phần cứng PC/Laptop chuyên nghiệp.
+
+### Mục đích
+Cung cấp dịch vụ IT chất lượng cao, minh bạch, công bằng cho cả khách hàng và kỹ thuật viên. Xây dựng hệ sinh thái dịch vụ IT tin cậy, chuyên nghiệp tại Việt Nam.
+
+### Dịch vụ
+• Vệ sinh máy tính cơ bản và cao cấp
+• Tra keo tản nhiệt (gốm cao cấp / kim loại lỏng)
+• Kiểm tra tình trạng phần cứng & Stress-test nhiệt độ
+• Kiểm tra và cài đặt phần mềm
+• Hỗ trợ làm sạch hệ thống, cài đặt phần mềm theo yêu cầu`;
+
+const DEFAULT_TERMS_MD = `# Quy định & Cam kết dịch vụ
+
+Các điều khoản minh bạch, quyền lợi và cam kết phục vụ chuẩn xác giữa khách hàng và kỹ thuật viên.
+
+### Dành cho khách hàng
+• Quy định đặt lịch: Khách hàng cần đặt lịch trước tối thiểu 4 tiếng và tối đa 30 ngày để đảm bảo kỹ thuật viên chuẩn bị đầy đủ trang thiết bị và vật tư chuyên dụng.
+• Quy định đổi lịch: Có thể đổi lịch tối thiểu 2 tiếng trước giờ hẹn, tùy theo tình trạng trống lịch của kỹ thuật viên.
+• Quy định hủy đơn: Hủy miễn phí nếu hủy trước 2 tiếng. Hủy sau 2 tiếng sẽ bị tính phí dịch chuyển 15% giá trị đơn.
+• Cam kết đúng giờ & Phạt vi phạm:
+  - Đến muộn 10 – 29 phút: Giảm ngay 15% tổng giá trị đơn hàng.
+  - Đến muộn ≥ 30 phút: MIỄN PHÍ 100% (0 VNĐ) cho khách hàng. Kỹ thuật viên/Hệ thống kích hoạt chế độ vi phạm để kết toán 0 đồng.
+• Quy định Voucher & Khuyến mãi:
+  - Chương trình khuyến mãi chung (Sale Event): Được áp dụng trực tiếp tại ca làm việc.
+  - Mã Voucher quà tặng (Gift Voucher): Mã quà tặng dùng 1 lần nhận qua khung chat hoặc email, có thể cộng dồn ưu đãi tri ân khách hàng.
+• Thanh toán & Hoàn tất: Khách hàng thanh toán sau khi máy tính đã hoàn thành và kiểm tra hài lòng. Hỗ trợ quét mã QR chuyển khoản hoặc tiền mặt.
+
+### Dành cho kỹ thuật viên
+• Tiếp nhận đơn: Kỹ thuật viên kiểm tra tình trạng máy kỹ lưỡng trước khi thao tác, ghi nhận lỗi và chụp ảnh lưu trữ.
+• Đúng giờ: Luôn có mặt tại phòng làm việc trước giờ hẹn ít nhất 10 phút để sẵn sàng trang thiết bị chống tĩnh điện và dụng cụ.
+• Trách nhiệm: Thực hiện chuẩn xác quy trình vệ sinh, tra keo tản nhiệt và stress-test nhiệt độ trước khi bàn giao.`;
+
+const DEFAULT_TOTP_GUIDE_MD = `# Hướng dẫn Cài đặt & Sử dụng Google Authenticator (TOTP)
+
+Hệ thống IT Supporter sử dụng chuẩn toán học mã hóa một lần TOTP (RFC 6238) để bảo vệ tài khoản và khôi phục mật khẩu mà không phụ thuộc vào hệ thống gửi Email.
+
+---
+
+### Bước 1: Tải ứng dụng Authenticator về điện thoại
+- **Android**: Vào Google Play Store tìm và cài đặt **Google Authenticator** (hoặc Microsoft Authenticator).
+- **iOS (iPhone/iPad)**: Vào Apple App Store tìm và cài đặt **Google Authenticator**.
+
+---
+
+### Bước 2: Quét mã QR hoặc Nhập khóa thiết lập
+1. Mở ứng dụng Google Authenticator trên điện thoại.
+2. Bấm vào biểu tượng dấu cộng **(+)** ở góc dưới màn hình.
+3. Chọn **Quét mã QR** và hướng camera vào mã QR đang hiển thị trên màn hình máy tính.
+4. *(Nếu camera hỏng hoặc không quét được)*: Chọn **Nhập khóa thiết lập (Enter setup key)**, nhập Tên tài khoản và dán dãy ký tự Khóa bí mật (Secret Key) được cung cấp.
+
+---
+
+### Bước 3: Lưu lại Bộ mã dự phòng (Backup Codes)
+- Khi kích hoạt, hệ thống sẽ cấp cho bạn **8 mã dự phòng (định dạng XXXX-XXXX)**.
+- Tải file text về máy tính hoặc chép ra sổ tay an toàn. Mỗi mã chỉ dùng được 1 lần duy nhất trong trường hợp điện thoại bị mất hoặc hỏng.
+
+---
+
+### Bước 4: Khắc phục lỗi lệch giờ (Lỗi nhập đúng số nhưng báo sai)
+Mã 6 chữ số thay đổi mỗi 30 giây dựa trên đồng hồ thời gian chuẩn. Nếu mã luôn báo không hợp lệ:
+1. Đảm bảo điện thoại của bạn đang bật chế độ **"Đặt giờ tự động (Set time automatically)"** theo mạng.
+2. Trên Android: Mở Google Authenticator -> bấm menu 3 chấm -> **Cài đặt** -> **Đồng bộ hóa thời gian** -> **Đồng bộ ngay (Sync now)**.`;
 
 export function AdminSettings() {
   const { t, i18n } = useTranslation();
@@ -27,6 +101,9 @@ export function AdminSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Markdown editor state
+  const [markdownTab, setMarkdownTab] = useState<'about' | 'terms' | 'totpGuide'>('about');
 
   // Telegram test & detect state
   const [testingTelegram, setTestingTelegram] = useState(false);
@@ -677,6 +754,108 @@ export function AdminSettings() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* SECTION 8: NỘI DUNG TRANG VỀ CHÚNG TÔI & ĐIỀU KHOẢN (MARKDOWN) */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-3">
+            <div className="flex items-center gap-2.5 text-slate-900 font-bold text-base">
+              <FileText className="w-5 h-5 text-orange-600" />
+              <span>{isEn ? 'Pages Content Management (Markdown)' : 'Quản lý nội dung bài viết (Markdown)'}</span>
+            </div>
+
+            {/* Subtabs */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="bg-slate-100 p-1 rounded-xl flex flex-wrap items-center text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setMarkdownTab('about')}
+                  className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                    markdownTab === 'about'
+                      ? 'bg-white text-orange-600 shadow-2xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {isEn ? 'About Us Page' : 'Về chúng tôi'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMarkdownTab('terms')}
+                  className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                    markdownTab === 'terms'
+                      ? 'bg-white text-orange-600 shadow-2xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {isEn ? 'Terms & Commitments' : 'Điều khoản & Cam kết'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMarkdownTab('totpGuide')}
+                  className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                    markdownTab === 'totpGuide'
+                      ? 'bg-white text-orange-600 shadow-2xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {isEn ? 'TOTP Guide' : 'Hướng dẫn Authenticator'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-500">
+            {markdownTab === 'about'
+              ? (isEn
+                  ? 'Editing content rendered on the /about page. Supports standard GitHub Flavored Markdown (headings, lists, bold, italics, images).'
+                  : 'Nội dung hiển thị trên trang Về chúng tôi (/about). Hỗ trợ cú pháp Markdown hoàn chỉnh, kéo thả hoặc dán ảnh (Ctrl + V) trực tiếp.')
+              : markdownTab === 'terms'
+              ? (isEn
+                  ? 'Editing rules & commitments rendered on the /terms page. Standardize rights and obligations between technicians and customers.'
+                  : 'Nội dung hiển thị trên trang Quy định & Cam kết dịch vụ (/terms). Chuẩn hóa quyền lợi và trách nhiệm.')
+              : (isEn
+                  ? 'Editing TOTP Google Authenticator instructions shown in public modal & user onboarding guide.'
+                  : 'Nội dung hướng dẫn cài đặt Google Authenticator / TOTP hiển thị trong Modal hướng dẫn và bảng trợ giúp.')}
+          </p>
+
+          {/* Editor / Preview Area */}
+          <div className="pt-1">
+            <MarkdownEditorWithUpload
+              value={
+                markdownTab === 'about'
+                  ? (settings.aboutMarkdown ?? DEFAULT_ABOUT_MD)
+                  : markdownTab === 'terms'
+                  ? (settings.termsMarkdown ?? DEFAULT_TERMS_MD)
+                  : (settings.totpGuideMarkdown ?? DEFAULT_TOTP_GUIDE_MD)
+              }
+              onChange={(val) => {
+                if (markdownTab === 'about') {
+                  setSettings((prev: any) => ({ ...prev, aboutMarkdown: val }));
+                } else if (markdownTab === 'terms') {
+                  setSettings((prev: any) => ({ ...prev, termsMarkdown: val }));
+                } else {
+                  setSettings((prev: any) => ({ ...prev, totpGuideMarkdown: val }));
+                }
+              }}
+              onRestoreDefault={() => {
+                if (markdownTab === 'about') {
+                  if (window.confirm(isEn ? 'Reset About Page content to system default?' : 'Khôi phục nội dung trang Về chúng tôi về mặc định ban đầu?')) {
+                    setSettings((prev: any) => ({ ...prev, aboutMarkdown: DEFAULT_ABOUT_MD }));
+                  }
+                } else if (markdownTab === 'terms') {
+                  if (window.confirm(isEn ? 'Reset Terms Page content to system default?' : 'Khôi phục nội dung trang Điều khoản dịch vụ về mặc định ban đầu?')) {
+                    setSettings((prev: any) => ({ ...prev, termsMarkdown: DEFAULT_TERMS_MD }));
+                  }
+                } else {
+                  if (window.confirm(isEn ? 'Reset TOTP Guide content to system default?' : 'Khôi phục tài liệu hướng dẫn Authenticator về mặc định ban đầu?')) {
+                    setSettings((prev: any) => ({ ...prev, totpGuideMarkdown: DEFAULT_TOTP_GUIDE_MD }));
+                  }
+                }
+              }}
+              minHeight="420px"
+              placeholder={isEn ? 'Type markdown content or paste/drag images...' : 'Nhập nội dung markdown hoặc kéo thả / dán ảnh (Ctrl + V) vào đây...'}
+            />
+          </div>
         </div>
 
         {/* SUBMIT BUTTON */}

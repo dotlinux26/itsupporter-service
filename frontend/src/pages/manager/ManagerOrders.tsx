@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { managerApi, publicApi, orderApi } from '../../api/client';
 import { Avatar } from '../../components/Avatar';
 import { OrderTimeline } from '../../components/OrderTimeline';
+import { DoubleCheckModal } from '../../components/modals/DoubleCheckModal';
 import {
   FileSpreadsheet,
   FileText,
@@ -38,12 +39,22 @@ export function ManagerOrders() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({ status: '', technician_id: '', from: '', to: '' });
 
+  // Double check modal state
+  const [doubleCheckConfig, setDoubleCheckConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    details?: Array<{ label: string; value: React.ReactNode }>;
+    isDanger?: boolean;
+    onConfirm: (confirmText: string) => Promise<void>;
+  } | null>(null);
+  const [doubleCheckLoading, setDoubleCheckLoading] = useState(false);
+
   // Assign modal state
   const [assignModalOrder, setAssignModalOrder] = useState<any | null>(null);
   const [selectedTechId, setSelectedTechId] = useState<number | ''>('');
   const [slotCandidates, setSlotCandidates] = useState<any[]>([]);
   const [candidatesLoading, setCandidatesLoading] = useState(false);
-  const [assignLoading, setAssignLoading] = useState(false);
 
   // Order Detail & Invoice Modal state
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -156,42 +167,89 @@ export function ManagerOrders() {
     }
   };
 
-  const handleStatusChange = async (orderId: number, nextStatus: string) => {
-    try {
-      await managerApi.updateOrderStatus(orderId, nextStatus);
-      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o)));
-      showFeedback('success', t('orders.statusUpdated', 'Đã cập nhật trạng thái đơn hàng.'));
-    } catch (err: any) {
-      showFeedback('error', err.response?.data?.message || t('orders.statusUpdateFail', 'Cập nhật trạng thái thất bại.'));
-    }
+  const handleStatusChangeRequest = (order: any, nextStatus: string) => {
+    if (order.status === nextStatus) return;
+    setDoubleCheckConfig({
+      isOpen: true,
+      title: isEn ? 'Confirm Order Status Change' : 'Xác nhận thay đổi trạng thái đơn hàng',
+      description: isEn
+        ? `You are changing the status of order #${order.code} from "${order.status}" to "${nextStatus}". Please enter the confirmation text below to proceed.`
+        : `Bạn đang thay đổi trạng thái đơn #${order.code} từ "${order.status}" sang "${nextStatus}". Thao tác này sẽ được ghi vào nhật ký kiểm toán và gửi thông báo tương ứng.`,
+      details: [
+        { label: isEn ? 'Order code' : 'Mã đơn', value: `#${order.code}` },
+        { label: isEn ? 'Customer' : 'Khách hàng', value: order.customer_name },
+        { label: isEn ? 'From status' : 'Trạng thái cũ', value: order.status },
+        { label: isEn ? 'To status' : 'Trạng thái mới', value: nextStatus },
+      ],
+      isDanger: nextStatus === 'CANCELLED',
+      onConfirm: async (confirmText: string) => {
+        setDoubleCheckLoading(true);
+        try {
+          await managerApi.updateOrderStatus(order.id, nextStatus, undefined, confirmText);
+          setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: nextStatus } : o)));
+          showFeedback('success', t('orders.statusUpdated', 'Đã cập nhật trạng thái đơn hàng.'));
+          setDoubleCheckConfig(null);
+        } catch (err: any) {
+          showFeedback('error', err.response?.data?.message || t('orders.statusUpdateFail', 'Cập nhật trạng thái thất bại.'));
+        } finally {
+          setDoubleCheckLoading(false);
+        }
+      },
+    });
   };
 
-  const handleAssignSubmit = async (e: React.FormEvent) => {
+  const handleAssignSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!assignModalOrder || !selectedTechId) return;
-    setAssignLoading(true);
-    try {
-      await managerApi.assignTechnician(assignModalOrder.id, Number(selectedTechId));
-      const tech = technicians.find((t) => t.id === Number(selectedTechId));
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === assignModalOrder.id
-            ? {
-                ...o,
-                technician_id: Number(selectedTechId),
-                technician_name: tech?.name || 'KTV',
-                status: o.status === 'PENDING' ? 'CONFIRMED' : o.status,
-              }
-            : o
-        )
-      );
-      showFeedback('success', t('manager.assignedSuccess', 'Đã phân công {{name}} cho đơn {{code}}.', { name: tech?.name, code: assignModalOrder.code }));
-      setAssignModalOrder(null);
-    } catch (err: any) {
-      showFeedback('error', err.response?.data?.message || t('manager.assignFail', 'Phân công kỹ thuật viên thất bại.'));
-    } finally {
-      setAssignLoading(false);
-    }
+    const tech = technicians.find((t) => t.id === Number(selectedTechId));
+    const isReassign = Boolean(assignModalOrder.technician_id);
+
+    setDoubleCheckConfig({
+      isOpen: true,
+      title: isReassign
+        ? (isEn ? 'Confirm Technician Reassignment' : 'Xác nhận đổi kỹ thuật viên phụ trách')
+        : (isEn ? 'Confirm Technician Assignment' : 'Xác nhận phân công kỹ thuật viên'),
+      description: isEn
+        ? `Assign technician ${tech?.name || selectedTechId} to order #${assignModalOrder.code}. Both customer and technician will be notified.`
+        : `Phân công kỹ thuật viên "${tech?.name || selectedTechId}" phụ trách đơn #${assignModalOrder.code}. Cả khách hàng và kỹ thuật viên sẽ nhận được thông báo điều phối.`,
+      details: [
+        { label: isEn ? 'Order code' : 'Mã đơn', value: `#${assignModalOrder.code}` },
+        { label: isEn ? 'Customer' : 'Khách hàng', value: assignModalOrder.customer_name },
+        { label: isEn ? 'Current technician' : 'KTV hiện tại', value: assignModalOrder.technician_name || (isEn ? 'Unassigned' : 'Chưa phân công') },
+        { label: isEn ? 'New technician' : 'KTV mới', value: tech?.name || `KTV #${selectedTechId}` },
+      ],
+      onConfirm: async (confirmText: string) => {
+        setDoubleCheckLoading(true);
+        try {
+          await managerApi.assignTechnician(assignModalOrder.id, Number(selectedTechId), confirmText);
+          setOrders((prev) =>
+            prev.map((o) =>
+              o.id === assignModalOrder.id
+                ? {
+                    ...o,
+                    technician_id: Number(selectedTechId),
+                    technician_name: tech?.name || 'KTV',
+                    status: o.status === 'PENDING' ? 'CONFIRMED' : o.status,
+                  }
+                : o
+            )
+          );
+          showFeedback(
+            'success',
+            t('manager.assignedSuccess', 'Đã phân công {{name}} cho đơn {{code}}.', {
+              name: tech?.name,
+              code: assignModalOrder.code,
+            })
+          );
+          setAssignModalOrder(null);
+          setDoubleCheckConfig(null);
+        } catch (err: any) {
+          showFeedback('error', err.response?.data?.message || t('manager.assignFail', 'Phân công kỹ thuật viên thất bại.'));
+        } finally {
+          setDoubleCheckLoading(false);
+        }
+      },
+    });
   };
 
   const handleExport = async (format: 'xlsx' | 'csv') => {
@@ -473,7 +531,7 @@ export function ManagerOrders() {
                     <td className="py-3.5 px-4">
                       <select
                         value={order.status}
-                        onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                        onChange={(e) => handleStatusChangeRequest(order, e.target.value)}
                         className={`text-[11px] font-semibold px-2 py-1 rounded-lg border appearance-none cursor-pointer transition ${
                           order.status === 'COMPLETED'
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -666,10 +724,10 @@ export function ManagerOrders() {
                 </button>
                 <button
                   type="submit"
-                  disabled={assignLoading || !selectedTechId}
+                  disabled={doubleCheckLoading || !selectedTechId}
                   className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md transition disabled:opacity-50"
                 >
-                  {assignLoading ? (isEn ? 'Assigning...' : 'Đang điều phối...') : (isEn ? 'Confirm Assignment' : 'Xác nhận phân công')}
+                  {doubleCheckLoading ? (isEn ? 'Assigning...' : 'Đang điều phối...') : (isEn ? 'Confirm Assignment' : 'Xác nhận phân công')}
                 </button>
               </div>
             </form>
@@ -977,6 +1035,24 @@ export function ManagerOrders() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* DOUBLE CHECK CONFIRMATION MODAL */}
+      {doubleCheckConfig && (
+        <DoubleCheckModal
+          isOpen={doubleCheckConfig.isOpen}
+          title={doubleCheckConfig.title}
+          description={doubleCheckConfig.description}
+          details={doubleCheckConfig.details}
+          isDanger={doubleCheckConfig.isDanger}
+          loading={doubleCheckLoading}
+          onConfirm={doubleCheckConfig.onConfirm}
+          onCancel={() => {
+            if (!doubleCheckLoading) {
+              setDoubleCheckConfig(null);
+            }
+          }}
+        />
       )}
     </div>
   );

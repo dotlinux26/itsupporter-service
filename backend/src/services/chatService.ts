@@ -124,6 +124,14 @@ export function sendOrderVoucherMessage(
     throw new AppError('NOT_FOUND', 'Không tìm thấy voucher.', 404);
   }
 
+  if (voucher.status !== 'active') {
+    throw new AppError('VALIDATION_ERROR', 'Voucher này đã được sử dụng hoặc không còn hiệu lực.', 400);
+  }
+
+  if (voucher.customer_id && voucher.customer_id !== order.customer_id) {
+    throw new AppError('VALIDATION_ERROR', 'Voucher này đã được cấp cho khách hàng khác.', 400);
+  }
+
   // Assign voucher to customer if not already assigned
   if (!voucher.customer_id) {
     db.prepare('UPDATE vouchers SET customer_id = ?, technician_id = ?, assigned_at = datetime(\'now\'), updated_at = datetime(\'now\') WHERE id = ?')

@@ -1,11 +1,23 @@
 import { Router } from 'express';
+import fs from 'node:fs';
+import path from 'node:path';
+import sharp from 'sharp';
+import config from '../config/index.js';
 import { getDb } from '../config/database.js';
 import { buildSlots, getAvailableTechnicians } from '../services/calendarService.js';
 import { getPublicRecentReviews } from '../repositories/notificationReviewRepository.js';
 import { getSystemSettings } from '../services/settingsService.js';
 import { TIME_ZONE, todayInZone, toISOWithZone } from '../utils/dateTime.js';
+import { generateAvatarSvg } from '../utils/avatar.js';
+import logger from '../utils/logger.js';
+import { imageUpload } from '../utils/upload.js';
+import { AppError } from '../utils/AppError.js';
+import { createRecoveryRequest, findUserByIdentifier } from '../repositories/userRepository.js';
+import { notifyAccountRecoveryRequest } from '../services/telegramService.js';
+import { accountRecoveryRateLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
+
 
 // GET /api/public/info - Thông tin đội IT Supporter HaUI & địa chỉ phòng làm việc tiếp nhận máy
 router.get('/info', (_req, res, next) => {
@@ -83,8 +95,15 @@ router.get('/info', (_req, res, next) => {
         server_time: new Date().toISOString(),
         server_timestamp: Date.now(),
         timezone: TIME_ZONE,
+        about_markdown: settings.aboutMarkdown,
+        aboutMarkdown: settings.aboutMarkdown,
+        terms_markdown: settings.termsMarkdown,
+        termsMarkdown: settings.termsMarkdown,
+        totp_guide_markdown: settings.totpGuideMarkdown,
+        totpGuideMarkdown: settings.totpGuideMarkdown,
       },
     });
+
   } catch (err) {
     next(err);
   }
@@ -350,4 +369,233 @@ router.get('/reviews', (req, res, next) => {
   }
 });
 
+function escapeXml(unsafe: string): string {
+  return String(unsafe || '').replace(/[<>&'"]/g, (c) => {
+    switch (c) {
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '&': return '&amp;';
+      case '\'': return '&apos;';
+      case '"': return '&quot;';
+      default: return c;
+    }
+  });
+}
+
+async function renderTechnicianOgPng(aliasOrId: string): Promise<Buffer> {
+  const db = getDb();
+  const isNumeric = /^\d+$/.test(aliasOrId);
+
+  const query = `
+    SELECT u.id, u.name, u.avatar_url,
+           p.bio, p.alias,
+           ROUND(COALESCE(AVG(r.rating), 5.0), 1) AS rating,
+           COUNT(DISTINCT r.id) AS rating_count,
+           (SELECT COUNT(*) FROM orders o WHERE o.technician_id = u.id AND o.status = 'COMPLETED') AS completed_orders_count
+    FROM users u
+    LEFT JOIN technician_profiles p ON p.user_id = u.id
+    LEFT JOIN reviews r ON r.technician_id = u.id
+    WHERE u.role = 'TECHNICIAN' AND u.status = 'ACTIVE' AND u.is_deleted = 0
+      AND (${isNumeric ? 'u.id = ? OR LOWER(p.alias) = LOWER(?)' : 'LOWER(p.alias) = LOWER(?)'})
+    GROUP BY u.id
+    LIMIT 1
+  `;
+
+  const params = isNumeric ? [Number(aliasOrId), aliasOrId] : [aliasOrId];
+  const tech = db.prepare(query).get(...params) as any;
+
+  const name = escapeXml(tech?.name || 'Kỹ thuật viên IT Supporter');
+  const rating = Number(tech?.rating || 5.0).toFixed(1);
+  const ratingCount = Number(tech?.rating_count || 0);
+  const completedCount = Number(tech?.completed_orders_count || 0);
+  const rawBio = tech?.bio || 'Đội ngũ kỹ thuật viên sinh viên nhiệt huyết, được đào tạo bài bản về vệ sinh và bảo dưỡng phần cứng PC/Laptop tại Đại học Công nghiệp Hà Nội.';
+  const bio = escapeXml(rawBio.length > 140 ? rawBio.slice(0, 140) + '...' : rawBio);
+
+  let avatarBase64 = '';
+  if (tech?.avatar_url && tech.avatar_url.startsWith('/uploads/')) {
+    const filename = path.basename(tech.avatar_url);
+    const filePath = path.join(config.uploadDir, filename);
+    if (fs.existsSync(filePath)) {
+      try {
+        const fileBuf = fs.readFileSync(filePath);
+        const avatarPng = await sharp(fileBuf).resize(360, 360, { fit: 'cover' }).png().toBuffer();
+        avatarBase64 = `data:image/png;base64,${avatarPng.toString('base64')}`;
+      } catch (err) {
+        logger.warn({ err }, 'Failed to read avatar for OG image');
+      }
+    }
+  }
+
+  if (!avatarBase64) {
+    const svgAvatar = generateAvatarSvg(tech?.name, null, 360);
+    const avatarPng = await sharp(Buffer.from(svgAvatar)).png().toBuffer();
+    avatarBase64 = `data:image/png;base64,${avatarPng.toString('base64')}`;
+  }
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+    <defs>
+      <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#0f172a" />
+        <stop offset="100%" stop-color="#020617" />
+      </linearGradient>
+      <radialGradient id="glowGrad" cx="20%" cy="50%" r="60%">
+        <stop offset="0%" stop-color="#ea580c" stop-opacity="0.3" />
+        <stop offset="100%" stop-color="#ea580c" stop-opacity="0" />
+      </radialGradient>
+      <clipPath id="avatarClip">
+        <circle cx="240" cy="315" r="150" />
+      </clipPath>
+    </defs>
+
+    <!-- Background -->
+    <rect width="1200" height="630" fill="url(#bgGrad)" />
+    <rect width="1200" height="630" fill="url(#glowGrad)" />
+
+    <!-- Left Side: Circular Avatar (Trai Avatar) -->
+    <circle cx="240" cy="315" r="160" fill="none" stroke="#ea580c" stroke-width="8" />
+    <circle cx="240" cy="315" r="150" fill="#1e293b" />
+    <image href="${avatarBase64}" x="90" y="165" width="300" height="300" preserveAspectRatio="xMidYMid slice" clip-path="url(#avatarClip)" />
+
+    <!-- Badge dưới avatar -->
+    <g transform="translate(130, 490)">
+      <rect width="220" height="42" rx="21" fill="#ea580c" />
+      <text x="110" y="26" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">✓ KỸ THUẬT VIÊN CHÍNH THỨC</text>
+    </g>
+
+    <!-- Right Side: Info (Phai Ho Ten & Thong Tin) -->
+    <text x="450" y="145" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="bold" fill="#fb923c" letter-spacing="1">
+      IT SUPPORTER HaUI · ĐẠI HỌC CÔNG NGHIỆP HÀ NỘI
+    </text>
+
+    <!-- Họ tên kỹ thuật viên -->
+    <text x="450" y="225" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="52" font-weight="bold" fill="#ffffff">
+      ${name}
+    </text>
+
+    <!-- Chức danh -->
+    <text x="450" y="275" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="22" font-weight="500" fill="#94a3b8">
+      Kỹ thuật viên Vệ sinh &amp; Bảo dưỡng phần cứng PC/Laptop
+    </text>
+
+    <!-- Stats Box -->
+    <rect x="450" y="315" width="670" height="85" rx="16" fill="#1e293b" fill-opacity="0.85" stroke="#334155" stroke-width="1.5" />
+    
+    <!-- Rating -->
+    <text x="480" y="367" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="26" font-weight="bold" fill="#facc15">
+      ★ ${rating} <tspan font-size="15" fill="#94a3b8" font-weight="normal">(${ratingCount} đánh giá)</tspan>
+    </text>
+
+    <line x1="720" y1="335" x2="720" y2="380" stroke="#475569" stroke-width="2" />
+
+    <!-- Orders Completed -->
+    <text x="750" y="367" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="26" font-weight="bold" fill="#38bdf8">
+      ${completedCount} <tspan font-size="15" fill="#94a3b8" font-weight="normal">ca bảo dưỡng thành công</tspan>
+    </text>
+
+    <!-- Bio snippet -->
+    <text x="450" y="445" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="18" fill="#cbd5e1">
+      ${bio}
+    </text>
+
+    <!-- Footer Bar -->
+    <line x1="450" y1="495" x2="1120" y2="495" stroke="#334155" stroke-width="1" />
+    <text x="450" y="535" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="16" font-weight="bold" fill="#fb923c">
+      ĐẶT LỊCH TRỰC TUYẾN: itsupporter.io.vn
+    </text>
+    <text x="850" y="535" font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-size="16" fill="#94a3b8">
+      Hotline: 0337.616.423
+    </text>
+  </svg>`;
+
+  return sharp(Buffer.from(svg)).png().toBuffer();
+}
+
+// GET /api/public/ktv/:aliasOrId/og-image - Dynamic Open Graph PNG image for KTV
+router.get(['/ktv/:aliasOrId/og-image', '/ktv/:aliasOrId/og-image.png', '/technicians/profile/:aliasOrId/og-image'], async (req, res) => {
+  try {
+    const aliasOrId = String(req.params.aliasOrId || '').trim();
+    const pngBuffer = await renderTechnicianOgPng(aliasOrId);
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
+    res.send(pngBuffer);
+  } catch (err) {
+    logger.error({ err }, 'Error generating technician OG image');
+    res.status(500).send('Error generating OG image');
+  }
+});
+
+// Link and HTML protection filter to prevent XSS and Phishing
+const URL_OR_LINK_REGEX = /(https?:\/\/|ftp:\/\/|www\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,}|[a-zA-Z0-9-]+\.(com|vn|edu\.vn|org|net|io|me|xyz|info|app|cc|to|ru|cn)\b)/i;
+const HTML_TAG_REGEX = /<[^>]*>/i;
+
+function assertSafePlainText(value: string | undefined, fieldLabel: string): void {
+  if (!value) return;
+  if (HTML_TAG_REGEX.test(value)) {
+    throw new AppError('VALIDATION_ERROR', `Trường "${fieldLabel}" không được chứa mã HTML.`, 400);
+  }
+  if (URL_OR_LINK_REGEX.test(value)) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      `Vì lý do an toàn bảo mật, form cứu trợ tài khoản nghiêm cấm cung cấp đường dẫn liên kết (links/URLs). Vui lòng chỉ nhập thông tin văn bản thuần túy cho "${fieldLabel}".`,
+      400
+    );
+  }
+}
+
+// POST /api/public/recovery-requests - Submit helpdesk account recovery request
+router.post('/recovery-requests', accountRecoveryRateLimiter, async (req, res, next) => {
+  try {
+    const { usernameOrEmail, fullName, contactPhone, contactEmail, reason } = req.body;
+
+    if (!usernameOrEmail?.trim() || !fullName?.trim() || !contactPhone?.trim() || !reason?.trim()) {
+      throw new AppError('VALIDATION_ERROR', 'Vui lòng điền đầy đủ các thông tin bắt buộc: Tài khoản/Email, Họ tên, SĐT liên hệ và Lý do.', 400);
+    }
+
+    // Strict validation: No links, no HTML in any text fields
+    assertSafePlainText(usernameOrEmail, 'Tài khoản cần cứu');
+    assertSafePlainText(fullName, 'Họ và tên');
+    assertSafePlainText(contactPhone, 'Số điện thoại liên hệ');
+    assertSafePlainText(contactEmail, 'Email liên hệ');
+    assertSafePlainText(reason, 'Lý do & mô tả sự cố');
+
+    const cleanUsernameOrEmail = usernameOrEmail.trim();
+    const cleanFullName = fullName.trim();
+    const cleanPhone = contactPhone.trim();
+    const cleanEmail = contactEmail?.trim() || null;
+    const cleanReason = reason.trim();
+
+    const matchedUser = findUserByIdentifier(cleanUsernameOrEmail);
+
+    const id = createRecoveryRequest({
+      userId: matchedUser?.id ?? null,
+      usernameOrEmail: cleanUsernameOrEmail,
+      fullName: cleanFullName,
+      contactPhone: cleanPhone,
+      contactEmail: cleanEmail,
+      reason: cleanReason,
+      evidenceUrl: null,
+    });
+
+    // Notify Telegram asynchronously in background (don't block user response)
+    notifyAccountRecoveryRequest({
+      id,
+      usernameOrEmail: cleanUsernameOrEmail,
+      fullName: cleanFullName,
+      contactPhone: cleanPhone,
+      contactEmail: cleanEmail || undefined,
+      reason: cleanReason,
+    }).catch((err) => {
+      logger.warn({ err: err?.message }, 'Failed to send Telegram notification for recovery request');
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Yêu cầu cứu trợ đã được tiếp nhận thành công. Đội ngũ quản trị viên sẽ liên hệ và xử lý cho bạn trong thời gian sớm nhất.',
+      data: { id },
+    });
+  } catch (err) { next(err); }
+});
+
+
 export default router;
+

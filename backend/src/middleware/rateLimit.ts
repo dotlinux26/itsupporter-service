@@ -119,3 +119,41 @@ export const telegramRateLimiter = rateLimit({
     });
   },
 });
+
+/**
+ * Rate limit gắt gao cho form Cứu trợ tài khoản Helpdesk (1 IP không quá 2 lần trong 1 giờ)
+ */
+export const accountRecoveryRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 giờ
+  limit: 2, // Tối đa 2 lần gửi yêu cầu mỗi IP trong 1 giờ
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: (_req: Request, res: Response) => {
+    res.status(429).json({
+      success: false,
+      error: {
+        code: 'RATE_LIMITED',
+        message: 'Bạn đã gửi yêu cầu cứu trợ tài khoản quá số lần cho phép (tối đa 2 lần / 1 giờ). Vui lòng chờ 1 giờ trước khi thử lại để bảo đảm an toàn hệ thống.',
+      },
+    });
+  },
+});
+
+/**
+ * Rate limit chuyên biệt cho TOTP & Quên mật khẩu (chống brute force 30s)
+ */
+export const totpRateLimiter = rateLimit({
+  windowMs: 30 * 60 * 1000, // 30 phút
+  limit: 10, // Tối đa 10 requests / 30 phút
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: (_req: Request, res: Response) => {
+    res.status(429).json({
+      success: false,
+      error: {
+        code: 'RATE_LIMITED',
+        message: 'Bạn đã thực hiện thao tác xác thực quá nhiều lần. Vui lòng chờ ít phút trước khi thử lại.',
+      },
+    });
+  },
+});

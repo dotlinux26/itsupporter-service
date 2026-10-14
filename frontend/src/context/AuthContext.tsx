@@ -5,7 +5,8 @@ import type { User } from '../types';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<User>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<any>;
+  login2FA: (tempToken: string, code: string, rememberMe?: boolean) => Promise<User>;
   register: (name: string, email: string, password: string, phone?: string) => Promise<User>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -34,12 +35,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser();
   }, [refreshUser]);
 
-  const login = async (email: string, password: string, rememberMe?: boolean): Promise<User> => {
+  const login = async (email: string, password: string, rememberMe?: boolean): Promise<any> => {
     const response = await authApi.login(email, password, rememberMe);
+    const resData = response.data.data;
+    if (resData?.require2FA) {
+      return resData;
+    }
+    setUser(resData);
+    return resData;
+  };
+
+  const login2FA = async (tempToken: string, code: string, rememberMe?: boolean): Promise<User> => {
+    const response = await authApi.login2FA(tempToken, code, rememberMe);
     const userData = response.data.data;
     setUser(userData);
     return userData;
   };
+
 
   const register = async (name: string, email: string, password: string, phone?: string): Promise<User> => {
     const response = await authApi.register(name, email, password, phone);
@@ -64,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         loading,
         login,
+        login2FA,
         register,
         logout,
         refreshUser,

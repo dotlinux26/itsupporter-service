@@ -51,10 +51,15 @@ export function TechnicianPublicProfilePage() {
     }
   };
 
+  const ogImageUrl = alias
+    ? `${window.location.origin}/api/public/ktv/${alias}/og-image`
+    : '/logo_bo3goc.png';
+
   useSEO({
     title: tech ? `${tech.name} | Kỹ thuật viên IT Supporter HaUI` : 'Kỹ thuật viên IT Supporter',
     description: tech?.bio || 'Hồ sơ kỹ thuật viên dịch vụ bảo dưỡng, sửa chữa máy tính IT Supporter.',
-    canonical: `https://service.ghedahaui.online/ktv/${alias}`,
+    canonical: `https://itsupporter.io.vn/ktv/${alias}`,
+    ogImage: ogImageUrl,
   });
 
   const handleCopyLink = () => {

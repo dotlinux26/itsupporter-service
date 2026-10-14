@@ -100,6 +100,7 @@ export function listOrders(opts: ListOrdersOptions): { data: OrderRow[]; total: 
   ).c;
 
   let unreadSub = `0 AS has_unread, NULL AS last_message_at`;
+  const selectParams: unknown[] = [];
   if (opts.includeUnreadFor) {
     unreadSub = `(
       (SELECT COUNT(*) FROM order_messages om
@@ -108,7 +109,7 @@ export function listOrders(opts: ListOrdersOptions): { data: OrderRow[]; total: 
       ) > 0
     ) AS has_unread,
     (SELECT MAX(om2.created_at) FROM order_messages om2 WHERE om2.order_id = o.id) AS last_message_at`;
-    params.push(opts.includeUnreadFor);
+    selectParams.push(opts.includeUnreadFor);
   }
 
   const sql = `SELECT o.*,
@@ -137,7 +138,7 @@ export function listOrders(opts: ListOrdersOptions): { data: OrderRow[]; total: 
                ORDER BY o.scheduled_date DESC, o.scheduled_start DESC, o.id DESC
                LIMIT ? OFFSET ?`;
 
-  const data = db.prepare(sql).all(...params, limit, offset) as OrderRow[];
+  const data = db.prepare(sql).all(...selectParams, ...params, limit, offset) as OrderRow[];
   return { data, total };
 }
 

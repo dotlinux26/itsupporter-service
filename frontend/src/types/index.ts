@@ -12,9 +12,28 @@ export interface User {
   alias?: string | null;
   bank_info?: string | null;
   bank_qr_path?: string | null;
+  is_recovery_enabled?: boolean | number;
+  is_2fa_enabled?: boolean | number;
   created_at: string;
   updated_at: string;
 }
+
+export interface AccountRecoveryRequest {
+  id: number;
+  user_id: number | null;
+  username_or_email: string;
+  full_name: string;
+  contact_phone: string;
+  contact_email: string | null;
+  reason: string;
+  evidence_url: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  admin_notes: string | null;
+  created_at: string;
+  resolved_at: string | null;
+  resolved_by: number | null;
+}
+
 
 export interface ServicePackage {
   id: number;
@@ -149,6 +168,8 @@ export interface SystemSettings {
   timezone: string;
   technicianSharePercent: number;
   teamSharePercent: number;
+  aboutMarkdown?: string;
+  termsMarkdown?: string;
 }
 
 export interface TimeSlot {
@@ -190,14 +211,34 @@ export interface TechnicianBrief {
 
 export interface Settlement {
   id: number;
-  code: string;
+  code?: string;
+  settlement_code?: string;
   technician_id: number;
   manager_id: number;
   amount: number;
   notes: string | null;
   created_at: string;
   technician_name: string;
-  manager_name: string;
+  manager_name?: string;
+  payout_status?: 'PENDING' | 'TRANSFERRED';
+  transferred_at?: string | null;
+  transferred_by?: number | null;
+  transferred_by_name?: string | null;
+}
+
+export interface AuditLogItem {
+  id: number;
+  actor_id: number | null;
+  actor_email: string | null;
+  actor_name?: string | null;
+  actor_avatar?: string | null;
+  actor_role?: string | null;
+  action: string;
+  target_type: string;
+  target_id: number | null;
+  ip_address: string | null;
+  metadata: Record<string, any> | null;
+  created_at: string;
 }
 
 export interface RevenueSummary {

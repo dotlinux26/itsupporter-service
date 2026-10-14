@@ -217,10 +217,29 @@ export function updateVoucherProgram(id: number, patch: {
   db.prepare(`UPDATE voucher_programs SET ${fields.join(', ')} WHERE id = ?`).run(...params);
 }
 
-export function deleteVoucherProgram(id: number): void {
+export function deleteVoucherProgram(id: number): { action: 'deleted' | 'deactivated'; message: string } {
   const db = getDb();
-  // First void all vouchers in this program
-  db.prepare('UPDATE vouchers SET status = ?, updated_at = datetime(\'now\') WHERE program_id = ?').run('voided', id);
-  // Then delete the program
+  
+  // Kiểm tra xem đã có voucher nào thuộc chương trình này được sử dụng chưa
+  const usedCount = (
+    db.prepare('SELECT COUNT(*) AS c FROM vouchers WHERE program_id = ? AND status = \'used\'').get(id) as { c: number }
+  ).c;
+
+  if (usedCount > 0) {
+    // Đã có mã được dùng trong đơn hàng -> Chuyển sang vô hiệu hóa chương trình và void các mã active còn lại
+    db.prepare('UPDATE voucher_programs SET is_active = 0, updated_at = datetime(\'now\') WHERE id = ?').run(id);
+    db.prepare('UPDATE vouchers SET status = \'voided\', updated_at = datetime(\'now\') WHERE program_id = ? AND status = \'active\'').run(id);
+    return {
+      action: 'deactivated',
+      message: 'Chương trình đã có mã được sử dụng trong đơn hàng nên được chuyển sang tắt kích hoạt và hủy các mã chưa dùng còn lại.',
+    };
+  }
+
+  // Chưa có mã nào được dùng -> Xóa sạch các mã chưa dùng và xóa chương trình
+  db.prepare('DELETE FROM vouchers WHERE program_id = ?').run(id);
   db.prepare('DELETE FROM voucher_programs WHERE id = ?').run(id);
+  return {
+    action: 'deleted',
+    message: 'Đã xóa hoàn toàn chương trình voucher và các mã liên quan.',
+  };
 }

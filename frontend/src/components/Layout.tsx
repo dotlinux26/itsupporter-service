@@ -10,6 +10,7 @@ import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { BasicInfoModal } from './modals/BasicInfoModal';
 import { TechnicianBankModal } from './modals/TechnicianBankModal';
+import { RecoveryPromptModal } from './modals/RecoveryPromptModal';
 
 export function AppHeader() {
   const { t } = useTranslation();
@@ -38,6 +39,7 @@ export function AppHeader() {
         { path: '/manager/technicians', label: t('nav.mgrTechnicians') || 'Kỹ thuật viên' },
         { path: '/manager/packages', label: t('nav.mgrPackages') || 'Gói dịch vụ' },
         { path: '/manager/settlements', label: t('nav.mgrSettlements') || 'Quyết toán' },
+        { path: '/manager/audit-logs', label: t('nav.auditLogs') || 'Nhật ký' },
         { path: '/manager/reviews', label: t('nav.mgrReviews') || 'Đánh giá' },
         { path: '/manager/settings', label: t('nav.mgrSettings') || 'Cài đặt' },
       ];
@@ -45,8 +47,10 @@ export function AppHeader() {
       return [
         { path: '/admin', label: t('nav.adminDashboard') || 'Bảng điều khiển' },
         { path: '/admin/users', label: t('nav.adminUsers') || 'Người dùng' },
+        { path: '/admin/recovery-requests', label: 'Cứu trợ TK' },
         { path: '/admin/stats', label: t('nav.adminStats') || 'Thống kê' },
         { path: '/admin/vouchers', label: t('nav.adminVouchers') || 'Mã giảm giá' },
+        { path: '/manager/audit-logs', label: t('nav.auditLogs') || 'Nhật ký' },
         { path: '/admin/qr', label: t('nav.adminQR') || 'Mã QR' },
         { path: '/admin/settings', label: t('nav.adminSettings') || 'Cài đặt' },
       ];
@@ -573,7 +577,24 @@ export function Footer() {
 }
 
 export function MainLayout({ children }: { children?: React.ReactNode }) {
-  const { loading } = useAuth();
+  const { loading, isAuthenticated, user, refreshUser } = useAuth();
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated && user && !user.is_recovery_enabled) {
+      const dismissed = sessionStorage.getItem(`recovery_prompt_dismissed_${user.id}`);
+      if (!dismissed) {
+        setShowRecoveryModal(true);
+      }
+    }
+  }, [isAuthenticated, user?.id, user?.is_recovery_enabled]);
+
+  const handleCloseRecoveryModal = () => {
+    if (user?.id) {
+      sessionStorage.setItem(`recovery_prompt_dismissed_${user.id}`, 'true');
+    }
+    setShowRecoveryModal(false);
+  };
 
   if (loading) {
     return (
@@ -593,6 +614,14 @@ export function MainLayout({ children }: { children?: React.ReactNode }) {
       <ScrollToTopButton />
       <BasicInfoModal />
       <TechnicianBankModal />
+      <RecoveryPromptModal
+        isOpen={showRecoveryModal}
+        onClose={handleCloseRecoveryModal}
+        onSuccess={() => {
+          refreshUser();
+          setShowRecoveryModal(false);
+        }}
+      />
     </div>
   );
 }

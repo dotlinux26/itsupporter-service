@@ -24,12 +24,19 @@ import {
   CreditCard,
   Upload,
   Link as LinkIcon,
+  ShieldCheck,
+  ShieldOff,
+  ShieldAlert,
+  HelpCircle,
 } from 'lucide-react';
 import { Avatar } from '../../components/Avatar';
 import { AvatarUploadModal } from '../../components/AvatarUploadModal';
 import { MarkdownRenderer } from '../../components/MarkdownRenderer';
+import { TwoFactorModal } from '../../components/modals/TwoFactorModal';
+import { RecoveryPromptModal } from '../../components/modals/RecoveryPromptModal';
+import { AuthenticatorGuideModal } from '../../components/modals/AuthenticatorGuideModal';
 
-type Tab = 'profile' | 'technician_profile' | 'password';
+type Tab = 'profile' | 'technician_profile' | 'password' | 'security';
 
 const PRESET_SKILLS = [
   { vi: 'Vệ sinh Laptop Văn Phòng', en: 'Office Laptop Cleaning' },
@@ -82,6 +89,12 @@ export function ProfilePage() {
   const [pwSaving, setPwSaving] = useState(false);
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState('');
+
+  // --- Security & TOTP state ---
+  const [twoFactorModalOpen, setTwoFactorModalOpen] = useState(false);
+  const [twoFactorModalMode, setTwoFactorModalMode] = useState<'ENABLE' | 'DISABLE'>('ENABLE');
+  const [recoveryModalOpen, setRecoveryModalOpen] = useState(false);
+  const [guideModalOpen, setGuideModalOpen] = useState(false);
 
   const isTechnician = user?.role === 'TECHNICIAN';
 
@@ -245,10 +258,12 @@ export function ProfilePage() {
           icon: <Award className="w-4 h-4 text-amber-600" />,
         },
         { key: 'password', label: t('profile.tabPassword'), icon: <KeyRound className="w-4 h-4" /> },
+        { key: 'security', label: isEn ? 'Security (2FA & TOTP)' : 'Bảo mật (2FA & TOTP)', icon: <ShieldCheck className="w-4 h-4 text-emerald-600" /> },
       ]
     : [
         { key: 'profile', label: t('profile.tabAccount'), icon: <User className="w-4 h-4" /> },
         { key: 'password', label: t('profile.tabPassword'), icon: <KeyRound className="w-4 h-4" /> },
+        { key: 'security', label: isEn ? 'Security (2FA & TOTP)' : 'Bảo mật (2FA & TOTP)', icon: <ShieldCheck className="w-4 h-4 text-emerald-600" /> },
       ];
 
   const getRoleBadge = () => {
@@ -948,6 +963,130 @@ export function ProfilePage() {
         </form>
       )}
 
+      {/* TAB CONTENT: BẢO MẬT (2FA & TOTP) */}
+      {tab === 'security' && (
+        <div className="space-y-6">
+          {/* Card 1: 2FA Login */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+              <div className="flex items-start gap-3">
+                <div className={`p-2.5 rounded-xl ${user?.is_2fa_enabled ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>
+                  {user?.is_2fa_enabled ? <ShieldCheck className="w-6 h-6" /> : <ShieldOff className="w-6 h-6" />}
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-base flex items-center gap-2">
+                    Xác thực 2 yếu tố khi đăng nhập (2FA)
+                    {user?.is_2fa_enabled ? (
+                      <span className="px-2 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-700 rounded-full">Đang Bật</span>
+                    ) : (
+                      <span className="px-2 py-0.5 text-xs font-semibold bg-gray-100 text-gray-500 rounded-full">Đang Tắt</span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Yêu cầu mã 6 số từ Google Authenticator mỗi khi đăng nhập tài khoản.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                {user?.is_2fa_enabled ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTwoFactorModalMode('DISABLE');
+                      setTwoFactorModalOpen(true);
+                    }}
+                    className="btn btn-outline border-rose-200 text-rose-600 hover:bg-rose-50 text-xs px-4 py-2"
+                  >
+                    Hủy kích hoạt 2FA
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTwoFactorModalMode('ENABLE');
+                      setTwoFactorModalOpen(true);
+                    }}
+                    className="btn btn-primary text-xs px-4 py-2"
+                  >
+                    Kích hoạt 2FA ngay
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Khi bật 2FA, kẻ xấu cho dù đánh cắp được mật khẩu của bạn cũng không thể đăng nhập nếu không có thiết bị điện thoại chứa mã xác thực một lần (mã thay đổi mỗi 30 giây).
+            </p>
+          </div>
+
+          {/* Card 2: Password Recovery TOTP */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+              <div className="flex items-start gap-3">
+                <div className={`p-2.5 rounded-xl ${user?.is_recovery_enabled ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'}`}>
+                  {user?.is_recovery_enabled ? <ShieldCheck className="w-6 h-6" /> : <ShieldAlert className="w-6 h-6" />}
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-base flex items-center gap-2">
+                    Khôi phục mật khẩu qua TOTP (Không cần Email)
+                    {user?.is_recovery_enabled ? (
+                      <span className="px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700 rounded-full">Đã kích hoạt</span>
+                    ) : (
+                      <span className="px-2 py-0.5 text-xs font-semibold bg-rose-100 text-rose-700 rounded-full">Chưa thiết lập</span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Sử dụng khóa bí mật độc lập lưu trong Google Authenticator để tự khôi phục tài khoản khi quên mật khẩu.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setRecoveryModalOpen(true)}
+                  className={`btn text-xs px-4 py-2 ${
+                    user?.is_recovery_enabled
+                      ? 'btn-outline border-amber-200 text-amber-700 hover:bg-amber-50'
+                      : 'btn-primary'
+                  }`}
+                >
+                  {user?.is_recovery_enabled ? 'Cài đặt lại / Xem mã' : 'Thiết lập ngay'}
+                </button>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Hệ thống IT Supporter sử dụng chuẩn toán học RFC 6238 độc lập để đặt lại mật khẩu tức thì mà không cần chờ gửi email qua máy chủ mail, miễn nhiễm hoàn toàn với lỗi nghẽn cổng mạng hoặc thất lạc thư rác.
+            </p>
+          </div>
+
+          {/* Card 3: Guide & Help */}
+          <div className="bg-orange-50/50 border border-orange-200/60 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-xl bg-orange-100 text-orange-600 shrink-0">
+                <HelpCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-gray-900">Chưa biết cách dùng Google Authenticator?</h4>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  Xem video hướng dẫn, cách đồng bộ lại đồng hồ chuẩn nếu mã liên tục báo không hợp lệ.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setGuideModalOpen(true)}
+              className="btn btn-outline border-orange-300 text-orange-700 hover:bg-orange-100/60 text-xs px-4 py-2 whitespace-nowrap self-start sm:self-center"
+            >
+              Xem hướng dẫn chi tiết
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* AVATAR UPLOAD & CROP MODAL */}
       <AvatarUploadModal
         isOpen={avatarModalOpen}
@@ -959,6 +1098,33 @@ export function ProfilePage() {
           refreshUser();
           setProfileSuccess(t('profile.avatarModal.success'));
         }}
+      />
+
+      {/* TWO FACTOR AUTH MODAL */}
+      <TwoFactorModal
+        isOpen={twoFactorModalOpen}
+        onClose={() => setTwoFactorModalOpen(false)}
+        mode={twoFactorModalMode}
+        onSuccess={() => {
+          refreshUser();
+          setProfileSuccess(twoFactorModalMode === 'ENABLE' ? 'Đã kích hoạt 2FA thành công!' : 'Đã hủy kích hoạt 2FA!');
+        }}
+      />
+
+      {/* RECOVERY PROMPT MODAL */}
+      <RecoveryPromptModal
+        isOpen={recoveryModalOpen}
+        onClose={() => setRecoveryModalOpen(false)}
+        onSuccess={() => {
+          refreshUser();
+          setProfileSuccess('Đã thiết lập TOTP khôi phục mật khẩu thành công!');
+        }}
+      />
+
+      {/* AUTHENTICATOR GUIDE MODAL */}
+      <AuthenticatorGuideModal
+        isOpen={guideModalOpen}
+        onClose={() => setGuideModalOpen(false)}
       />
     </div>
   );

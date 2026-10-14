@@ -6,6 +6,7 @@ import {
   Users,
   Search,
   Shield,
+  ShieldAlert,
   UserX,
   KeyRound,
   Trash2,
@@ -29,7 +30,10 @@ interface UserRow {
   contact_info: string | null;
   created_at: string;
   updated_at: string;
+  is_recovery_enabled?: boolean | number;
+  is_2fa_enabled?: boolean | number;
 }
+
 
 export function AdminUsers() {
   const { t, i18n } = useTranslation();
@@ -142,6 +146,26 @@ export function AdminUsers() {
       showFeedback('error', err.response?.data?.message || t('admin.deleteUserFail', 'Xóa người dùng thất bại.'));
     }
   };
+
+  const [totpResetModalUser, setTotpResetModalUser] = useState<UserRow | null>(null);
+  const [totpResetType, setTotpResetType] = useState<'2FA' | 'RECOVERY' | 'ALL'>('ALL');
+  const [totpResetLoading, setTotpResetLoading] = useState(false);
+
+  const handleResetTotpSubmit = async () => {
+    if (!totpResetModalUser) return;
+    setTotpResetLoading(true);
+    try {
+      await adminApi.resetUserTotp(totpResetModalUser.id, totpResetType);
+      showFeedback('success', `Đã reset cấu hình TOTP (${totpResetType}) cho ${totpResetModalUser.name}.`);
+      setTotpResetModalUser(null);
+      loadUsers();
+    } catch (err: any) {
+      showFeedback('error', err.response?.data?.message || 'Reset TOTP thất bại.');
+    } finally {
+      setTotpResetLoading(false);
+    }
+  };
+
 
   // Quick stats calculation
   const totalCount = users.length;
@@ -319,6 +343,7 @@ export function AdminUsers() {
                   <th className="py-3 px-4">{t('admin.phone')}</th>
                   <th className="py-3 px-4">{t('admin.role')}</th>
                   <th className="py-3 px-4">{t('admin.status')}</th>
+                  <th className="py-3 px-4">Bảo mật TOTP</th>
                   <th className="py-3 px-4">{t('admin.joinedAt')}</th>
                   <th className="py-3 px-4 text-right">{t('admin.actions')}</th>
                 </tr>
@@ -393,6 +418,32 @@ export function AdminUsers() {
                       </button>
                     </td>
 
+                    {/* TOTP Security status */}
+                    <td className="py-3.5 px-4">
+                      <div className="flex flex-col gap-1 items-start">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${
+                            user.is_2fa_enabled
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-gray-50 text-gray-400 border border-gray-200'
+                          }`}
+                        >
+                          <Shield className="w-3 h-3" />
+                          {user.is_2fa_enabled ? '2FA Bật' : '2FA Tắt'}
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${
+                            user.is_recovery_enabled
+                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                              : 'bg-rose-50 text-rose-500 border border-rose-200'
+                          }`}
+                        >
+                          <ShieldAlert className="w-3 h-3" />
+                          {user.is_recovery_enabled ? 'Khôi phục Bật' : 'Khôi phục Tắt'}
+                        </span>
+                      </div>
+                    </td>
+
                     {/* Created date */}
                     <td className="py-3.5 px-4 text-gray-500 text-[11px]">
                       {new Date(user.created_at).toLocaleDateString(isEn ? 'en-US' : 'vi-VN', {
@@ -405,6 +456,18 @@ export function AdminUsers() {
                     {/* Actions */}
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTotpResetModalUser(user);
+                            setTotpResetType('ALL');
+                          }}
+                          className="p-1.5 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                          title="Quản lý / Reset TOTP & 2FA"
+                        >
+                          <ShieldAlert className="w-4 h-4" />
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => {
@@ -491,6 +554,110 @@ export function AdminUsers() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* RESET TOTP MODAL */}
+      {totpResetModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-md w-full overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-rose-600" />
+                <h3 className="font-bold text-gray-900 text-sm">Quản lý / Reset TOTP & 2FA</h3>
+              </div>
+              <button
+                onClick={() => setTotpResetModalUser(null)}
+                className="p-1 text-gray-400 hover:text-gray-600 rounded-lg transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs">
+              <p className="text-gray-600">
+                Bạn đang can thiệp bảo mật TOTP cho tài khoản: <strong className="text-gray-900">{totpResetModalUser.name}</strong> ({totpResetModalUser.email}).
+              </p>
+
+              <div className="space-y-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-800">
+                <div className="font-semibold flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  Lưu ý quan trọng
+                </div>
+                <p>
+                  Thao tác này sẽ hủy khóa bí mật Authenticator đã cấp. Người dùng sẽ phải thiết lập lại từ đầu để tiếp tục sử dụng.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-bold text-gray-700 uppercase tracking-wider mb-2">
+                  Chọn phạm vi Reset
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="resetType"
+                      value="ALL"
+                      checked={totpResetType === 'ALL'}
+                      onChange={() => setTotpResetType('ALL')}
+                      className="text-primary"
+                    />
+                    <div>
+                      <span className="font-bold block text-gray-900">Reset toàn bộ (Cả 2FA & Khôi phục)</span>
+                      <span className="text-gray-500 text-[11px]">Hủy cả mã 2FA đăng nhập và TOTP khôi phục mật khẩu</span>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="resetType"
+                      value="2FA"
+                      checked={totpResetType === '2FA'}
+                      onChange={() => setTotpResetType('2FA')}
+                      className="text-primary"
+                    />
+                    <div>
+                      <span className="font-bold block text-gray-900">Chỉ Reset 2FA Đăng nhập</span>
+                      <span className="text-gray-500 text-[11px]">Người dùng đăng nhập không cần hỏi mã 2FA nữa</span>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="resetType"
+                      value="RECOVERY"
+                      checked={totpResetType === 'RECOVERY'}
+                      onChange={() => setTotpResetType('RECOVERY')}
+                      className="text-primary"
+                    />
+                    <div>
+                      <span className="font-bold block text-gray-900">Chỉ Reset TOTP Khôi phục</span>
+                      <span className="text-gray-500 text-[11px]">Người dùng sẽ nhận lại pop-up yêu cầu cài đặt khi đăng nhập</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setTotpResetModalUser(null)}
+                  className="px-3 py-1.5 font-medium text-gray-600 hover:bg-gray-100 rounded-lg"
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetTotpSubmit}
+                  disabled={totpResetLoading}
+                  className="btn btn-danger px-4"
+                >
+                  {totpResetLoading ? 'Đang xử lý...' : 'Xác nhận Reset'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

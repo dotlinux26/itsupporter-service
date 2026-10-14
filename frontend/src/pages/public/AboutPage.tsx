@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { publicApi } from '../../api/client';
 import { useSEO } from '../../hooks/useSEO';
+import { MarkdownRenderer } from '../../components/MarkdownRenderer';
 
 export function AboutPage() {
   const { t } = useTranslation();
@@ -22,6 +23,7 @@ export function AboutPage() {
     facebook_page: 'https://www.facebook.com/itsupporter.haui/',
     distributor_name: 'dotlinux26',
     distributor_url: 'https://github.com/dotlinux26',
+    about_markdown: '',
   });
 
   useEffect(() => {
@@ -33,48 +35,57 @@ export function AboutPage() {
   }, []);
 
   return (
-    <div className="container py-5 sm:py-8 md:py-12 max-w-4xl mx-auto">
-      <div className="mb-10 text-center sm:text-left">
-        <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-          {t('about.title', { team: info.team_name })}
-        </h1>
-        <p className="text-sm sm:text-base text-slate-500 mt-2">
-          {t('about.subtitle', { university: info.university })}
-        </p>
-      </div>
-
-      <div className="space-y-8">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 mb-4">{t('about.introTitle')}</h2>
-          <p className="text-text-secondary leading-relaxed">
-            {t('about.introDesc', { team: info.team_name })}
-          </p>
+    <div className="container py-5 sm:py-8 md:py-12 max-w-4xl mx-auto space-y-10">
+      {info.about_markdown ? (
+        <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-2xs">
+          <MarkdownRenderer content={info.about_markdown} className="leading-relaxed" />
         </div>
+      ) : (
+        <div className="space-y-8">
+          <div className="text-center sm:text-left">
+            <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              {t('about.title', { team: info.team_name })}
+            </h1>
+            <p className="text-sm sm:text-base text-slate-500 mt-2">
+              {t('about.subtitle', { university: info.university })}
+            </p>
+          </div>
 
-        <div>
-          <h2 className="text-xl font-semibold text-text mb-4">{t('about.teamTitle')}</h2>
-          <p className="text-text-secondary leading-relaxed">
-            {t('about.teamDesc', { team: info.team_name, university: info.university })}
-          </p>
-        </div>
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">{t('about.introTitle')}</h2>
+            <p className="text-text-secondary leading-relaxed">
+              {t('about.introDesc', { team: info.team_name })}
+            </p>
+          </div>
 
-        <div>
-          <h2 className="text-xl font-semibold text-text mb-4">{t('about.purposeTitle')}</h2>
-          <p className="text-text-secondary leading-relaxed">
-            {t('about.purposeDesc')}
-          </p>
-        </div>
+          <div>
+            <h2 className="text-xl font-semibold text-text mb-4">{t('about.teamTitle')}</h2>
+            <p className="text-text-secondary leading-relaxed">
+              {t('about.teamDesc', { team: info.team_name, university: info.university })}
+            </p>
+          </div>
 
-        <div>
-          <h2 className="text-xl font-semibold text-text mb-4">{t('about.servicesTitle')}</h2>
-          <ul className="space-y-2 text-text-secondary">
-            <li>• {t('about.service1')}</li>
-            <li>• {t('about.service2')}</li>
-            <li>• {t('about.service3')}</li>
-            <li>• {t('about.service4')}</li>
-            <li>• {t('about.service5')}</li>
-          </ul>
+          <div>
+            <h2 className="text-xl font-semibold text-text mb-4">{t('about.purposeTitle')}</h2>
+            <p className="text-text-secondary leading-relaxed">
+              {t('about.purposeDesc')}
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-xl font-semibold text-text mb-4">{t('about.servicesTitle')}</h2>
+            <ul className="space-y-2 text-text-secondary">
+              <li>• {t('about.service1')}</li>
+              <li>• {t('about.service2')}</li>
+              <li>• {t('about.service3')}</li>
+              <li>• {t('about.service4')}</li>
+              <li>• {t('about.service5')}</li>
+            </ul>
+          </div>
         </div>
+      )}
+
+      {/* Official Contact & Organization info */}
 
         <div>
           <h2 className="text-xl font-semibold text-text mb-4">{t('about.contactTitle')}</h2>
@@ -107,7 +118,6 @@ export function AboutPage() {
             </li>
           </ul>
         </div>
-      </div>
     </div>
   );
 }

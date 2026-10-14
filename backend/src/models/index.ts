@@ -14,6 +14,28 @@ export interface User {
   is_deleted: number;
   created_at: string;
   updated_at: string;
+  is_recovery_enabled?: number;
+  recovery_secret?: string | null;
+  recovery_backup_codes?: string | null;
+  is_2fa_enabled?: number;
+  two_factor_secret?: string | null;
+  two_factor_backup_codes?: string | null;
+}
+
+export interface AccountRecoveryRequest {
+  id: number;
+  user_id: number | null;
+  username_or_email: string;
+  full_name: string;
+  contact_phone: string;
+  contact_email: string | null;
+  reason: string;
+  evidence_url: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  admin_notes: string | null;
+  created_at: string;
+  resolved_at: string | null;
+  resolved_by: number | null;
 }
 
 export interface TechnicianProfile {
@@ -176,6 +198,10 @@ export interface Settlement {
   balance_before: number;
   balance_after: number;
   status: string;
+  payout_status?: 'PENDING' | 'TRANSFERRED';
+  transferred_at?: string | null;
+  transferred_by?: number | null;
+  transferred_by_name?: string | null;
   notes: string | null;
   created_at: string;
 }

@@ -71,6 +71,19 @@ export const loginController = asyncHandler(async (req, res) => {
 
   const result = await authService.login(body);
 
+  if (result.require2FA) {
+    ok(
+      res,
+      {
+        require2FA: true,
+        tempToken: result.tempToken,
+        user: result.user,
+      },
+      'Vui lòng nhập mã xác thực 2 bước để tiếp tục.'
+    );
+    return;
+  }
+
   writeAuditLog({
     actorId: result.user.id,
     actorEmail: result.user.email,
@@ -78,9 +91,71 @@ export const loginController = asyncHandler(async (req, res) => {
     ip: req.ip,
   });
 
-  setAuthCookies(res, result.accessToken, result.refreshToken, rememberMe);
+  setAuthCookies(res, result.accessToken!, result.refreshToken!, rememberMe);
   ok(res, result.user, 'Đăng nhập thành công.');
 });
+
+export const verifyLogin2FAController = asyncHandler(async (req, res) => {
+  const { tempToken, code, rememberMe } = req.body;
+  const isRemember = rememberMe === true || rememberMe === 'true';
+
+  const result = await authService.verifyLogin2FA(tempToken, code, req.ip);
+  setAuthCookies(res, result.accessToken, result.refreshToken, isRemember);
+  ok(res, result.user, 'Đăng nhập thành công.');
+});
+
+export const setupRecoveryController = asyncHandler(async (req, res) => {
+  const user = (req as AuthRequest).user!;
+  const result = await authService.setupRecoveryTotp(user.id);
+  ok(res, result);
+});
+
+export const confirmRecoveryController = asyncHandler(async (req, res) => {
+  const user = (req as AuthRequest).user!;
+  const { token, secret, backupCodes } = req.body;
+  if (!token || !secret || !backupCodes) {
+    throw new BadRequestError('Dữ liệu xác nhận không đầy đủ.');
+  }
+  await authService.confirmRecoveryTotp(user.id, token, secret, backupCodes, req.ip);
+  ok(res, { success: true }, 'Kích hoạt phương thức khôi phục mật khẩu thành công.');
+});
+
+export const setup2FAController = asyncHandler(async (req, res) => {
+  const user = (req as AuthRequest).user!;
+  const result = await authService.setup2FA(user.id);
+  ok(res, result);
+});
+
+export const confirm2FAController = asyncHandler(async (req, res) => {
+  const user = (req as AuthRequest).user!;
+  const { token, secret, backupCodes } = req.body;
+  if (!token || !secret || !backupCodes) {
+    throw new BadRequestError('Dữ liệu xác nhận 2FA không đầy đủ.');
+  }
+  await authService.confirm2FA(user.id, token, secret, backupCodes, req.ip);
+  ok(res, { success: true }, 'Bật xác thực 2 bước thành công.');
+});
+
+export const disable2FAController = asyncHandler(async (req, res) => {
+  const user = (req as AuthRequest).user!;
+  const { tokenOrPassword } = req.body;
+  if (!tokenOrPassword) {
+    throw new BadRequestError('Vui lòng nhập mật khẩu hoặc mã 2FA để xác nhận tắt.');
+  }
+  await authService.disable2FA(user.id, tokenOrPassword, req.ip);
+  ok(res, { success: true }, 'Đã tắt xác thực 2 bước.');
+});
+
+
+export const forgotPasswordTotpController = asyncHandler(async (req, res) => {
+  const { identifier, code, newPassword } = req.body;
+  if (!identifier || !code || !newPassword) {
+    throw new BadRequestError('Vui lòng điền đầy đủ thông tin: Tài khoản/Email, Mã xác thực và Mật khẩu mới.');
+  }
+  const result = await authService.resetPasswordViaTotp(identifier, code, newPassword, req.ip);
+  ok(res, result, result.message);
+});
+
 
 export const refreshController = asyncHandler(async (req, res) => {
   const refreshToken = (req as AuthRequest & { cookies?: Record<string, string> }).cookies?.[REFRESH_TOKEN_NAME];

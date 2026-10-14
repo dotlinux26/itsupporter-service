@@ -225,8 +225,8 @@ export function createSettlement(technicianId: number, managerId: number, notes?
 
   const result = db
     .prepare(
-      `INSERT INTO settlements (settlement_code, technician_id, manager_id, amount, balance_before, balance_after, notes)
-       VALUES (?, ?, ?, ?, ?, 0, ?)`
+      `INSERT INTO settlements (settlement_code, technician_id, manager_id, amount, balance_before, balance_after, payout_status, notes)
+       VALUES (?, ?, ?, ?, ?, 0, 'PENDING', ?)`
     )
     .run(
       `SETTLE-${Date.now() % 1000000}`,
@@ -252,13 +252,53 @@ export function createSettlement(technicianId: number, managerId: number, notes?
   return db.prepare('SELECT * FROM settlements WHERE id = ?').get(id) as Settlement;
 }
 
+export function updateSettlementPayoutStatus(
+  id: number,
+  payoutStatus: 'PENDING' | 'TRANSFERRED',
+  managerId: number
+): Settlement {
+  const db = getDb();
+  const settlement = db.prepare('SELECT * FROM settlements WHERE id = ?').get(id) as Settlement | undefined;
+  if (!settlement) {
+    throw new AppError('NOT_FOUND', 'Không tìm thấy phiếu quyết toán.', 404);
+  }
+
+  if (payoutStatus === 'TRANSFERRED') {
+    db.prepare(
+      `UPDATE settlements 
+       SET payout_status = 'TRANSFERRED', 
+           transferred_at = datetime('now'), 
+           transferred_by = ? 
+       WHERE id = ?`
+    ).run(managerId, id);
+  } else {
+    db.prepare(
+      `UPDATE settlements 
+       SET payout_status = 'PENDING', 
+           transferred_at = NULL, 
+           transferred_by = NULL 
+       WHERE id = ?`
+    ).run(id);
+  }
+
+  const updated = db.prepare(`
+    SELECT s.*, u.name AS technician_name, m.name AS transferred_by_name
+    FROM settlements s
+    LEFT JOIN users u ON u.id = s.technician_id
+    LEFT JOIN users m ON m.id = s.transferred_by
+    WHERE s.id = ?
+  `).get(id) as Settlement;
+
+  return updated;
+}
+
 export function listSettlements(options: {
   technicianId?: number;
   from?: string;
   to?: string;
   page?: number;
   limit?: number;
-}): { data: Array<Settlement & { technician_name?: string }>; total: number } {
+}): { data: Array<Settlement & { technician_name?: string; transferred_by_name?: string | null; bank_info?: string | null; bank_qr_path?: string | null }>; total: number } {
   const db = getDb();
   const page = options.page ?? 1;
   const limit = Math.min(options.limit ?? 10, 50);
@@ -277,15 +317,16 @@ export function listSettlements(options: {
   ).c;
   const data = db
     .prepare(
-      `SELECT s.*, u.name AS technician_name,
+      `SELECT s.*, u.name AS technician_name, m.name AS transferred_by_name,
               tp.bank_info, tp.bank_qr_path
        FROM settlements s
        LEFT JOIN users u ON u.id = s.technician_id
+       LEFT JOIN users m ON m.id = s.transferred_by
        LEFT JOIN technician_profiles tp ON tp.user_id = s.technician_id
        ${whereSql}
        ORDER BY s.created_at DESC, s.id DESC LIMIT ? OFFSET ?`
     )
-    .all(...params, limit, offset) as Array<Settlement & { technician_name?: string; bank_info?: string | null; bank_qr_path?: string | null }>;
+    .all(...params, limit, offset) as Array<Settlement & { technician_name?: string; transferred_by_name?: string | null; bank_info?: string | null; bank_qr_path?: string | null }>;
 
   return { data, total };
 }

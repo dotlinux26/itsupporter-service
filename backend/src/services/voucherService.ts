@@ -201,12 +201,13 @@ export function updateVoucherProgramService(id: number, patch: {
   updateVoucherProgram(id, patch);
 }
 
-export function deleteVoucherProgramService(id: number): void {
+export function deleteVoucherProgramService(id: number): { action: 'deleted' | 'deactivated'; message: string; program: any } {
   const program = findVoucherProgramById(id);
   if (!program) {
     throw new AppError('NOT_FOUND', 'Chương trình voucher không tồn tại', 404);
   }
-  deleteVoucherProgram(id);
+  const result = deleteVoucherProgram(id);
+  return { ...result, program };
 }
 
 export function generateVouchersForProgram(programId: number, count: number, options?: {

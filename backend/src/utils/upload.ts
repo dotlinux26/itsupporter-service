@@ -20,8 +20,9 @@ export function ensureUploadDir(): string {
 }
 
 export function safeRandomName(originalName: string, ext?: string): string {
-  const parsed = path.parse(originalName);
-  const safeExt = ext ? `.${ext.replace(/^\./, '')}` : path.extname(originalName).toLowerCase();
+  const rawExt = ext ? `.${ext.replace(/^\./, '')}` : path.extname(originalName).toLowerCase();
+  const cleanExt = rawExt.replace(/[^a-z0-9.]/gi, '').toLowerCase();
+  const safeExt = ALLOWED_IMAGE_EXT.has(cleanExt) ? cleanExt : '.png';
   const name = crypto.randomBytes(16).toString('hex');
   return `${name}${safeExt}`;
 }

@@ -16,6 +16,7 @@ import {
   findVoucherProgramById,
 } from '../services/voucherService.js';
 import { requireRole } from '../middleware/auth.js';
+import { writeAuditLog } from '../services/auditService.js';
 
 export function validateVoucherHandler(req: Request, res: Response, next: NextFunction): void {
   try {
@@ -67,6 +68,17 @@ export function voidVoucherHandler(req: Request, res: Response, next: NextFuncti
     }
     const { id } = req.params;
     voidVoucher(Number(id));
+
+    writeAuditLog({
+      actorId: user.id,
+      actorEmail: user.email,
+      action: 'VOUCHER_VOID',
+      targetType: 'VOUCHER',
+      targetId: id,
+      ip: req.ip,
+      metadata: { voucher_id: Number(id) },
+    });
+
     res.json({ success: true, message: 'Đã hủy voucher thành công.' });
   } catch (err) {
     next(err);
@@ -125,11 +137,22 @@ export function createVoucherProgramHandler(req: Request, res: Response, next: N
     if (!user) {
       throw new AppError('UNAUTHORIZED', 'Vui lòng đăng nhập', 401);
     }
-    const program = createVoucherProgramService({
+    const programId = createVoucherProgramService({
       ...req.body,
       created_by: user.id,
     });
-    res.status(201).json({ data: { id: program } });
+
+    writeAuditLog({
+      actorId: user.id,
+      actorEmail: user.email,
+      action: 'VOUCHER_PROGRAM_CREATE',
+      targetType: 'VOUCHER_PROGRAM',
+      targetId: programId,
+      ip: req.ip,
+      metadata: { code: req.body.code, name: req.body.name, discount_type: req.body.discount_type, discount_value: req.body.discount_value },
+    });
+
+    res.status(201).json({ data: { id: programId } });
   } catch (err) {
     next(err);
   }
@@ -149,8 +172,21 @@ export function getVoucherProgramHandler(req: Request, res: Response, next: Next
 
 export function updateVoucherProgramHandler(req: Request, res: Response, next: NextFunction): void {
   try {
-    updateVoucherProgramService(Number(req.params.id), req.body);
-    res.json({ success: true });
+    const user = getAuthUser(req);
+    const id = Number(req.params.id);
+    updateVoucherProgramService(id, req.body);
+
+    writeAuditLog({
+      actorId: user?.id,
+      actorEmail: user?.email,
+      action: 'VOUCHER_PROGRAM_UPDATE',
+      targetType: 'VOUCHER_PROGRAM',
+      targetId: id,
+      ip: req.ip,
+      metadata: req.body,
+    });
+
+    res.json({ success: true, message: 'Cập nhật chương trình voucher thành công.' });
   } catch (err) {
     next(err);
   }
@@ -158,8 +194,21 @@ export function updateVoucherProgramHandler(req: Request, res: Response, next: N
 
 export function deleteVoucherProgramHandler(req: Request, res: Response, next: NextFunction): void {
   try {
-    deleteVoucherProgramService(Number(req.params.id));
-    res.json({ success: true });
+    const user = getAuthUser(req);
+    const id = Number(req.params.id);
+    const result = deleteVoucherProgramService(id);
+
+    writeAuditLog({
+      actorId: user?.id,
+      actorEmail: user?.email,
+      action: result.action === 'deleted' ? 'VOUCHER_PROGRAM_DELETE' : 'VOUCHER_PROGRAM_DEACTIVATE',
+      targetType: 'VOUCHER_PROGRAM',
+      targetId: id,
+      ip: req.ip,
+      metadata: { code: result.program?.code, name: result.program?.name, result_action: result.action },
+    });
+
+    res.json({ success: true, action: result.action, message: result.message });
   } catch (err) {
     next(err);
   }
@@ -189,6 +238,16 @@ export function generateVouchersHandler(req: Request, res: Response, next: NextF
       customer_id: customerId ? Number(customerId) : undefined,
       technician_id: technicianId ? Number(technicianId) : undefined,
       expired_at: expiredAt ? String(expiredAt) : undefined,
+    });
+
+    writeAuditLog({
+      actorId: user.id,
+      actorEmail: user.email,
+      action: 'VOUCHER_GENERATE_CODES',
+      targetType: 'VOUCHER_PROGRAM',
+      targetId: programId,
+      ip: req.ip,
+      metadata: { count, program_id: programId, generated_count: result.count },
     });
 
     res.status(201).json({

@@ -13,6 +13,7 @@ import {
   QrCode,
   CreditCard,
   Copy,
+  Clock,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi, enUS } from 'date-fns/locale';
@@ -90,6 +91,33 @@ export function ManagerSettlements() {
       );
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleTogglePayoutStatus = async (settlement: any) => {
+    const nextStatus = settlement.payout_status === 'TRANSFERRED' ? 'PENDING' : 'TRANSFERRED';
+    const confirmPrompt =
+      nextStatus === 'TRANSFERRED'
+        ? (isEn
+            ? `Confirm marking settlement #${settlement.settlement_code || settlement.id} as TRANSFERRED?`
+            : `Xác nhận bạn đã chuyển khoản hoa hồng cho phiếu #${settlement.settlement_code || settlement.id}?`)
+        : (isEn
+            ? `Revert settlement #${settlement.settlement_code || settlement.id} back to PENDING?`
+            : `Chuyển trạng thái phiếu #${settlement.settlement_code || settlement.id} về CHƯA CHUYỂN?`);
+
+    if (!window.confirm(confirmPrompt)) return;
+
+    try {
+      const res = await managerApi.updateSettlementPayoutStatus(settlement.id, nextStatus);
+      showFeedback('success', res.data?.message || (nextStatus === 'TRANSFERRED' ? 'Đã đánh dấu đã chuyển khoản.' : 'Đã chuyển về chưa chuyển.'));
+      setSettlements((prev) =>
+        prev.map((s) => (s.id === settlement.id ? { ...s, ...res.data?.data } : s))
+      );
+      if (paymentModalItem?.id === settlement.id) {
+        setPaymentModalItem((prev: any) => ({ ...prev, ...res.data?.data }));
+      }
+    } catch (err: any) {
+      showFeedback('error', err.response?.data?.message || (isEn ? 'Failed to update payout status.' : 'Cập nhật trạng thái chuyển khoản thất bại.'));
     }
   };
 
@@ -230,6 +258,7 @@ export function ManagerSettlements() {
                   <th className="py-3 px-4">{t('orders.technician')}</th>
                   <th className="py-3 px-4">{isEn ? 'Approver' : 'Người duyệt'}</th>
                   <th className="py-3 px-4">{isEn ? 'Settled Amount' : 'Số tiền kết toán'}</th>
+                  <th className="py-3 px-4">{isEn ? 'Payout Status' : 'Trạng thái chuyển khoản'}</th>
                   <th className="py-3 px-4">{isEn ? 'Audit Notes' : 'Ghi chú đối soát'}</th>
                   <th className="py-3 px-4 text-center">{isEn ? 'Payment / QR' : 'Thông tin thanh toán'}</th>
                   <th className="py-3 px-4 text-right">{t('orders.dateTime')}</th>
@@ -249,6 +278,36 @@ export function ManagerSettlements() {
                     </td>
                     <td className="py-3.5 px-4 font-bold text-emerald-600 text-sm">
                       {(s.amount || 0).toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      {s.payout_status === 'TRANSFERRED' ? (
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePayoutStatus(s)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 rounded-lg transition cursor-pointer"
+                            title={isEn ? 'Click to revert back to Pending' : 'Bấm để hoàn tác trạng thái về Chưa chuyển'}
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>{isEn ? 'Transferred' : 'Đã chuyển'}</span>
+                          </button>
+                          {s.transferred_at && (
+                            <div className="text-[10px] text-gray-400 mt-0.5" title={s.transferred_by_name || 'Quản lý'}>
+                              {format(new Date(s.transferred_at), 'dd/MM HH:mm')} • {s.transferred_by_name || (isEn ? 'Manager' : 'Quản lý')}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePayoutStatus(s)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition cursor-pointer"
+                          title={isEn ? 'Click to mark as Transferred' : 'Bấm để đánh dấu Đã chuyển'}
+                        >
+                          <Clock className="w-3.5 h-3.5 text-amber-500" />
+                          <span>{isEn ? 'Pending' : 'Chưa chuyển'}</span>
+                        </button>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 text-gray-500 max-w-xs truncate">
                       {s.notes || '-'}
@@ -306,6 +365,18 @@ export function ManagerSettlements() {
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-gray-600">{isEn ? 'Settlement Code:' : 'Mã phiếu:'}</span>
                   <span className="font-mono font-bold text-emerald-800">{paymentModalItem.settlement_code || `SETTLE-${paymentModalItem.id}`}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-600">{isEn ? 'Payout Status:' : 'Trạng thái chuyển:'}</span>
+                  {paymentModalItem.payout_status === 'TRANSFERRED' ? (
+                    <span className="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded text-[11px] inline-flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> {isEn ? 'Transferred' : 'Đã chuyển'}
+                    </span>
+                  ) : (
+                    <span className="font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded text-[11px] inline-flex items-center gap-1">
+                      <Clock className="w-3 h-3" /> {isEn ? 'Pending' : 'Chưa chuyển'}
+                    </span>
+                  )}
                 </div>
                 <div className="flex justify-between items-center pt-1 border-t border-emerald-200/60">
                   <span className="text-xs font-bold text-emerald-950 uppercase">{isEn ? 'Amount to transfer:' : 'Số tiền cần chuyển:'}</span>
@@ -369,11 +440,27 @@ export function ManagerSettlements() {
                 )}
               </div>
 
-              <div className="pt-2 flex justify-end">
+              <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleTogglePayoutStatus(paymentModalItem)}
+                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer ${
+                    paymentModalItem.payout_status === 'TRANSFERRED'
+                      ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  }`}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>
+                    {paymentModalItem.payout_status === 'TRANSFERRED'
+                      ? (isEn ? 'Revert to Pending' : 'Chuyển về Chưa chuyển')
+                      : (isEn ? 'Mark as Transferred' : 'Xác nhận Đã chuyển khoản')}
+                  </span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setPaymentModalItem(null)}
-                  className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition cursor-pointer"
+                  className="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition cursor-pointer"
                 >
                   {isEn ? 'Close' : 'Đóng'}
                 </button>
