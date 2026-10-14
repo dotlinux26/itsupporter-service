@@ -151,9 +151,11 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                 </p>
 
                 {/* Short Bio snippet */}
-                <p className="text-slate-600 text-xs mt-2 line-clamp-2 leading-relaxed px-1">
-                  {tech.bio || t('home.techDefaultBio')}
-                </p>
+                {tech.bio ? (
+                  <p className="text-slate-600 text-xs mt-2 line-clamp-2 leading-relaxed px-1">
+                    {tech.bio}
+                  </p>
+                ) : null}
 
                 {/* Skills tags preview */}
                 <div className="flex flex-wrap gap-1.5 justify-center mt-3">
@@ -237,7 +239,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                   {selectedTech.name}
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
-                  <Laptop className="w-3.5 h-3.5 text-orange-500 shrink-0" /> {t('home.techDefaultBio')}
+                  <Laptop className="w-3.5 h-3.5 text-orange-500 shrink-0" /> {selectedTech.bio || t('home.techRoleBadge', 'Kỹ thuật viên IT Supporter')}
                 </p>
                 {selectedTech.rating_count && selectedTech.rating_count > 0 ? (
                   <div className="flex items-center gap-2 mt-2">
@@ -260,14 +262,16 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
             {/* Modal Body (Scrollable) */}
             <div className="space-y-4 text-sm overflow-y-auto pr-1 flex-1">
               {/* Bio description */}
-              <div>
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                  {t('home.techIntroTitle')}
-                </h4>
-                <p className="text-slate-700 leading-relaxed text-xs sm:text-sm bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  {selectedTech.bio || t('home.techDefaultBio')}
-                </p>
-              </div>
+              {selectedTech.bio && (
+                <div>
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                    {t('home.techIntroTitle')}
+                  </h4>
+                  <p className="text-slate-700 leading-relaxed text-xs sm:text-sm bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    {selectedTech.bio}
+                  </p>
+                </div>
+              )}
 
               {/* Skills */}
               <div>
@@ -323,10 +327,8 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                   markdownContent = selectedTech.public_profile || '';
                 }
 
-                if (!markdownContent) {
-                  markdownContent = `### ${selectedTech.name}
-- **${t('footer.servicesAndLinks')}**: IT Supporter - HaUI.
-- **${t('home.stepsTitle')}**: 9 steps PC/Laptop care.`;
+                if (!markdownContent || !markdownContent.trim()) {
+                  return null;
                 }
 
                 const isLongContent = markdownContent.length > 220;

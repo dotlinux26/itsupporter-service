@@ -166,13 +166,9 @@ export function TechnicianPublicProfilePage() {
                 </span>
               </div>
 
-              {tech.bio ? (
+              {tech.bio && (
                 <p className="text-sm text-slate-600 max-w-2xl leading-relaxed">
                   {tech.bio}
-                </p>
-              ) : (
-                <p className="text-xs text-slate-400 italic">
-                  {isEn ? 'Professional IT Supporter Technician at HaUI Workshop.' : 'Kỹ thuật viên hỗ trợ máy tính chuyên nghiệp tại Workshop IT Supporter HaUI.'}
                 </p>
               )}
 
