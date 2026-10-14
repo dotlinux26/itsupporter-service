@@ -56,7 +56,7 @@ export const AuthenticatorGuideModal: React.FC<AuthenticatorGuideModalProps> = (
             </div>
             <div>
               <h3 className="text-lg font-bold text-white">Hướng dẫn cài đặt Google Authenticator</h3>
-              <p className="text-xs text-slate-400">Bảo mật mã một lần chuẩn RFC 6238</p>
+              <p className="text-xs text-slate-400">Bảo mật mã xác thực tài khoản</p>
             </div>
           </div>
           <button

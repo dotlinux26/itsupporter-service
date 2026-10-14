@@ -1021,8 +1021,8 @@ export function ProfilePage() {
           </div>
 
           {/* Card 2: Password Recovery TOTP */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
                 <div className={`p-2.5 rounded-xl ${user?.is_recovery_enabled ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'}`}>
                   {user?.is_recovery_enabled ? <ShieldCheck className="w-6 h-6" /> : <ShieldAlert className="w-6 h-6" />}
@@ -1056,10 +1056,6 @@ export function ProfilePage() {
                 </button>
               </div>
             </div>
-
-            <p className="text-xs text-gray-600 leading-relaxed">
-              Hệ thống IT Supporter sử dụng chuẩn toán học RFC 6238 độc lập để đặt lại mật khẩu tức thì mà không cần chờ gửi email qua máy chủ mail, miễn nhiễm hoàn toàn với lỗi nghẽn cổng mạng hoặc thất lạc thư rác.
-            </p>
           </div>
 
           {/* Card 3: Guide & Help */}

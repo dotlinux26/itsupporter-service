@@ -30,16 +30,18 @@ export function TechnicianPublicProfilePage() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
 
+  const cleanAlias = alias ? alias.replace(/[./]+$/, '').trim() : '';
+
   useEffect(() => {
-    if (!alias) return;
+    if (!cleanAlias) return;
     loadProfile();
-  }, [alias]);
+  }, [cleanAlias]);
 
   const loadProfile = async () => {
     setLoading(true);
     setError('');
     try {
-      const res = await publicApi.technicianProfile(alias!);
+      const res = await publicApi.technicianProfile(cleanAlias);
       setTech(res.data?.data);
     } catch (err: any) {
       setError(
@@ -51,14 +53,14 @@ export function TechnicianPublicProfilePage() {
     }
   };
 
-  const ogImageUrl = alias
-    ? `${window.location.origin}/api/public/ktv/${alias}/og-image`
+  const ogImageUrl = cleanAlias
+    ? `${window.location.origin}/api/public/ktv/${cleanAlias}/og-image`
     : '/logo_bo3goc.png';
 
   useSEO({
     title: tech ? `${tech.name} | Kỹ thuật viên IT Supporter HaUI` : 'Kỹ thuật viên IT Supporter',
     description: tech?.bio || 'Hồ sơ kỹ thuật viên dịch vụ bảo dưỡng, sửa chữa máy tính IT Supporter.',
-    canonical: `https://itsupporter.io.vn/ktv/${alias}`,
+    canonical: `https://itsupporter.io.vn/ktv/${cleanAlias}`,
     ogImage: ogImageUrl,
   });
 

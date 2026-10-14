@@ -41,6 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (resData?.require2FA) {
       return resData;
     }
+    if (resData?.id) {
+      sessionStorage.removeItem(`recovery_prompt_dismissed_${resData.id}`);
+    }
     setUser(resData);
     return resData;
   };
@@ -48,19 +51,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login2FA = async (tempToken: string, code: string, rememberMe?: boolean): Promise<User> => {
     const response = await authApi.login2FA(tempToken, code, rememberMe);
     const userData = response.data.data;
+    if (userData?.id) {
+      sessionStorage.removeItem(`recovery_prompt_dismissed_${userData.id}`);
+    }
     setUser(userData);
     return userData;
   };
 
-
   const register = async (name: string, email: string, password: string, phone?: string): Promise<User> => {
     const response = await authApi.register(name, email, password, phone);
     const userData = response.data.data;
+    if (userData?.id) {
+      sessionStorage.removeItem(`recovery_prompt_dismissed_${userData.id}`);
+    }
     setUser(userData);
     return userData;
   };
 
   const logout = async () => {
+    try {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('recovery_prompt_dismissed_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    } catch {}
     await authApi.logout();
     setUser(null);
   };

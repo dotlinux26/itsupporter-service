@@ -1,8 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Request, Response } from 'express';
 import { getDb } from '../config/database.js';
 import logger from '../utils/logger.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function escapeXml(unsafe: string): string {
   return String(unsafe || '').replace(/[<>&'"]/g, (c) => {
@@ -23,7 +27,8 @@ function escapeXml(unsafe: string): string {
  */
 export function handleTechnicianPublicHtml(req: Request, res: Response): void {
   try {
-    const aliasOrId = String(req.params.aliasOrId || '').trim();
+    const rawParam = String(req.params.aliasOrId || '').trim();
+    const aliasOrId = rawParam.replace(/[./]+$/, '').trim();
     if (!aliasOrId) {
       res.redirect('/');
       return;
@@ -41,7 +46,7 @@ export function handleTechnicianPublicHtml(req: Request, res: Response): void {
       LEFT JOIN technician_profiles p ON p.user_id = u.id
       LEFT JOIN reviews r ON r.technician_id = u.id
       WHERE u.role = 'TECHNICIAN' AND u.status = 'ACTIVE' AND u.is_deleted = 0
-        AND (${isNumeric ? 'u.id = ? OR LOWER(p.alias) = LOWER(?)' : 'LOWER(p.alias) = LOWER(?) OR LOWER(u.name) = LOWER(?) OR LOWER(substr(u.email, 1, instr(u.email, "@") - 1)) = LOWER(?)'})
+        AND (${isNumeric ? 'u.id = ? OR LOWER(p.alias) = LOWER(?)' : "LOWER(p.alias) = LOWER(?) OR LOWER(u.name) = LOWER(?) OR (instr(u.email, '@') > 0 AND LOWER(substr(u.email, 1, instr(u.email, '@') - 1)) = LOWER(?))"})
       GROUP BY u.id
       LIMIT 1
     `;
@@ -50,9 +55,11 @@ export function handleTechnicianPublicHtml(req: Request, res: Response): void {
 
     // Tìm file frontend/dist/index.html trong các môi trường khác nhau
     const candidates = [
-      path.resolve(process.cwd(), '../frontend/dist/index.html'),
       path.resolve(process.cwd(), 'frontend/dist/index.html'),
+      path.resolve(process.cwd(), '../frontend/dist/index.html'),
       path.resolve(process.cwd(), 'dist/index.html'),
+      path.resolve(__dirname, '../../../frontend/dist/index.html'),
+      path.resolve(__dirname, '../../frontend/dist/index.html'),
       '/var/www/itsupporter/frontend/dist/index.html',
     ];
     const htmlPath = candidates.find((p) => fs.existsSync(p));
@@ -120,6 +127,22 @@ export function handleTechnicianPublicHtml(req: Request, res: Response): void {
     res.send(html);
   } catch (err) {
     logger.error({ err }, 'Error handling technician public HTML');
-    res.status(500).send('Internal Server Error');
+    try {
+      const fallbackPath = [
+        path.resolve(process.cwd(), 'frontend/dist/index.html'),
+        path.resolve(process.cwd(), '../frontend/dist/index.html'),
+        path.resolve(__dirname, '../../../frontend/dist/index.html'),
+        path.resolve(__dirname, '../../frontend/dist/index.html'),
+        '/var/www/itsupporter/frontend/dist/index.html',
+      ].find((p) => fs.existsSync(p));
+
+      if (fallbackPath) {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.sendFile(fallbackPath);
+        return;
+      }
+    } catch {}
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send('<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>IT Supporter HaUI</title></head><body><div id="root"></div></body></html>');
   }
 }

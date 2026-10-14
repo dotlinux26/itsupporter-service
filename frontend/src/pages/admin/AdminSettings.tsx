@@ -66,7 +66,7 @@ Các điều khoản minh bạch, quyền lợi và cam kết phục vụ chuẩ
 
 const DEFAULT_TOTP_GUIDE_MD = `# Hướng dẫn Cài đặt & Sử dụng Google Authenticator (TOTP)
 
-Hệ thống IT Supporter sử dụng chuẩn toán học mã hóa một lần TOTP (RFC 6238) để bảo vệ tài khoản và khôi phục mật khẩu mà không phụ thuộc vào hệ thống gửi Email.
+Hướng dẫn cài đặt ứng dụng Google Authenticator để bảo vệ tài khoản và khôi phục mật khẩu.
 
 ---
 

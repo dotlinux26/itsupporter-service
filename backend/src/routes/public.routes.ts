@@ -220,7 +220,8 @@ router.get('/technicians', (req, res, next) => {
 // GET /api/public/technicians/profile/:aliasOrId - Public Profile KTV
 router.get('/technicians/profile/:aliasOrId', (req, res, next) => {
   try {
-    const aliasOrId = String(req.params.aliasOrId ?? '').trim();
+    const rawParam = String(req.params.aliasOrId ?? '').trim();
+    const aliasOrId = rawParam.replace(/[./]+$/, '').trim();
     if (!aliasOrId) {
       res.status(400).json({ error: { message: 'Thiếu định danh kỹ thuật viên.' } });
       return;
@@ -239,12 +240,12 @@ router.get('/technicians/profile/:aliasOrId', (req, res, next) => {
       LEFT JOIN technician_profiles p ON p.user_id = u.id
       LEFT JOIN reviews r ON r.technician_id = u.id
       WHERE u.role = 'TECHNICIAN' AND u.status = 'ACTIVE' AND u.is_deleted = 0
-        AND (${isNumeric ? 'u.id = ? OR LOWER(p.alias) = LOWER(?)' : 'LOWER(p.alias) = LOWER(?)'})
+        AND (${isNumeric ? 'u.id = ? OR LOWER(p.alias) = LOWER(?)' : "LOWER(p.alias) = LOWER(?) OR LOWER(u.name) = LOWER(?) OR (instr(u.email, '@') > 0 AND LOWER(substr(u.email, 1, instr(u.email, '@') - 1)) = LOWER(?))"})
       GROUP BY u.id
       LIMIT 1
     `;
 
-    const params = isNumeric ? [Number(aliasOrId), aliasOrId] : [aliasOrId];
+    const params = isNumeric ? [Number(aliasOrId), aliasOrId] : [aliasOrId, aliasOrId, aliasOrId];
     const tech = db.prepare(query).get(...params) as any;
 
     if (!tech) {
@@ -384,7 +385,8 @@ function escapeXml(unsafe: string): string {
   });
 }
 
-async function renderTechnicianOgPng(aliasOrId: string): Promise<Buffer> {
+async function renderTechnicianOgPng(rawAliasOrId: string): Promise<Buffer> {
+  const aliasOrId = String(rawAliasOrId || '').replace(/[./]+$/, '').trim();
   const db = getDb();
   const isNumeric = /^\d+$/.test(aliasOrId);
 
@@ -398,12 +400,12 @@ async function renderTechnicianOgPng(aliasOrId: string): Promise<Buffer> {
     LEFT JOIN technician_profiles p ON p.user_id = u.id
     LEFT JOIN reviews r ON r.technician_id = u.id
     WHERE u.role = 'TECHNICIAN' AND u.status = 'ACTIVE' AND u.is_deleted = 0
-      AND (${isNumeric ? 'u.id = ? OR LOWER(p.alias) = LOWER(?)' : 'LOWER(p.alias) = LOWER(?)'})
+      AND (${isNumeric ? 'u.id = ? OR LOWER(p.alias) = LOWER(?)' : "LOWER(p.alias) = LOWER(?) OR LOWER(u.name) = LOWER(?) OR (instr(u.email, '@') > 0 AND LOWER(substr(u.email, 1, instr(u.email, '@') - 1)) = LOWER(?))"})
     GROUP BY u.id
     LIMIT 1
   `;
 
-  const params = isNumeric ? [Number(aliasOrId), aliasOrId] : [aliasOrId];
+  const params = isNumeric ? [Number(aliasOrId), aliasOrId] : [aliasOrId, aliasOrId, aliasOrId];
   const tech = db.prepare(query).get(...params) as any;
 
   const name = escapeXml(tech?.name || 'Kỹ thuật viên IT Supporter');
