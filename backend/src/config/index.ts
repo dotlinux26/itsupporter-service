@@ -32,6 +32,7 @@ const config = {
   env: process.env.NODE_ENV ?? 'development',
   isProd,
   port: Number(process.env.PORT ?? 4000),
+  host: process.env.HOST ?? '127.0.0.1',
 
   databasePath: resolvePath(process.env.DATABASE_PATH, './data/itsupporter.sqlite'),
 

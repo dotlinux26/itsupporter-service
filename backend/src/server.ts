@@ -5,7 +5,7 @@ import logger from './utils/logger.js';
 import { runMigrations } from './scripts/migrate.js';
 import { ensureUploadDir } from './utils/upload.js';
 
-const server = app.listen(config.port, () => {
+const server = app.listen(config.port, config.host, () => {
   try {
     getDb();
     runMigrations();
@@ -13,7 +13,7 @@ const server = app.listen(config.port, () => {
   } catch (err) {
     logger.error({ err }, 'Startup initialization failed');
   }
-  logger.info(`API listening on http://localhost:${config.port} (${config.env})`);
+  logger.info(`API listening on http://${config.host}:${config.port} (${config.env})`);
 });
 
 function shutdown(signal: string): void {
