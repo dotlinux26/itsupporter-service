@@ -18,6 +18,7 @@ import managerRoutes from './routes/manager.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import voucherRoutes from './routes/voucher.routes.js';
 import publicRoutes from './routes/public.routes.js';
+import { handleTechnicianPublicHtml } from './controllers/ktvOgController.js';
 
 const app = express();
 
@@ -82,6 +83,9 @@ app.use('/api/manager', managerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/vouchers', voucherRoutes);
 app.use('/api/public', publicRoutes);
+
+// Phục vụ HTML trang KTV với Open Graph meta tags (Facebook, Zalo, Telegram, Google bot & trình duyệt)
+app.get(['/ktv/:aliasOrId', '/technicians/profile/:aliasOrId'], handleTechnicianPublicHtml);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

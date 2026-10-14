@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { publicApi } from '../../api/client';
+import { formatYouTubeEmbedUrl } from '../../utils/youtube';
 import {
   X,
   Smartphone,
@@ -13,14 +15,33 @@ import {
 interface AuthenticatorGuideModalProps {
   isOpen: boolean;
   onClose: () => void;
+  videoUrl?: string;
 }
 
 export const AuthenticatorGuideModal: React.FC<AuthenticatorGuideModalProps> = ({
   isOpen,
   onClose,
+  videoUrl,
 }) => {
   const [activeTab, setActiveTab] = useState<'android' | 'ios' | 'sync'>('android');
   const [showVideo, setShowVideo] = useState(false);
+  const [videoSrc, setVideoSrc] = useState<string>(() => formatYouTubeEmbedUrl(videoUrl));
+
+  useEffect(() => {
+    if (videoUrl) {
+      setVideoSrc(formatYouTubeEmbedUrl(videoUrl));
+      return;
+    }
+    publicApi
+      .info()
+      .then((res) => {
+        const url = res.data?.data?.totpGuideVideoUrl || res.data?.data?.totp_guide_video_url;
+        if (url) {
+          setVideoSrc(formatYouTubeEmbedUrl(url));
+        }
+      })
+      .catch(() => {});
+  }, [videoUrl]);
 
   if (!isOpen) return null;
 
@@ -63,7 +84,7 @@ export const AuthenticatorGuideModal: React.FC<AuthenticatorGuideModalProps> = (
             <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-800 flex items-center justify-center">
               <iframe
                 title="Google Authenticator Tutorial"
-                src="https://www.youtube-nocookie.com/embed/n4sM0fK6n8A?autoplay=1"
+                src={videoSrc || 'https://www.youtube-nocookie.com/embed/n4sM0fK6n8A?autoplay=1'}
                 className="w-full h-full border-0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen

@@ -265,6 +265,8 @@ router.patch('/settings', authenticate, requireRole('ADMIN'), (req, res, next) =
       termsMarkdown: 'terms_markdown',
       totp_guide_markdown: 'totp_guide_markdown',
       totpGuideMarkdown: 'totp_guide_markdown',
+      totp_guide_video_url: 'totp_guide_video_url',
+      totpGuideVideoUrl: 'totp_guide_video_url',
     };
 
     const updatedKeys: string[] = [];

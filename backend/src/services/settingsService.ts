@@ -37,6 +37,7 @@ export interface SystemSettings {
   aboutMarkdown: string;
   termsMarkdown: string;
   totpGuideMarkdown: string;
+  totpGuideVideoUrl: string;
 }
 
 
@@ -173,6 +174,7 @@ Mã 6 chữ số thay đổi mỗi 30 giây dựa trên đồng hồ thời gian
 1. Đảm bảo điện thoại của bạn đang bật chế độ **"Đặt giờ tự động (Set time automatically)"** theo mạng.
 2. Trên Android: Mở Google Authenticator -> bấm menu 3 chấm -> **Cài đặt** -> **Đồng bộ hóa thời gian** -> **Đồng bộ ngay (Sync now)**.`
     ),
+    totpGuideVideoUrl: getVal('totp_guide_video_url', 'https://www.youtube-nocookie.com/embed/n4sM0fK6n8A?autoplay=1'),
   };
 }
 

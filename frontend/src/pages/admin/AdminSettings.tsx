@@ -16,9 +16,10 @@ import {
   Bot,
   Sparkles,
   RefreshCw,
-  AlertCircle,
   Shield,
-  FileText
+  FileText,
+  Play,
+  AlertCircle
 } from 'lucide-react';
 import { MarkdownEditorWithUpload } from '../../components/MarkdownEditorWithUpload';
 
@@ -817,6 +818,36 @@ export function AdminSettings() {
                   ? 'Editing TOTP Google Authenticator instructions shown in public modal & user onboarding guide.'
                   : 'Nội dung hướng dẫn cài đặt Google Authenticator / TOTP hiển thị trong Modal hướng dẫn và bảng trợ giúp.')}
           </p>
+
+          {markdownTab === 'totpGuide' && (
+            <div className="p-4 rounded-xl bg-orange-50/70 border border-orange-200/80 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-slate-800 font-bold text-xs uppercase tracking-wider">
+                  <Play className="w-3.5 h-3.5 text-orange-600 fill-orange-600" />
+                  <span>{isEn ? 'Tutorial Video (YouTube Link / Embed)' : 'Đường link Video hướng dẫn YouTube (Google Authenticator)'}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSettings((prev: any) => ({ ...prev, totpGuideVideoUrl: 'https://www.youtube.com/watch?v=n4sM0fK6n8A' }))}
+                  className="text-xs text-orange-600 hover:text-orange-700 underline font-medium cursor-pointer"
+                >
+                  {isEn ? 'Reset default video' : 'Khôi phục video mặc định'}
+                </button>
+              </div>
+              <input
+                type="text"
+                value={settings.totpGuideVideoUrl ?? ''}
+                onChange={(e) => setSettings((prev: any) => ({ ...prev, totpGuideVideoUrl: e.target.value }))}
+                placeholder="VD: https://www.youtube.com/watch?v=n4sM0fK6n8A hoặc https://youtu.be/..."
+                className="input w-full text-xs font-mono bg-white"
+              />
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                {isEn
+                  ? 'Paste any YouTube URL (watch, shorts, youtu.be or embed). The system will automatically convert it into a privacy-enhanced embed player for users.'
+                  : 'Dán đường dẫn video YouTube (hỗ trợ cả dạng youtube.com/watch?v=..., youtu.be/... hoặc link embed). Hệ thống tự động chuyển thành video nhúng khi người dùng bấm "Xem Video hướng dẫn".'}
+              </p>
+            </div>
+          )}
 
           {/* Editor / Preview Area */}
           <div className="pt-1">

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LifeBuoy,
-  ShieldAlert,
   Send,
   ArrowLeft,
   CheckCircle2,
@@ -28,8 +27,10 @@ export const AccountRecoveryPage: React.FC = () => {
 
   // Client-side link and HTML detector to protect against spam and XSS
   const containsUrlOrLink = (str: string) => {
-    const urlPattern = /(https?:\/\/|ftp:\/\/|www\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,}|[a-zA-Z0-9-]+\.(com|vn|edu\.vn|org|net|io|me|xyz|info|app|cc|to|ru|cn)\b)/i;
-    return urlPattern.test(str);
+    // Loại bỏ định dạng email trước để không báo nhầm đuôi tên miền email (@gmail.com, ...)
+    const withoutEmail = str.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '');
+    const urlPattern = /(https?:\/\/|ftp:\/\/|www\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,})/i;
+    return urlPattern.test(withoutEmail);
   };
 
   const containsHtml = (str: string) => {
@@ -40,26 +41,20 @@ export const AccountRecoveryPage: React.FC = () => {
     e.preventDefault();
     setErrorMsg('');
 
-    // Security check: strictly no links or HTML tags in any inputs
-    const fieldsToCheck = [
-      { name: 'Tài khoản/Email', val: usernameOrEmail },
-      { name: 'Họ và tên', val: fullName },
-      { name: 'Số điện thoại', val: contactPhone },
-      { name: 'Email liên hệ', val: contactEmail },
-      { name: 'Mô tả lý do', val: reason },
-    ];
+    // Security check: no HTML tags and no web links in text fields
+    if (containsHtml(usernameOrEmail) || containsHtml(fullName) || containsHtml(contactPhone) || containsHtml(contactEmail) || containsHtml(reason)) {
+      setErrorMsg('Vui lòng chỉ nhập ký tự văn bản thuần túy, không chứa mã HTML.');
+      return;
+    }
 
-    for (const field of fieldsToCheck) {
-      if (containsHtml(field.val)) {
-        setErrorMsg(`Trường "${field.name}" không được chứa mã HTML.`);
-        return;
-      }
-      if (containsUrlOrLink(field.val)) {
-        setErrorMsg(
-          `Vì lý do an toàn bảo mật, form cứu trợ nghiêm cấm cung cấp đường dẫn liên kết (links/URLs). Vui lòng xóa link trong "${field.name}".`
-        );
-        return;
-      }
+    if (containsUrlOrLink(fullName)) {
+      setErrorMsg('Vui lòng không cung cấp đường dẫn liên kết trong trường Họ và tên.');
+      return;
+    }
+
+    if (containsUrlOrLink(reason)) {
+      setErrorMsg('Vì lý do an toàn bảo mật, form cứu trợ nghiêm cấm cung cấp đường dẫn liên kết (links/URLs). Vui lòng xóa link trong phần Lý do.');
+      return;
     }
 
     if (!usernameOrEmail.trim() || !fullName.trim() || !contactPhone.trim() || !reason.trim()) {
@@ -112,14 +107,6 @@ export const AccountRecoveryPage: React.FC = () => {
 
         {/* Form Card */}
         <div className="mt-8 bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
-          {/* Security policy notice */}
-          <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/25 flex items-start gap-3">
-            <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-            <div className="text-xs text-rose-200/90 leading-relaxed">
-              <b>Chính sách bảo mật nghiêm ngặt:</b> Để phòng chống tấn công mạo danh và SPAM, mỗi địa chỉ IP chỉ được gửi tối đa <b>2 yêu cầu / 1 giờ</b>. Hệ thống tự động thông báo tức thì về máy Quản trị viên qua <b>Telegram</b> để xác minh danh tính.
-            </div>
-          </div>
-
           {isSuccess ? (
             <div className="text-center space-y-4 py-6 animate-fade-in">
               <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">

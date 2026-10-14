@@ -101,6 +101,8 @@ router.get('/info', (_req, res, next) => {
         termsMarkdown: settings.termsMarkdown,
         totp_guide_markdown: settings.totpGuideMarkdown,
         totpGuideMarkdown: settings.totpGuideMarkdown,
+        totp_guide_video_url: settings.totpGuideVideoUrl,
+        totpGuideVideoUrl: settings.totpGuideVideoUrl,
       },
     });
 
@@ -525,15 +527,24 @@ router.get(['/ktv/:aliasOrId/og-image', '/ktv/:aliasOrId/og-image.png', '/techni
 });
 
 // Link and HTML protection filter to prevent XSS and Phishing
-const URL_OR_LINK_REGEX = /(https?:\/\/|ftp:\/\/|www\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,}|[a-zA-Z0-9-]+\.(com|vn|edu\.vn|org|net|io|me|xyz|info|app|cc|to|ru|cn)\b)/i;
 const HTML_TAG_REGEX = /<[^>]*>/i;
+const PROTOCOL_URL_REGEX = /(https?:\/\/|ftp:\/\/|www\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,})/i;
 
-function assertSafePlainText(value: string | undefined, fieldLabel: string): void {
+function assertSafePlainText(value: string | undefined, fieldLabel: string, isEmailField = false): void {
   if (!value) return;
   if (HTML_TAG_REGEX.test(value)) {
     throw new AppError('VALIDATION_ERROR', `Trường "${fieldLabel}" không được chứa mã HTML.`, 400);
   }
-  if (URL_OR_LINK_REGEX.test(value)) {
+  // Email fields should not be flagged for domain extensions like .com, .vn
+  if (isEmailField) {
+    if (PROTOCOL_URL_REGEX.test(value)) {
+      throw new AppError('VALIDATION_ERROR', `Trường "${fieldLabel}" không hợp lệ.`, 400);
+    }
+    return;
+  }
+  // Strip out valid email addresses before checking for links
+  const stripped = value.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '');
+  if (PROTOCOL_URL_REGEX.test(stripped)) {
     throw new AppError(
       'VALIDATION_ERROR',
       `Vì lý do an toàn bảo mật, form cứu trợ tài khoản nghiêm cấm cung cấp đường dẫn liên kết (links/URLs). Vui lòng chỉ nhập thông tin văn bản thuần túy cho "${fieldLabel}".`,
@@ -552,11 +563,11 @@ router.post('/recovery-requests', accountRecoveryRateLimiter, async (req, res, n
     }
 
     // Strict validation: No links, no HTML in any text fields
-    assertSafePlainText(usernameOrEmail, 'Tài khoản cần cứu');
-    assertSafePlainText(fullName, 'Họ và tên');
-    assertSafePlainText(contactPhone, 'Số điện thoại liên hệ');
-    assertSafePlainText(contactEmail, 'Email liên hệ');
-    assertSafePlainText(reason, 'Lý do & mô tả sự cố');
+    assertSafePlainText(usernameOrEmail, 'Tài khoản cần cứu', true);
+    assertSafePlainText(fullName, 'Họ và tên', false);
+    assertSafePlainText(contactPhone, 'Số điện thoại liên hệ', false);
+    assertSafePlainText(contactEmail, 'Email liên hệ', true);
+    assertSafePlainText(reason, 'Lý do & mô tả sự cố', false);
 
     const cleanUsernameOrEmail = usernameOrEmail.trim();
     const cleanFullName = fullName.trim();
