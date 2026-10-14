@@ -427,7 +427,7 @@ export function ProfilePage() {
               onChange={(e) => setPhone(e.target.value)}
               maxLength={20}
               className="input text-sm"
-              placeholder="0981.234.567"
+              placeholder="0912.345.678"
             />
           </div>
 

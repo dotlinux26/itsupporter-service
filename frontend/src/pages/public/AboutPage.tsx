@@ -11,15 +11,45 @@ export function AboutPage() {
     title: t('about.seoTitle'),
     description: t('about.seoDesc'),
     keywords: t('about.seoKeywords'),
-    canonical: 'https://itsupporter.vn/about',
+    canonical: 'https://itsupporter.io.vn/about',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'AboutPage',
+      '@id': 'https://itsupporter.io.vn/about#webpage',
+      url: 'https://itsupporter.io.vn/about',
+      name: 'Về chúng tôi - IT Supporter HaUI',
+      isPartOf: {
+        '@type': 'WebSite',
+        '@id': 'https://itsupporter.io.vn/#website',
+        name: 'IT Supporter Service HaUI',
+        url: 'https://itsupporter.io.vn/'
+      },
+      breadcrumb: {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Trang chủ',
+            item: 'https://itsupporter.io.vn/'
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Về chúng tôi',
+            item: 'https://itsupporter.io.vn/about'
+          }
+        ]
+      }
+    }
   });
 
   const [info, setInfo] = useState<any>({
     team_name: 'IT Supporter HaUI',
     university: 'Đại học Công nghiệp Hà Nội',
     workshop_address: 'Phòng 1603, Tòa A1, Cơ sở 1 - Đại học Công nghiệp Hà Nội',
-    contact_phone: '0981.234.567',
-    email: 'support@itsupporter.vn',
+    contact_phone: '0337.616.423',
+    email: 'it.supporter@fit-haui.edu.vn',
     facebook_page: 'https://www.facebook.com/itsupporter.haui/',
     distributor_name: 'dotlinux26',
     distributor_url: 'https://github.com/dotlinux26',

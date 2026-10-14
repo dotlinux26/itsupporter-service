@@ -1,63 +1,77 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <!-- Homepage -->
   <url>
-    <loc>https://itsupporter.vn/</loc>
-    <lastmod>2026-09-26</lastmod>
+    <loc>https://itsupporter.io.vn/</loc>
+    <lastmod>2026-10-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://itsupporter.io.vn/logo_bo3goc.png</image:loc>
+      <image:title>IT Supporter HaUI - Dịch vụ bảo dưỡng máy tính sinh viên</image:title>
+      <image:caption>Phòng 1603 Tòa A1, ĐH Công nghiệp Hà Nội</image:caption>
+    </image:image>
   </url>
 
   <!-- Service Packages -->
   <url>
-    <loc>https://itsupporter.vn/services</loc>
-    <lastmod>2026-09-26</lastmod>
+    <loc>https://itsupporter.io.vn/services</loc>
+    <lastmod>2026-10-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <!-- Public Booking Page -->
   <url>
-    <loc>https://itsupporter.vn/booking</loc>
-    <lastmod>2026-09-26</lastmod>
+    <loc>https://itsupporter.io.vn/booking</loc>
+    <lastmod>2026-10-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <!-- Public Orders Live Board -->
   <url>
-    <loc>https://itsupporter.vn/public-orders</loc>
-    <lastmod>2026-09-26</lastmod>
+    <loc>https://itsupporter.io.vn/public-orders</loc>
+    <lastmod>2026-10-15</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <!-- About Us -->
   <url>
-    <loc>https://itsupporter.vn/about</loc>
-    <lastmod>2026-09-26</lastmod>
+    <loc>https://itsupporter.io.vn/about</loc>
+    <lastmod>2026-10-15</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
 
   <!-- Terms & Policy -->
   <url>
-    <loc>https://itsupporter.vn/terms</loc>
-    <lastmod>2026-09-26</lastmod>
+    <loc>https://itsupporter.io.vn/terms</loc>
+    <lastmod>2026-10-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Account Recovery (TOTP & RFC 6238) -->
+  <url>
+    <loc>https://itsupporter.io.vn/account-recovery</loc>
+    <lastmod>2026-10-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
   <!-- Authentication -->
   <url>
-    <loc>https://itsupporter.vn/login</loc>
-    <lastmod>2026-09-26</lastmod>
+    <loc>https://itsupporter.io.vn/login</loc>
+    <lastmod>2026-10-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://itsupporter.vn/register</loc>
-    <lastmod>2026-09-26</lastmod>
+    <loc>https://itsupporter.io.vn/register</loc>
+    <lastmod>2026-10-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>

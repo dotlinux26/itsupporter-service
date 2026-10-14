@@ -11,7 +11,7 @@ export function RegisterPage() {
   useSEO({
     title: t('auth.registerTitle'),
     description: t('auth.registerDesc'),
-    canonical: 'https://itsupporter.vn/register',
+    canonical: 'https://itsupporter.io.vn/register',
   });
 
   const navigate = useNavigate();
@@ -108,7 +108,7 @@ export function RegisterPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 className="input"
-                placeholder="email@itsupporter.vn"
+                placeholder="email@itsupporter.io.vn"
               />
             </div>
 

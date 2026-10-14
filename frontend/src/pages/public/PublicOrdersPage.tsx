@@ -11,7 +11,7 @@ export function PublicOrdersPage() {
     title: t('orders.publicOrdersTitle'),
     description: t('orders.publicOrdersDesc'),
     keywords: t('orders.seoKeywords'),
-    canonical: 'https://itsupporter.vn/public-orders',
+    canonical: 'https://itsupporter.io.vn/public-orders',
   });
 
   const [orders, setOrders] = useState<any[]>([]);

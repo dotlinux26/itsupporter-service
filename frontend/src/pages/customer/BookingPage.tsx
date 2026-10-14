@@ -45,7 +45,7 @@ export function BookingPage() {
     title: t('booking.seoTitle'),
     description: t('booking.seoDesc'),
     keywords: t('booking.seoKeywords'),
-    canonical: 'https://itsupporter.vn/booking',
+    canonical: 'https://itsupporter.io.vn/booking',
   });
 
   const navigate = useNavigate();

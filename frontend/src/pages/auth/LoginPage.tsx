@@ -11,7 +11,7 @@ export function LoginPage() {
   useSEO({
     title: t('auth.loginTitle'),
     description: t('auth.loginDesc'),
-    canonical: 'https://itsupporter.vn/login',
+    canonical: 'https://itsupporter.io.vn/login',
   });
 
   const navigate = useNavigate();
@@ -122,7 +122,7 @@ export function LoginPage() {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   className="input"
-                  placeholder="email@itsupporter.vn"
+                  placeholder="email@itsupporter.io.vn"
                 />
               </div>
 

@@ -19,6 +19,7 @@ import adminRoutes from './routes/admin.routes.js';
 import voucherRoutes from './routes/voucher.routes.js';
 import publicRoutes from './routes/public.routes.js';
 import { handleTechnicianPublicHtml } from './controllers/ktvOgController.js';
+import { handleSitemapXml } from './controllers/sitemapController.js';
 
 const app = express();
 
@@ -87,6 +88,9 @@ app.use('/api/public', publicRoutes);
 
 // Phục vụ HTML trang KTV với Open Graph meta tags (Facebook, Zalo, Telegram, Google bot & trình duyệt)
 app.get(['/ktv/:aliasOrId', '/technicians/profile/:aliasOrId'], handleTechnicianPublicHtml);
+
+// Phục vụ dynamic XML Sitemap cho Search Engines (Google, Bing, CocCoc, Yandex)
+app.get(['/sitemap.xml', '/sitemap_index.xml', '/api/sitemap.xml'], handleSitemapXml);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

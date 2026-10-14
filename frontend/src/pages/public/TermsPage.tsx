@@ -12,7 +12,37 @@ export function TermsPage() {
     title: t('termsPage.seoTitle'),
     description: t('termsPage.seoDesc'),
     keywords: t('termsPage.seoKeywords'),
-    canonical: 'https://itsupporter.vn/terms',
+    canonical: 'https://itsupporter.io.vn/terms',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': 'https://itsupporter.io.vn/terms#webpage',
+      url: 'https://itsupporter.io.vn/terms',
+      name: 'Quy định & Cam kết dịch vụ - IT Supporter HaUI',
+      isPartOf: {
+        '@type': 'WebSite',
+        '@id': 'https://itsupporter.io.vn/#website',
+        name: 'IT Supporter Service HaUI',
+        url: 'https://itsupporter.io.vn/'
+      },
+      breadcrumb: {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Trang chủ',
+            item: 'https://itsupporter.io.vn/'
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Điều khoản dịch vụ',
+            item: 'https://itsupporter.io.vn/terms'
+          }
+        ]
+      }
+    }
   });
 
   useEffect(() => {

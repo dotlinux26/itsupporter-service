@@ -24,7 +24,7 @@ export function HomePage() {
     title: t('home.seoTitle'),
     description: t('home.seoDesc'),
     keywords: t('home.seoKeywords'),
-    canonical: 'https://itsupporter.vn/',
+    canonical: 'https://itsupporter.io.vn/',
   });
 
   const location = useLocation();
@@ -50,7 +50,7 @@ export function HomePage() {
   }>({
     workshop_address: 'Phòng 1603, Tòa A1, Cơ sở 1 - Đại học Công nghiệp Hà Nội',
     team_name: 'IT Supporter HaUI',
-    contact_phone: '0981.234.567',
+    contact_phone: '0337.616.423',
     booking_notice: 'Khách hàng đặt lịch trước tối thiểu 4 tiếng, sau đó mang máy tới phòng làm việc để kỹ thuật viên kiểm tra & bảo dưỡng trực tiếp.',
     warranty_policy_enabled: false,
     warranty_policy_days: '30 Ngày',

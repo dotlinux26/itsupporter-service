@@ -320,10 +320,10 @@ export function AdminSettings() {
               </label>
               <input
                 type="text"
-                value={settings.contactPhone ?? '0981.234.567'}
+                value={settings.contactPhone ?? '0337.616.423'}
                 onChange={e => setSettings((prev: any) => ({ ...prev, contactPhone: e.target.value }))}
                 className="input w-full"
-                placeholder="0981.234.567"
+                placeholder="0337.616.423"
               />
             </div>
 
@@ -333,10 +333,10 @@ export function AdminSettings() {
               </label>
               <input
                 type="email"
-                value={settings.contactEmail ?? 'support@itsupporter.vn'}
+                value={settings.contactEmail ?? 'it.supporter@fit-haui.edu.vn'}
                 onChange={e => setSettings((prev: any) => ({ ...prev, contactEmail: e.target.value }))}
                 className="input w-full"
-                placeholder="support@itsupporter.vn"
+                placeholder="it.supporter@fit-haui.edu.vn"
               />
             </div>
 

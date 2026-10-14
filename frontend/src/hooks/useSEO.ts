@@ -9,6 +9,7 @@ export interface SEOProps {
   ogDescription?: string;
   ogImage?: string;
   ogType?: string;
+  jsonLd?: Record<string, any> | Array<Record<string, any>>;
 }
 
 export function useSEO({
@@ -20,6 +21,7 @@ export function useSEO({
   ogDescription,
   ogImage = '/logo_bo3goc.png',
   ogType = 'website',
+  jsonLd,
 }: SEOProps) {
   useEffect(() => {
     // 1. Update Document Title
@@ -77,5 +79,22 @@ export function useSEO({
       }
       linkCanonical.setAttribute('href', canonical);
     }
-  }, [title, description, keywords, canonical, ogTitle, ogDescription, ogImage, ogType]);
+
+    // 5. Dynamic JSON-LD Structured Data
+    if (jsonLd) {
+      let script = document.querySelector('script#dynamic-seo-jsonld') as HTMLScriptElement | null;
+      if (!script) {
+        script = document.createElement('script');
+        script.id = 'dynamic-seo-jsonld';
+        script.type = 'application/ld+json';
+        document.head.appendChild(script);
+      }
+      script.textContent = JSON.stringify(jsonLd);
+    }
+
+    return () => {
+      const dynamicScript = document.querySelector('script#dynamic-seo-jsonld');
+      if (dynamicScript) dynamicScript.remove();
+    };
+  }, [title, description, keywords, canonical, ogTitle, ogDescription, ogImage, ogType, jsonLd]);
 }

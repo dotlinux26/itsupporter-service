@@ -16,7 +16,37 @@ export function ServicesPage() {
     title: t('packages.servicesTitle'),
     description: t('packages.servicesDesc'),
     keywords: t('packages.servicesKeywords'),
-    canonical: 'https://itsupporter.vn/services',
+    canonical: 'https://itsupporter.io.vn/services',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'ItemPage',
+      '@id': 'https://itsupporter.io.vn/services#webpage',
+      url: 'https://itsupporter.io.vn/services',
+      name: 'Dịch vụ bảo dưỡng & vệ sinh máy tính HaUI',
+      isPartOf: {
+        '@type': 'WebSite',
+        '@id': 'https://itsupporter.io.vn/#website',
+        name: 'IT Supporter Service HaUI',
+        url: 'https://itsupporter.io.vn/'
+      },
+      breadcrumb: {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Trang chủ',
+            item: 'https://itsupporter.io.vn/'
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Dịch vụ',
+            item: 'https://itsupporter.io.vn/services'
+          }
+        ]
+      }
+    }
   });
 
   const { isAuthenticated } = useAuth();
