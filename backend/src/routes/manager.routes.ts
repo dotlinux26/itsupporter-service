@@ -27,7 +27,7 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
 
     const revRow = db.prepare(`
       SELECT 
-        COALESCE(SUM(CASE WHEN status = 'COMPLETED' AND payment_status = 'PAID' THEN final_amount ELSE 0 END), 0) AS total_revenue,
+        COALESCE(SUM(CASE WHEN status = 'COMPLETED' THEN final_amount ELSE 0 END), 0) AS total_revenue,
         COUNT(*) AS total_orders,
         COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS completed_orders,
         COUNT(CASE WHEN status = 'PENDING' THEN 1 END) AS pending_orders,
@@ -57,7 +57,7 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
         SELECT 
           COUNT(*) AS total_jobs,
           COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS completed_jobs,
-          COALESCE(SUM(CASE WHEN status = 'COMPLETED' AND payment_status = 'PAID' THEN final_amount ELSE 0 END), 0) AS generated_revenue
+          COALESCE(SUM(CASE WHEN status = 'COMPLETED' THEN final_amount ELSE 0 END), 0) AS generated_revenue
         FROM orders
         WHERE technician_id = ?
       `).get(tech.id) as any;
@@ -95,7 +95,7 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
         WHERE (
           DATE(completed_at, '+7 hours') = ? 
           OR (completed_at IS NULL AND scheduled_date = ?)
-        ) AND status = 'COMPLETED' AND payment_status = 'PAID'
+        ) AND status = 'COMPLETED'
       `).get(dateStr, dateStr) as any;
 
       const rev = Number(row?.revenue || 0);
@@ -118,7 +118,7 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
         p.name,
         p.price,
         COUNT(o.id) AS order_count,
-        COALESCE(SUM(CASE WHEN o.status = 'COMPLETED' AND o.payment_status = 'PAID' THEN o.final_amount ELSE 0 END), 0) AS total_revenue
+        COALESCE(SUM(CASE WHEN o.status = 'COMPLETED' THEN o.final_amount ELSE 0 END), 0) AS total_revenue
       FROM service_packages p
       LEFT JOIN orders o ON o.package_id = p.id
       GROUP BY p.id
