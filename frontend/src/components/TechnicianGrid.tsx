@@ -301,7 +301,7 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                 to={`/booking?technicianId=${selectedTech.id}`}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs rounded-xl shadow-md shadow-orange-600/20 transition cursor-pointer"
               >
-                <span>{t('home.bookWithTechnician', { name: selectedTech.name })}</span>
+                <span className="whitespace-nowrap">{t('home.bookWithTechnician')}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
