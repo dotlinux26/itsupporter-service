@@ -114,10 +114,18 @@ export function getLedger(options: {
   return { data, total };
 }
 
+// Legacy ledger entries for unpaid completed orders stay recorded but are not yet payable.
 export function getRunBalance(technicianId: number): number {
   const row = getDb()
     .prepare(
       `SELECT COALESCE(SUM(CASE 
+        WHEN type IN ('TECHNICIAN_SHARE', 'EXTEND_FEE')
+          AND EXISTS (
+            SELECT 1 FROM orders o
+            WHERE o.id = financial_transactions.order_id
+              AND o.status IN ('COMPLETED', 'COMPLETED_UNPAID')
+              AND o.payment_status = 'UNPAID'
+          ) THEN 0
         WHEN type IN ('TECHNICIAN_SHARE', 'EXTEND_FEE') THEN amount 
         WHEN type = 'SETTLEMENT' THEN -amount
         WHEN direction = 'IN' THEN amount
@@ -135,7 +143,18 @@ export function getTeamBalance(): number {
     .prepare(
       `SELECT COALESCE(SUM(CASE WHEN direction = 'IN' THEN amount ELSE -amount END), 0) AS balance
        FROM financial_transactions 
-       WHERE (technician_id IS NULL OR technician_id = 0) AND type != 'ORDER_REVENUE' AND type != 'LATE_PENALTY'`
+       WHERE (technician_id IS NULL OR technician_id = 0)
+         AND type != 'ORDER_REVENUE'
+         AND type != 'LATE_PENALTY'
+         AND NOT (
+           type = 'TEAM_SHARE'
+           AND EXISTS (
+             SELECT 1 FROM orders o
+             WHERE o.id = financial_transactions.order_id
+               AND o.status IN ('COMPLETED', 'COMPLETED_UNPAID')
+               AND o.payment_status = 'UNPAID'
+           )
+         )`
     )
     .get() as { balance: number };
   return row.balance;
@@ -143,6 +162,12 @@ export function getTeamBalance(): number {
 
 /** Khi đóng order thành công — ghi ledger theo ledger-first. */
 export function settleOrderLedger(order: Order, createdBy: number): void {
+  const db = getDb();
+  const existingRevenueEntry = db
+    .prepare("SELECT 1 FROM financial_transactions WHERE order_id = ? AND type = 'ORDER_REVENUE' LIMIT 1")
+    .get(order.id);
+  if (existingRevenueEntry) return;
+
   const settings = getSystemSettings();
   const techPercent = settings.technicianSharePercent / 100;
   const extendFee = Number(order.extend_fee || 0);

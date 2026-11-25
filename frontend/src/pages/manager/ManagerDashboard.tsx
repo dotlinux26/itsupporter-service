@@ -29,6 +29,8 @@ import { vi, enUS } from 'date-fns/locale';
 interface AnalyticsData {
   summary: {
     total_revenue: number;
+    completed_service_revenue: number;
+    completed_unpaid_revenue: number;
     team_fund_balance: number;
     total_technician_share: number;
     pending_settlements_total: number;
@@ -188,6 +190,8 @@ export function ManagerDashboard() {
 
   const summary = analytics?.summary || {
     total_revenue: 0,
+    completed_service_revenue: 0,
+    completed_unpaid_revenue: 0,
     team_fund_balance: 0,
     total_technician_share: 0,
     pending_settlements_total: 0,
@@ -205,8 +209,8 @@ export function ManagerDashboard() {
           <div className="h-8 bg-gray-200 rounded-lg w-64"></div>
           <div className="h-4 bg-gray-100 rounded w-96"></div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="card p-5 bg-white space-y-3 animate-pulse">
               <div className="w-10 h-10 rounded-xl bg-gray-100"></div>
               <div className="h-6 bg-gray-200 rounded w-24"></div>
@@ -258,9 +262,9 @@ export function ManagerDashboard() {
         </div>
       )}
 
-      {/* 4 FINANCIAL KPI CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* 1. Total Gross Revenue */}
+      {/* FINANCIAL KPI CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {/* 1. Cash collected */}
         <div className="card p-5 bg-gradient-to-br from-orange-50/60 to-white border-orange-200 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center font-bold shadow-md shadow-orange-500/20">
@@ -281,7 +285,31 @@ export function ManagerDashboard() {
           </div>
         </div>
 
-        {/* 2. Team Fund Balance */}
+        {/* 2. Completed services, including unpaid legacy orders */}
+        <div className="card p-5 bg-gradient-to-br from-amber-50/70 to-white border-amber-200 shadow-sm relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-md shadow-amber-500/20">
+              <Clock className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+              {t('manager.completedServiceRevenue')}
+            </span>
+          </div>
+          <div className="mt-3">
+            <span className="text-xs font-medium text-gray-500 block">{t('manager.completedServiceRevenue')}</span>
+            <div className="text-2xl font-extrabold text-amber-700 font-mono tracking-tight mt-0.5">
+              {summary.completed_service_revenue.toLocaleString(isEn ? 'en-US' : 'vi-VN')} <span className="text-sm font-semibold">{isEn ? 'VND' : 'đ'}</span>
+            </div>
+            <p className="text-[11px] text-gray-500 mt-1">
+              {isEn ? 'Still unpaid: ' : 'Còn chưa thu: '}
+              <span className="font-semibold text-amber-700">
+                {summary.completed_unpaid_revenue.toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        {/* 3. Team Fund Balance */}
         <div className="card p-5 bg-gradient-to-br from-emerald-50/60 to-white border-emerald-200 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-md shadow-emerald-600/20">
@@ -302,7 +330,7 @@ export function ManagerDashboard() {
           </div>
         </div>
 
-        {/* 3. Total Technician Share */}
+        {/* 4. Total Technician Share */}
         <div className="card p-5 bg-gradient-to-br from-blue-50/60 to-white border-blue-200 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-md shadow-blue-600/20">
@@ -323,7 +351,7 @@ export function ManagerDashboard() {
           </div>
         </div>
 
-        {/* 4. Pending Settlements Total */}
+        {/* 5. Pending Settlements Total */}
         <div className="card p-5 bg-gradient-to-br from-purple-50/60 to-white border-purple-200 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold shadow-md shadow-purple-600/20">

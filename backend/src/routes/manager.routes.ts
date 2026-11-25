@@ -6,7 +6,7 @@ import { ensureTechnicianAlias } from '../repositories/userRepository.js';
 import { getDb } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import type { OrderRow } from '../models/index.js';
-import { listSettlements, createSettlement, updateSettlementPayoutStatus, getTeamBalance, getRunBalance } from '../services/financeService.js';
+import { listSettlements, createSettlement, updateSettlementPayoutStatus, getTeamBalance, getRunBalance, settleOrderLedger } from '../services/financeService.js';
 import { getSystemSettings, setSetting } from '../services/settingsService.js';
 import { getAvailableTechnicians } from '../services/calendarService.js';
 import { testTelegramConnection, detectTelegramChatId, notifyOrderAssigned, notifyOrderCancelled } from '../services/telegramService.js';
@@ -27,9 +27,11 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
 
     const revRow = db.prepare(`
       SELECT 
-        COALESCE(SUM(CASE WHEN status = 'COMPLETED' THEN final_amount ELSE 0 END), 0) AS total_revenue,
+        COALESCE(SUM(CASE WHEN status IN ('COMPLETED', 'COMPLETED_UNPAID') AND payment_status = 'PAID' THEN final_amount ELSE 0 END), 0) AS total_revenue,
+        COALESCE(SUM(CASE WHEN status IN ('COMPLETED', 'COMPLETED_UNPAID') THEN final_amount ELSE 0 END), 0) AS completed_service_revenue,
+        COALESCE(SUM(CASE WHEN status IN ('COMPLETED', 'COMPLETED_UNPAID') AND payment_status = 'UNPAID' THEN final_amount ELSE 0 END), 0) AS completed_unpaid_revenue,
         COUNT(*) AS total_orders,
-        COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS completed_orders,
+        COUNT(CASE WHEN status IN ('COMPLETED', 'COMPLETED_UNPAID') THEN 1 END) AS completed_orders,
         COUNT(CASE WHEN status = 'PENDING' THEN 1 END) AS pending_orders,
         COUNT(CASE WHEN status IN ('CONFIRMED', 'IN_PROGRESS') THEN 1 END) AS in_progress_orders,
         COUNT(CASE WHEN status = 'CANCELLED' THEN 1 END) AS cancelled_orders
@@ -40,6 +42,12 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
       SELECT COALESCE(SUM(amount), 0) AS total_tech_share
       FROM financial_transactions
       WHERE type IN ('TECHNICIAN_SHARE', 'EXTEND_FEE') AND direction = 'IN'
+        AND NOT EXISTS (
+          SELECT 1 FROM orders o
+          WHERE o.id = financial_transactions.order_id
+            AND o.status IN ('COMPLETED', 'COMPLETED_UNPAID')
+            AND o.payment_status = 'UNPAID'
+        )
     `).get() as any;
 
     const technicians = db.prepare(`
@@ -56,8 +64,8 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
       const stats = db.prepare(`
         SELECT 
           COUNT(*) AS total_jobs,
-          COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS completed_jobs,
-          COALESCE(SUM(CASE WHEN status = 'COMPLETED' THEN final_amount ELSE 0 END), 0) AS generated_revenue
+          COUNT(CASE WHEN status IN ('COMPLETED', 'COMPLETED_UNPAID') THEN 1 END) AS completed_jobs,
+          COALESCE(SUM(CASE WHEN status IN ('COMPLETED', 'COMPLETED_UNPAID') AND payment_status = 'PAID' THEN final_amount ELSE 0 END), 0) AS generated_revenue
         FROM orders
         WHERE technician_id = ?
       `).get(tech.id) as any;
@@ -95,7 +103,7 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
         WHERE (
           DATE(completed_at, '+7 hours') = ? 
           OR (completed_at IS NULL AND scheduled_date = ?)
-        ) AND status = 'COMPLETED'
+        ) AND status IN ('COMPLETED', 'COMPLETED_UNPAID') AND payment_status = 'PAID'
       `).get(dateStr, dateStr) as any;
 
       const rev = Number(row?.revenue || 0);
@@ -117,8 +125,8 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
         p.id,
         p.name,
         p.price,
-        COUNT(o.id) AS order_count,
-        COALESCE(SUM(CASE WHEN o.status = 'COMPLETED' THEN o.final_amount ELSE 0 END), 0) AS total_revenue
+        COUNT(CASE WHEN o.status IN ('COMPLETED', 'COMPLETED_UNPAID') AND o.payment_status = 'PAID' THEN 1 END) AS order_count,
+        COALESCE(SUM(CASE WHEN o.status IN ('COMPLETED', 'COMPLETED_UNPAID') AND o.payment_status = 'PAID' THEN o.final_amount ELSE 0 END), 0) AS total_revenue
       FROM service_packages p
       LEFT JOIN orders o ON o.package_id = p.id
       GROUP BY p.id
@@ -129,6 +137,8 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
       data: {
         summary: {
           total_revenue: revRow.total_revenue || 0,
+          completed_service_revenue: revRow.completed_service_revenue || 0,
+          completed_unpaid_revenue: revRow.completed_unpaid_revenue || 0,
           team_fund_balance: teamFundBalance,
           total_technician_share: techShareRow.total_tech_share || 0,
           pending_settlements_total: pendingSettlementsTotal,
@@ -165,6 +175,57 @@ router.get('/orders', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, 
                  LIMIT 200`;
     const orders = getDb().prepare(sql).all(...params) as (OrderRow & { customer_name: string; technician_name: string | null; package_name: string })[];
     res.json({ data: orders });
+  } catch (err) { next(err); }
+});
+
+router.patch('/orders/:id/payment', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
+  try {
+    const orderId = Number(req.params.id);
+    if (!Number.isInteger(orderId)) throw new AppError('VALIDATION_ERROR', 'Mã đơn không hợp lệ.', 400);
+    if (req.body.payment_status !== 'PAID') {
+      throw new AppError('VALIDATION_ERROR', 'Chỉ xác nhận đã thu tiền qua thao tác này.', 400);
+    }
+
+    const note = String(req.body.note ?? '').trim();
+    if (!note) throw new AppError('VALIDATION_ERROR', 'Vui lòng ghi chú xác nhận thu tiền.', 400);
+
+    const db = getDb();
+    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as OrderRow | undefined;
+    if (!order) throw new AppError('NOT_FOUND', 'Không tìm thấy đơn hàng.', 404);
+    if (!['COMPLETED', 'COMPLETED_UNPAID'].includes(order.status) || order.payment_status !== 'UNPAID') {
+      throw new AppError('CONFLICT', 'Chỉ xác nhận thu tiền cho đơn đã hoàn thành và đang ở trạng thái chưa thu.', 409);
+    }
+
+    const manager = getAuthUser(req);
+    const nextStatus = order.status === 'COMPLETED_UNPAID' ? 'COMPLETED' : order.status;
+    db.transaction(() => {
+      db.prepare(`
+        UPDATE orders
+        SET status = ?,
+            completion_result = CASE WHEN status = 'COMPLETED_UNPAID' THEN 'SUCCESS' ELSE completion_result END,
+            payment_status = 'PAID',
+            unpaid_reason = NULL,
+            completed_at = COALESCE(completed_at, datetime('now')),
+            updated_at = datetime('now')
+        WHERE id = ?
+      `).run(nextStatus, orderId);
+      logStatusChange(orderId, order.status, nextStatus, manager?.id ?? null, `Quản lý xác nhận đã thu tiền — ${note}`);
+
+      const updatedOrder = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as OrderRow;
+      settleOrderLedger(updatedOrder, manager?.id ?? 0);
+    })();
+
+    writeAuditLog({
+      actorId: manager?.id,
+      actorEmail: manager?.email,
+      action: 'MANAGER_CONFIRM_ORDER_PAYMENT',
+      targetType: 'ORDER',
+      targetId: orderId,
+      ip: req.ip,
+      metadata: { order_code: order.code, previous_status: order.status, next_status: nextStatus, previous_payment_status: order.payment_status, note },
+    });
+
+    res.json({ data: db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId), message: 'Đã cập nhật trạng thái thanh toán.' });
   } catch (err) { next(err); }
 });
 

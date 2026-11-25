@@ -198,6 +198,25 @@ export function ManagerOrders() {
     });
   };
 
+  const handleConfirmPayment = async (order: any) => {
+    const note = window.prompt(
+      isEn ? 'Add a note confirming payment was received:' : 'Ghi chú xác nhận đã nhận tiền:'
+    );
+    if (note === null) return;
+    if (!note.trim()) {
+      showFeedback('error', isEn ? 'A payment confirmation note is required.' : 'Vui lòng nhập ghi chú xác nhận thu tiền.');
+      return;
+    }
+
+    try {
+      await managerApi.updateOrderPayment(order.id, note.trim());
+      showFeedback('success', isEn ? 'Payment marked as received.' : 'Đã xác nhận đơn hàng thu tiền.');
+      await loadOrders();
+    } catch (err: any) {
+      showFeedback('error', err.response?.data?.message || (isEn ? 'Failed to confirm payment.' : 'Không thể xác nhận thanh toán.'));
+    }
+  };
+
   const handleAssignSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!assignModalOrder || !selectedTechId) return;
@@ -568,6 +587,17 @@ export function ManagerOrders() {
                       >
                         {order.payment_status === 'PAID' ? (isEn ? '✓ Paid' : '✓ Đã thu') : (isEn ? 'Unpaid' : 'Chưa thu')}
                       </span>
+                      {order.payment_status === 'UNPAID' && ['COMPLETED', 'COMPLETED_UNPAID'].includes(order.status) && (
+                        <button
+                          type="button"
+                          onClick={() => handleConfirmPayment(order)}
+                          className="mt-1 block text-[10px] font-semibold text-emerald-700 hover:text-emerald-800 underline"
+                        >
+                          {order.status === 'COMPLETED_UNPAID'
+                            ? (isEn ? 'Receive & finalize' : 'Thu tiền & hoàn tất')
+                            : (isEn ? 'Confirm received' : 'Xác nhận đã thu')}
+                        </button>
+                      )}
                     </td>
 
                     {/* Actions */}

@@ -429,15 +429,19 @@ export function technicianPaymentHandler(req: Request, res: Response, next: Next
     const order = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow | undefined;
     if (!order) { next(new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404)); return; }
     ensureAssignedTechnician(order, user);
-    if (!['IN_PROGRESS', 'COMPLETED_UNPAID'].includes(order.status)) {
+    const isLegacyCompletedUnpaid = order.status === 'COMPLETED' && order.payment_status === 'UNPAID';
+    if (!['IN_PROGRESS', 'COMPLETED_UNPAID'].includes(order.status) && !isLegacyCompletedUnpaid) {
       next(new AppError('CONFLICT', 'Chỉ cập nhật thanh toán khi đơn đang thực hiện hoặc chờ xác nhận đã thu tiền.', 409)); return;
     }
 
     const note = req.body.note ? String(req.body.note).trim() : '';
+    if (isLegacyCompletedUnpaid && (payment_status !== 'PAID' || !note)) {
+      next(new AppError('VALIDATION_ERROR', 'Đơn hoàn thành cũ chỉ được xác nhận đã thu tiền và bắt buộc có ghi chú.', 400)); return;
+    }
     if (payment_status === 'UNPAID' && !unpaid_reason?.trim()) {
       next(new AppError('VALIDATION_ERROR', 'Vui lòng ghi rõ lý do chưa thu được tiền.', 400)); return;
     }
-    if (order.status === 'COMPLETED_UNPAID' && payment_status === 'PAID' && !note) {
+    if (['COMPLETED', 'COMPLETED_UNPAID'].includes(order.status) && payment_status === 'PAID' && !note) {
       next(new AppError('VALIDATION_ERROR', 'Vui lòng nhập ghi chú khi xác nhận đã nhận tiền.', 400)); return;
     }
 
@@ -459,6 +463,11 @@ export function technicianPaymentHandler(req: Request, res: Response, next: Next
         user.id,
         `Cập nhật thanh toán: ${payment_status}${unpaid_reason ? ` (Lý do: ${unpaid_reason})` : ''}${note ? ` — ${note}` : ''}`
       );
+
+      if (isLegacyCompletedUnpaid) {
+        const updatedOrder = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow;
+        settleOrderLedger(updatedOrder, user.id);
+      }
     })();
     const updated = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow;
     res.json({ data: updated });

@@ -417,6 +417,7 @@ export function TechnicianOrderDetail() {
   };
 
   const isFinalizingUnpaid = order?.status === 'COMPLETED_UNPAID';
+  const isLegacyCompletedUnpaid = order?.status === 'COMPLETED' && order.payment_status === 'UNPAID';
 
   if (loading) {
     return (
@@ -687,17 +688,19 @@ export function TechnicianOrderDetail() {
               {order.unpaid_reason && <span className="text-rose-600">({order.unpaid_reason})</span>}
             </div>
 
-            {(order.status === 'IN_PROGRESS' || order.status === 'COMPLETED_UNPAID') && (
+            {(order.status === 'IN_PROGRESS' || order.status === 'COMPLETED_UNPAID' || isLegacyCompletedUnpaid) && (
               <button
                 onClick={() => {
-                  setPaymentStatusChoice(order.payment_status);
+                  setPaymentStatusChoice(isLegacyCompletedUnpaid ? 'PAID' : order.payment_status);
                   setUnpaidReason(order.unpaid_reason || '');
                   setPaymentNote('');
                   setShowPaymentModal(true);
                 }}
                 className="text-orange-600 hover:text-orange-700 font-semibold underline"
               >
-                {t('technician.detail.updatePaymentBtn')}
+                {isLegacyCompletedUnpaid
+                  ? t('technician.detail.confirmLegacyPaymentBtn')
+                  : t('technician.detail.updatePaymentBtn')}
               </button>
             )}
           </div>
@@ -1214,17 +1217,23 @@ export function TechnicianOrderDetail() {
             <h3 className="text-lg font-bold text-text mb-4">{t('technician.detail.paymentModalTitle')}</h3>
 
             <div className="space-y-4">
-              <div>
-                <label className="label text-xs">{t('technician.detail.paymentCollectStatusLabel')}</label>
-                <select
-                  value={paymentStatusChoice}
-                  onChange={(e) => setPaymentStatusChoice(e.target.value as 'PAID' | 'UNPAID')}
-                  className="input text-sm"
-                >
-                  <option value="PAID">{t('technician.detail.paymentPaidChoice')}</option>
-                  <option value="UNPAID">{t('technician.detail.paymentUnpaidChoice')}</option>
-                </select>
-              </div>
+              {isLegacyCompletedUnpaid ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">
+                  {t('technician.detail.legacyPaymentConfirmNotice')}
+                </div>
+              ) : (
+                <div>
+                  <label className="label text-xs">{t('technician.detail.paymentCollectStatusLabel')}</label>
+                  <select
+                    value={paymentStatusChoice}
+                    onChange={(e) => setPaymentStatusChoice(e.target.value as 'PAID' | 'UNPAID')}
+                    className="input text-sm"
+                  >
+                    <option value="PAID">{t('technician.detail.paymentPaidChoice')}</option>
+                    <option value="UNPAID">{t('technician.detail.paymentUnpaidChoice')}</option>
+                  </select>
+                </div>
+              )}
 
               {paymentStatusChoice === 'UNPAID' && (
                 <div>

@@ -236,6 +236,8 @@ export const managerApi = {
     api.post(`/manager/orders/${orderId}/assign`, { technician_id: technicianId, confirm_text }),
   updateOrderStatus: (orderId: number, status: string, notes?: string, confirm_text?: string) =>
     api.patch(`/manager/orders/${orderId}/status`, { status, notes, confirm_text }),
+  updateOrderPayment: (orderId: number, note: string) =>
+    api.patch(`/manager/orders/${orderId}/payment`, { payment_status: 'PAID', note }),
   technicians: () => api.get('/manager/technicians'),
   packages: () => api.get('/manager/packages'),
   createPackage: (data: {
