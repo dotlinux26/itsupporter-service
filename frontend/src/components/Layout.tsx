@@ -24,6 +24,7 @@ export function AppHeader() {
         { path: '/', label: t('nav.home') || 'Trang chủ' },
         { path: '/services', label: t('nav.services') || 'Gói dịch vụ' },
         { path: '/about', label: t('nav.about') || 'Về chúng tôi' },
+        { path: '/terms', label: t('nav.terms') || 'Quy định' },
       ];
     } else if (user?.role === 'TECHNICIAN') {
       return [
