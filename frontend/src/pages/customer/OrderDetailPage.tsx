@@ -167,6 +167,8 @@ export function OrderDetailPage() {
                     ? 'badge-confirmed'
                     : order.status === 'IN_PROGRESS'
                     ? 'badge-in_progress'
+                    : order.status === 'COMPLETED_UNPAID'
+                    ? 'bg-amber-50 text-amber-800 border border-amber-200'
                     : order.status === 'COMPLETED'
                     ? 'badge-completed'
                     : 'badge-cancelled'
@@ -178,6 +180,8 @@ export function OrderDetailPage() {
                   ? t('status.confirmed')
                   : order.status === 'IN_PROGRESS'
                   ? t('status.in_progress')
+                  : order.status === 'COMPLETED_UNPAID'
+                  ? t('status.completed_unpaid')
                   : order.status === 'COMPLETED'
                   ? t('status.completed')
                   : t('status.cancelled')}
@@ -283,18 +287,18 @@ export function OrderDetailPage() {
           <div className="p-3.5 sm:p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">{t('orders.servicePackage')}</span>
             <div className="flex items-baseline justify-between mb-2">
-              <h3 className="text-lg font-bold text-slate-900">{order.package_name}</h3>
+              <h3 className="text-lg font-bold text-slate-900">{isEn ? order.package_name_en || order.package_name : order.package_name}</h3>
               <span className="text-sm font-extrabold text-orange-600">
                 {Number(order.package_price || order.price).toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
               </span>
             </div>
-            {order.package_description && (
-              <p className="text-xs text-slate-600 mb-2 leading-relaxed">{order.package_description}</p>
+            {(isEn ? order.package_description_en || order.package_description : order.package_description) && (
+              <p className="text-xs text-slate-600 mb-2 leading-relaxed">{isEn ? order.package_description_en || order.package_description : order.package_description}</p>
             )}
-            {order.package_features && (
+            {(isEn ? order.package_features_en || order.package_features : order.package_features) && (
               <div className="text-xs text-slate-500 pt-2 border-t border-slate-100 flex items-center gap-1">
                 <Sparkles className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                <span className="line-clamp-2">{order.package_features}</span>
+                <span className="line-clamp-2">{isEn ? order.package_features_en || order.package_features : order.package_features}</span>
               </div>
             )}
           </div>

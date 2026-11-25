@@ -25,6 +25,7 @@ export function AppHeader() {
         { path: '/services', label: t('nav.services') || 'Gói dịch vụ' },
         { path: '/about', label: t('nav.about') || 'Về chúng tôi' },
         { path: '/terms', label: t('nav.terms') || 'Quy định' },
+        { path: '/privacy', label: t('nav.privacy') || 'Quyền riêng tư' },
       ];
     } else if (user?.role === 'TECHNICIAN') {
       return [
@@ -358,8 +359,11 @@ export function Footer() {
   const isEn = i18n.language?.startsWith('en');
   const [info, setInfo] = useState<{
     team_name: string;
+    team_name_en: string;
     university: string;
+    university_en: string;
     workshop_address: string;
+    workshop_address_en: string;
     contact_phone: string;
     email: string;
     facebook_page: string;
@@ -368,11 +372,16 @@ export function Footer() {
     google_map_embed_url: string;
     google_map_direct_url: string;
     working_hours_display: string;
+    working_hours_display_en: string;
     booking_notice: string;
+    booking_notice_en: string;
   }>({
     team_name: 'IT Supporter HaUI',
+    team_name_en: 'IT Supporter HaUI',
     university: 'Đại học Công nghiệp Hà Nội',
+    university_en: 'Hanoi University of Industry',
     workshop_address: 'Phòng 1603, Tòa A1, Cơ sở 1 - Đại học Công nghiệp Hà Nội',
+    workshop_address_en: 'Room 1603, Building A1, Campus 1 - Hanoi University of Industry',
     contact_phone: '0337.616.423',
     email: 'it.supporter@fit-haui.edu.vn',
     facebook_page: 'https://www.facebook.com/itsupporter.haui/',
@@ -382,8 +391,10 @@ export function Footer() {
       'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3723.863985044336!2d105.7445984154024!3d21.05372429283389!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31345457e292d5bf%3A0x20ac91903d45e803!2zVHLGsOG7nW5nIMSQ4bqhaSBI4buNYyBDw7RuZyBOZ2hp4buHcCBIw6AgTuG7mWk!5e0!3m2!1svi!2s!4v1700000000000!5m2!1svi!2s',
     google_map_direct_url: 'https://maps.google.com/?q=21.053724,105.744598',
     working_hours_display: '07:00 - 19:00 (Thứ 2 - Thứ 7)',
+    working_hours_display_en: '07:00 - 19:00 (Monday - Saturday)',
     booking_notice:
       'Khách hàng đặt lịch trước tối thiểu 4 tiếng, sau đó mang máy tới phòng 1603 Tòa A1 để kỹ thuật viên kiểm tra & bảo dưỡng trực tiếp.',
+    booking_notice_en: 'Book at least 4 hours in advance and bring your device to Room 1603, Building A1 for inspection and maintenance.',
   });
 
   useEffect(() => {
@@ -396,8 +407,11 @@ export function Footer() {
             ...prev,
             ...d,
             team_name: d.team_name || d.teamName || prev.team_name,
+            team_name_en: d.team_name_en || d.teamNameEn || d.team_name || prev.team_name_en,
             university: d.university || prev.university,
+            university_en: d.university_en || d.universityEn || d.university || prev.university_en,
             workshop_address: d.workshop_address || d.workshopAddress || prev.workshop_address,
+            workshop_address_en: d.workshop_address_en || d.workshopAddressEn || d.workshop_address || prev.workshop_address_en,
             contact_phone: d.contact_phone || d.contactPhone || prev.contact_phone,
             email: d.email || d.contactEmail || prev.email,
             facebook_page: d.facebook_page || d.facebookPage || prev.facebook_page,
@@ -406,7 +420,9 @@ export function Footer() {
             google_map_embed_url: d.google_map_embed_url || d.googleMapEmbedUrl || prev.google_map_embed_url,
             google_map_direct_url: d.google_map_direct_url || d.googleMapDirectUrl || prev.google_map_direct_url,
             working_hours_display: d.working_hours_display || d.workingHoursDisplay || prev.working_hours_display,
+            working_hours_display_en: d.working_hours_display_en || d.workingHoursDisplayEn || d.working_hours_display || prev.working_hours_display_en,
             booking_notice: d.booking_notice || d.bookingNotice || prev.booking_notice,
+            booking_notice_en: d.booking_notice_en || d.bookingNoticeEn || d.booking_notice || prev.booking_notice_en,
           }));
         }
       })
@@ -427,7 +443,7 @@ export function Footer() {
                 className="w-8 h-8 object-contain rounded-[2px]" 
               />
               <div>
-                <span className="font-bold text-sm text-slate-100 block tracking-tight">{info.team_name}</span>
+                <span className="font-bold text-sm text-slate-100 block tracking-tight">{isEn ? info.team_name_en || info.team_name : info.team_name}</span>
                 <span className="text-[11px] text-slate-500 block">{info.university}</span>
               </div>
             </div>
@@ -477,6 +493,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link to="/privacy" className="text-slate-400 hover:text-slate-200 transition-colors">
+                  {t('nav.privacy')}
+                </Link>
+              </li>
+              <li>
                 <Link to="/about" className="text-slate-400 hover:text-slate-200 transition-colors">
                   {t('home.footer.aboutTeam')}
                 </Link>
@@ -492,7 +513,7 @@ export function Footer() {
             <div className="space-y-2.5 text-[12px] text-slate-400">
               <div>
                 <span className="text-slate-500 block text-[11px]">{t('home.footer.workshopAddress')}</span>
-                <span className="text-slate-200 font-medium">{info.workshop_address}</span>
+                <span className="text-slate-200 font-medium">{isEn ? info.workshop_address_en || info.workshop_address : info.workshop_address}</span>
               </div>
               <div>
                 <span className="text-slate-500 block text-[11px]">{t('home.footer.hotline')}</span>
@@ -508,7 +529,7 @@ export function Footer() {
               </div>
               <div>
                 <span className="text-slate-500 block text-[11px]">{t('home.footer.workingHours')}</span>
-                <span className="text-slate-300">{info.working_hours_display}</span>
+                <span className="text-slate-300">{isEn ? info.working_hours_display_en || info.working_hours_display : info.working_hours_display}</span>
               </div>
             </div>
           </div>
@@ -551,7 +572,7 @@ export function Footer() {
       <div className="bg-slate-950">
         <div className="container mx-auto px-4 pt-2 pb-8 md:pb-10 flex flex-col sm:flex-row items-center justify-between gap-3 text-[12px] text-slate-500">
           <div>
-            <p>© 2026 {info.team_name} · {info.university}. {t('home.footer.allRightsReserved')}</p>
+            <p>© 2026 {isEn ? info.team_name_en || info.team_name : info.team_name} · {isEn ? info.university_en || info.university : info.university}. {t('home.footer.allRightsReserved')}</p>
           </div>
           <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-end">
             <LanguageSwitcher theme="dark" />
@@ -559,7 +580,7 @@ export function Footer() {
             <span>
               {t('home.footer.developedBy')}{' '}
               <a href={info.facebook_page} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-slate-200 transition-colors">
-                {info.team_name}
+                {isEn ? info.team_name_en || info.team_name : info.team_name}
               </a>
             </span>
             <span>·</span>
@@ -590,9 +611,6 @@ export function MainLayout({ children }: { children?: React.ReactNode }) {
   }, [isAuthenticated, user?.id, user?.is_recovery_enabled]);
 
   const handleCloseRecoveryModal = () => {
-    if (user?.id) {
-      sessionStorage.setItem(`recovery_prompt_dismissed_${user.id}`, 'true');
-    }
     setShowRecoveryModal(false);
   };
 

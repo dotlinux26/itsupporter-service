@@ -76,11 +76,9 @@ export function PublicOrdersPage() {
                     <span className={`badge ${order.status === 'PENDING' ? 'badge-pending' :
                                           order.status === 'CONFIRMED' ? 'badge-confirmed' :
                                           order.status === 'IN_PROGRESS' ? 'badge-in_progress' :
+                                          order.status === 'COMPLETED_UNPAID' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
                                           order.status === 'COMPLETED' ? 'badge-completed' : 'badge-cancelled'}`}>
-                      {order.status === 'PENDING' ? t('status.pending') :
-                       order.status === 'CONFIRMED' ? t('status.confirmed') :
-                       order.status === 'IN_PROGRESS' ? t('status.in_progress') :
-                       order.status === 'COMPLETED' ? t('status.completed') : t('status.cancelled')}
+                      {t(`status.${order.status.toLowerCase()}`)}
                     </span>
                     <p className="text-text-secondary">{new Date(order.scheduled_date).toLocaleDateString(isEn ? 'en-US' : 'vi-VN')} {order.scheduled_start}</p>
                     <p className="text-text-secondary">{order.technician_name || t('orders.unassigned')}</p>

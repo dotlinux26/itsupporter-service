@@ -5,8 +5,9 @@ import { publicApi } from '../../api/client';
 import { MarkdownRenderer } from '../../components/MarkdownRenderer';
 
 export function TermsPage() {
-  const { t } = useTranslation();
-  const [termsMarkdown, setTermsMarkdown] = useState<string>('');
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
+  const [termsContent, setTermsContent] = useState<{ vi: string; en: string }>({ vi: '', en: '' });
 
   useSEO({
     title: t('termsPage.seoTitle'),
@@ -47,11 +48,18 @@ export function TermsPage() {
 
   useEffect(() => {
     publicApi.info().then((res) => {
-      if (res.data?.data?.terms_markdown) {
-        setTermsMarkdown(res.data.data.terms_markdown);
-      }
-    }).catch(() => {});
+      const info = res.data?.data;
+      if (!info) return;
+      setTermsContent({
+        vi: info.terms_markdown || '',
+        en: info.terms_markdown_en || info.terms_markdown || '',
+      });
+    }).catch((err) => {
+      console.error('Failed to load terms:', err);
+    });
   }, []);
+
+  const termsMarkdown = isEn ? termsContent.en || termsContent.vi : termsContent.vi;
 
   return (
     <div className="container py-5 sm:py-8 md:py-12 max-w-4xl mx-auto space-y-8">

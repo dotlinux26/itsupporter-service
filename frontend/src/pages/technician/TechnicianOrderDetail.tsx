@@ -59,6 +59,7 @@ export function TechnicianOrderDetail() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentStatusChoice, setPaymentStatusChoice] = useState<'PAID' | 'UNPAID'>('PAID');
   const [unpaidReason, setUnpaidReason] = useState('');
+  const [paymentNote, setPaymentNote] = useState('');
 
   // System penalty settings from manager
   const [systemSettings, setSystemSettings] = useState<{
@@ -207,17 +208,32 @@ export function TechnicianOrderDetail() {
   // Confirm completion & financial settlement from modal
   const handleConfirmComplete = async () => {
     if (!id) return;
+    const isFinalizingUnpaid = order?.status === 'COMPLETED_UNPAID';
+    if ((isFinalizingUnpaid || completePaymentStatus === 'UNPAID') && !completeNote.trim()) {
+      setError(t('technician.detail.paymentNoteRequiredError'));
+      return;
+    }
+    if (!isFinalizingUnpaid && completePaymentStatus === 'UNPAID' && !completeUnpaidReason.trim()) {
+      setError(t('technician.detail.unpaidReasonRequiredError'));
+      return;
+    }
     setActionLoading(true);
     setError('');
     setSuccess('');
     try {
       await technicianApi.complete(Number(id), {
         completion_result: 'SUCCESS',
-        payment_status: completePaymentStatus,
-        unpaid_reason: completePaymentStatus === 'UNPAID' ? completeUnpaidReason : null,
-        note: completeNote || null,
+        payment_status: isFinalizingUnpaid ? 'PAID' : completePaymentStatus,
+        unpaid_reason: !isFinalizingUnpaid && completePaymentStatus === 'UNPAID' ? completeUnpaidReason : null,
+        note: completeNote.trim() || null,
       });
-      setSuccess(t('technician.detail.completeSuccess'));
+      setSuccess(
+        isFinalizingUnpaid
+          ? t('technician.detail.finalizePaidSuccess')
+          : completePaymentStatus === 'UNPAID'
+            ? t('timeline.completedUnpaidSuccess')
+            : t('technician.detail.completeSuccess')
+      );
       setShowCompleteModal(false);
       loadOrder();
     } catch (err: any) {
@@ -369,6 +385,14 @@ export function TechnicianOrderDetail() {
   // Confirm payment
   const handleSavePayment = async () => {
     if (!id) return;
+    if (!paymentNote.trim()) {
+      setError(t('technician.detail.paymentNoteRequiredError'));
+      return;
+    }
+    if (paymentStatusChoice === 'UNPAID' && !unpaidReason.trim()) {
+      setError(t('technician.detail.unpaidReasonRequiredError'));
+      return;
+    }
     setActionLoading(true);
     setError('');
     try {
@@ -376,6 +400,7 @@ export function TechnicianOrderDetail() {
         payment_status: paymentStatusChoice,
         unpaid_reason: paymentStatusChoice === 'UNPAID' ? unpaidReason : null,
         payment_qr_path: bankQrUrl,
+        note: paymentNote.trim(),
       });
       setSuccess(
         t('technician.detail.paymentUpdateSuccess', {
@@ -390,6 +415,8 @@ export function TechnicianOrderDetail() {
       setActionLoading(false);
     }
   };
+
+  const isFinalizingUnpaid = order?.status === 'COMPLETED_UNPAID';
 
   if (loading) {
     return (
@@ -463,6 +490,8 @@ export function TechnicianOrderDetail() {
                     ? 'badge-confirmed'
                     : order.status === 'IN_PROGRESS'
                     ? 'badge-in_progress'
+                    : order.status === 'COMPLETED_UNPAID'
+                    ? 'bg-amber-50 text-amber-800 border border-amber-200'
                     : order.status === 'COMPLETED'
                     ? 'badge-completed'
                     : 'badge-cancelled'
@@ -658,9 +687,14 @@ export function TechnicianOrderDetail() {
               {order.unpaid_reason && <span className="text-rose-600">({order.unpaid_reason})</span>}
             </div>
 
-            {order.status === 'IN_PROGRESS' && (
+            {(order.status === 'IN_PROGRESS' || order.status === 'COMPLETED_UNPAID') && (
               <button
-                onClick={() => setShowPaymentModal(true)}
+                onClick={() => {
+                  setPaymentStatusChoice(order.payment_status);
+                  setUnpaidReason(order.unpaid_reason || '');
+                  setPaymentNote('');
+                  setShowPaymentModal(true);
+                }}
                 className="text-orange-600 hover:text-orange-700 font-semibold underline"
               >
                 {t('technician.detail.updatePaymentBtn')}
@@ -768,6 +802,22 @@ export function TechnicianOrderDetail() {
               </button>
             </>
           )}
+
+          {order.status === 'COMPLETED_UNPAID' && order.payment_status === 'PAID' && (
+            <button
+              onClick={() => {
+                setCompletePaymentStatus('PAID');
+                setCompleteUnpaidReason('');
+                setCompleteNote('');
+                setShowCompleteModal(true);
+              }}
+              disabled={actionLoading}
+              className="btn btn-primary bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{t('technician.detail.finalizePaidBtn')}</span>
+            </button>
+          )}
         </div>
 
         {/* Order Status Timeline Section */}
@@ -834,8 +884,12 @@ export function TechnicianOrderDetail() {
             <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
               <ShieldCheck className="w-6 h-6 text-emerald-600" />
               <div>
-                <h3 className="text-lg font-bold text-text">{t('technician.detail.confirmModalTitle')}</h3>
-                <p className="text-xs text-slate-500">{t('technician.detail.confirmModalSubtitle')}</p>
+                <h3 className="text-lg font-bold text-text">
+                  {isFinalizingUnpaid ? t('technician.detail.finalizePaidTitle') : t('technician.detail.confirmModalTitle')}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {isFinalizingUnpaid ? t('technician.detail.finalizePaidSubtitle') : t('technician.detail.confirmModalSubtitle')}
+                </p>
               </div>
             </div>
 
@@ -862,6 +916,7 @@ export function TechnicianOrderDetail() {
             </div>
 
             {/* Ledger Breakdown Notice */}
+            {completePaymentStatus === 'PAID' && (
             <div className="p-3 rounded-lg bg-emerald-50/60 border border-emerald-200 text-emerald-900 text-xs mb-4 space-y-1">
               <div className="font-bold flex items-center gap-1.5 text-emerald-800">
                 <Check className="w-3.5 h-3.5" />
@@ -889,85 +944,99 @@ export function TechnicianOrderDetail() {
                 </strong>
               </div>
             </div>
+            )}
+            {completePaymentStatus === 'UNPAID' && (
+              <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs mb-4">
+                {t('technician.detail.ledgerPendingNotice')}
+              </div>
+            )}
+            {isFinalizingUnpaid && (
+              <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs mb-4">
+                {t('technician.detail.finalizePaidHint')}
+              </div>
+            )}
 
             {/* Payment Status Option */}
-            <div className="space-y-3 mb-4">
-              <label className="text-xs font-bold text-slate-700 block">
-                {t('technician.detail.paymentStatusLabel')}
-              </label>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label
-                  className={`p-3 rounded-xl border flex items-center gap-2 cursor-pointer transition-colors ${
-                    completePaymentStatus === 'PAID'
-                      ? 'bg-emerald-50 border-emerald-400 text-emerald-900 font-semibold'
-                      : 'bg-white border-slate-200 text-slate-700'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="completePaymentStatus"
-                    value="PAID"
-                    checked={completePaymentStatus === 'PAID'}
-                    onChange={() => setCompletePaymentStatus('PAID')}
-                    className="accent-emerald-600"
-                  />
-                  <div className="text-xs">
-                    <div>{t('technician.detail.paidFullOption')}</div>
-                    <div className="text-[10px] text-slate-500 font-normal">{t('technician.detail.paidFullDesc')}</div>
-                  </div>
+            {!isFinalizingUnpaid && (
+              <div className="space-y-3 mb-4">
+                <label className="text-xs font-bold text-slate-700 block">
+                  {t('technician.detail.paymentStatusLabel')}
                 </label>
 
-                <label
-                  className={`p-3 rounded-xl border flex items-center gap-2 cursor-pointer transition-colors ${
-                    completePaymentStatus === 'UNPAID'
-                      ? 'bg-amber-50 border-amber-400 text-amber-900 font-semibold'
-                      : 'bg-white border-slate-200 text-slate-700'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="completePaymentStatus"
-                    value="UNPAID"
-                    checked={completePaymentStatus === 'UNPAID'}
-                    onChange={() => setCompletePaymentStatus('UNPAID')}
-                    className="accent-amber-600"
-                  />
-                  <div className="text-xs">
-                    <div>{t('technician.detail.unpaidOption')}</div>
-                    <div className="text-[10px] text-slate-500 font-normal">{t('technician.detail.unpaidDesc')}</div>
-                  </div>
-                </label>
-              </div>
-
-              {completePaymentStatus === 'UNPAID' && (
-                <div>
-                  <label className="text-xs font-semibold text-rose-700 block mb-1">
-                    {t('technician.detail.unpaidReasonLabel')}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label
+                    className={`p-3 rounded-xl border flex items-center gap-2 cursor-pointer transition-colors ${
+                      completePaymentStatus === 'PAID'
+                        ? 'bg-emerald-50 border-emerald-400 text-emerald-900 font-semibold'
+                        : 'bg-white border-slate-200 text-slate-700'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="completePaymentStatus"
+                      value="PAID"
+                      checked={completePaymentStatus === 'PAID'}
+                      onChange={() => setCompletePaymentStatus('PAID')}
+                      className="accent-emerald-600"
+                    />
+                    <div className="text-xs">
+                      <div>{t('technician.detail.paidFullOption')}</div>
+                      <div className="text-[10px] text-slate-500 font-normal">{t('technician.detail.paidFullDesc')}</div>
+                    </div>
                   </label>
-                  <textarea
-                    rows={2}
-                    value={completeUnpaidReason}
-                    onChange={(e) => setCompleteUnpaidReason(e.target.value)}
-                    placeholder={t('technician.detail.unpaidReasonPlaceholder')}
-                    className="input text-xs w-full resize-none"
-                    required
-                  />
-                </div>
-              )}
 
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  {t('technician.detail.settlementNoteLabel')}
-                </label>
-                <textarea
-                  rows={2}
-                  value={completeNote}
-                  onChange={(e) => setCompleteNote(e.target.value)}
-                  placeholder={t('technician.detail.settlementNotePlaceholder')}
-                  className="input text-xs w-full resize-none"
-                />
+                  <label
+                    className={`p-3 rounded-xl border flex items-center gap-2 cursor-pointer transition-colors ${
+                      completePaymentStatus === 'UNPAID'
+                        ? 'bg-amber-50 border-amber-400 text-amber-900 font-semibold'
+                        : 'bg-white border-slate-200 text-slate-700'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="completePaymentStatus"
+                      value="UNPAID"
+                      checked={completePaymentStatus === 'UNPAID'}
+                      onChange={() => setCompletePaymentStatus('UNPAID')}
+                      className="accent-amber-600"
+                    />
+                    <div className="text-xs">
+                      <div>{t('technician.detail.unpaidOption')}</div>
+                      <div className="text-[10px] text-slate-500 font-normal">{t('technician.detail.unpaidDesc')}</div>
+                    </div>
+                  </label>
+                </div>
+
+                {completePaymentStatus === 'UNPAID' && (
+                  <div>
+                    <label className="text-xs font-semibold text-rose-700 block mb-1">
+                      {t('technician.detail.unpaidReasonLabel')}
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={completeUnpaidReason}
+                      onChange={(e) => setCompleteUnpaidReason(e.target.value)}
+                      placeholder={t('technician.detail.unpaidReasonPlaceholder')}
+                      className="input text-xs w-full resize-none"
+                      required
+                    />
+                  </div>
+                )}
               </div>
+            )}
+
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-slate-700 block mb-1">
+                {t('technician.detail.settlementNoteLabel')}
+              </label>
+              <textarea
+                rows={2}
+                value={completeNote}
+                onChange={(e) => setCompleteNote(e.target.value)}
+                placeholder={t('technician.detail.settlementNotePlaceholder')}
+                className="input text-xs w-full resize-none"
+                required={isFinalizingUnpaid || completePaymentStatus === 'UNPAID'}
+              />
             </div>
 
             {/* Actions */}
@@ -985,12 +1054,19 @@ export function TechnicianOrderDetail() {
                 onClick={handleConfirmComplete}
                 disabled={
                   actionLoading ||
-                  (completePaymentStatus === 'UNPAID' && !completeUnpaidReason.trim())
+                  (isFinalizingUnpaid && !completeNote.trim()) ||
+                  (completePaymentStatus === 'UNPAID' && (!completeUnpaidReason.trim() || !completeNote.trim()))
                 }
                 className="btn btn-primary bg-emerald-600 hover:bg-emerald-700 text-xs flex items-center gap-1.5"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>{actionLoading ? t('technician.detail.processingSettlement') : t('technician.detail.confirmCompleteBtn')}</span>
+                <span>{actionLoading
+                  ? t('technician.detail.processingSettlement')
+                  : isFinalizingUnpaid
+                    ? t('technician.detail.finalizePaidBtn')
+                    : completePaymentStatus === 'UNPAID'
+                      ? t('technician.detail.confirmUnpaidCompleteBtn')
+                      : t('technician.detail.confirmCompleteBtn')}</span>
               </button>
             </div>
           </div>
@@ -1164,6 +1240,18 @@ export function TechnicianOrderDetail() {
                 </div>
               )}
 
+              <div>
+                <label className="label text-xs">{t('technician.detail.paymentNoteLabel')}</label>
+                <textarea
+                  rows={2}
+                  value={paymentNote}
+                  onChange={(e) => setPaymentNote(e.target.value)}
+                  placeholder={t('technician.detail.paymentNotePlaceholder')}
+                  className="input text-sm resize-none"
+                  required
+                />
+              </div>
+
               <div className="flex justify-end gap-3 pt-4 border-t border-border">
                 <button
                   type="button"
@@ -1175,7 +1263,7 @@ export function TechnicianOrderDetail() {
                 <button
                   type="button"
                   onClick={handleSavePayment}
-                  disabled={actionLoading || (paymentStatusChoice === 'UNPAID' && !unpaidReason.trim())}
+                  disabled={actionLoading || !paymentNote.trim() || (paymentStatusChoice === 'UNPAID' && !unpaidReason.trim())}
                   className="btn btn-primary text-xs"
                 >
                   {t('technician.detail.saveConfirmBtn')}

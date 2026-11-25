@@ -249,6 +249,17 @@ export function LoginPage() {
           </form>
         )}
 
+        <p className="text-center text-xs text-text-secondary leading-relaxed">
+          {t('auth.loginLegalNotice')}{' '}
+          <Link to="/terms" className="font-medium text-primary hover:underline">
+            {t('auth.termsOfService')}
+          </Link>
+          {' '}{t('auth.and')}{' '}
+          <Link to="/privacy" className="font-medium text-primary hover:underline">
+            {t('auth.privacyPolicy')}
+          </Link>
+        </p>
+
         <div className="text-center">
           <p className="text-sm text-text-secondary">
             {t('auth.noAccount')}

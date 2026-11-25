@@ -22,12 +22,18 @@ export function RegisterPage() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!termsAccepted) {
+      setError(t('auth.termsRequired'));
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError(t('auth.passwordMismatch'));
@@ -47,7 +53,7 @@ export function RegisterPage() {
     setLoading(true);
 
     try {
-      await register(name, email, password, phone.trim() || undefined);
+      await register(name, email, password, phone.trim() || undefined, termsAccepted);
       navigate('/orders', { replace: true });
     } catch (err: any) {
       const msg = err.response?.data?.error?.message 
@@ -160,9 +166,30 @@ export function RegisterPage() {
             </div>
           </div>
 
+          <div className="flex items-start gap-2 text-sm text-text-secondary">
+            <input
+              id="termsAccepted"
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+              required
+            />
+            <label htmlFor="termsAccepted">
+              {t('auth.termsConsentText')}{' '}
+              <Link to="/terms" className="font-medium text-primary hover:underline">
+                {t('auth.termsOfService')}
+              </Link>{' '}
+              {t('auth.privacyNotice')}{' '}
+              <Link to="/privacy" className="font-medium text-primary hover:underline">
+                {t('auth.privacyPolicy')}
+              </Link>
+            </label>
+          </div>
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !termsAccepted}
             className="btn btn-primary w-full py-3"
           >
             {loading ? t('common.loading') : t('auth.registerButton')}

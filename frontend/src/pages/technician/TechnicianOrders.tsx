@@ -39,6 +39,7 @@ export function TechnicianOrders() {
           <option value="PENDING">{t('status.pending')}</option>
           <option value="CONFIRMED">{t('status.confirmed')}</option>
           <option value="IN_PROGRESS">{t('status.in_progress')}</option>
+          <option value="COMPLETED_UNPAID">{t('status.completed_unpaid')}</option>
           <option value="COMPLETED">{t('status.completed')}</option>
           <option value="CANCELLED">{t('status.cancelled')}</option>
         </select>
@@ -64,11 +65,9 @@ export function TechnicianOrders() {
                 <span className={`badge ${order.status === 'PENDING' ? 'badge-pending' :
                                           order.status === 'CONFIRMED' ? 'badge-confirmed' :
                                           order.status === 'IN_PROGRESS' ? 'badge-in_progress' :
+                                          order.status === 'COMPLETED_UNPAID' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
                                           order.status === 'COMPLETED' ? 'badge-completed' : 'badge-cancelled'}`}>
-                  {order.status === 'PENDING' ? t('status.pending') :
-                   order.status === 'CONFIRMED' ? t('status.confirmed') :
-                   order.status === 'IN_PROGRESS' ? t('status.in_progress') :
-                   order.status === 'COMPLETED' ? t('status.completed') : t('status.cancelled')}
+                  {t(`status.${order.status.toLowerCase()}`)}
                 </span>
                 <p className="text-text-secondary">
                   {new Date(order.scheduled_date).toLocaleDateString(isEn ? 'en-US' : 'vi-VN')} {order.scheduled_start}

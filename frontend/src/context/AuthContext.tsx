@@ -7,7 +7,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<any>;
   login2FA: (tempToken: string, code: string, rememberMe?: boolean) => Promise<User>;
-  register: (name: string, email: string, password: string, phone?: string) => Promise<User>;
+  register: (name: string, email: string, password: string, phone: string | undefined, termsAccepted: boolean) => Promise<User>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
@@ -58,8 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return userData;
   };
 
-  const register = async (name: string, email: string, password: string, phone?: string): Promise<User> => {
-    const response = await authApi.register(name, email, password, phone);
+  const register = async (name: string, email: string, password: string, phone: string | undefined, termsAccepted: boolean): Promise<User> => {
+    const response = await authApi.register(name, email, password, phone, termsAccepted);
     const userData = response.data.data;
     if (userData?.id) {
       sessionStorage.removeItem(`recovery_prompt_dismissed_${userData.id}`);

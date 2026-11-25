@@ -18,7 +18,8 @@ import {
 import { useSEO } from '../../hooks/useSEO';
 
 export function HomePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
 
   useSEO({
     title: t('home.seoTitle'),
@@ -33,12 +34,17 @@ export function HomePage() {
   const [loading, setLoading] = useState(true);
   const [siteInfo, setSiteInfo] = useState<{
     workshop_address: string;
+    workshop_address_en?: string;
     team_name: string;
+    team_name_en?: string;
     contact_phone: string;
     booking_notice: string;
+    booking_notice_en?: string;
     warranty_policy_enabled?: boolean | string;
     warranty_policy_days?: string;
+    warranty_policy_days_en?: string;
     warranty_policy_title?: string;
+    warranty_policy_title_en?: string;
     stats?: {
       completed_orders_count?: number;
       total_orders_count?: number;
@@ -120,6 +126,10 @@ export function HomePage() {
   };
 
   const isWarrantyActive = siteInfo.warranty_policy_enabled === true || siteInfo.warranty_policy_enabled === 'true' || siteInfo.warranty_policy_enabled === '1';
+  const teamName = isEn ? siteInfo.team_name_en || siteInfo.team_name : siteInfo.team_name;
+  const workshopAddress = isEn ? siteInfo.workshop_address_en || siteInfo.workshop_address : siteInfo.workshop_address;
+  const warrantyDays = isEn ? siteInfo.warranty_policy_days_en || siteInfo.warranty_policy_days : siteInfo.warranty_policy_days;
+  const warrantyTitle = isEn ? siteInfo.warranty_policy_title_en || siteInfo.warranty_policy_title : siteInfo.warranty_policy_title;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-orange-500 selection:text-white">
@@ -153,13 +163,13 @@ export function HomePage() {
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-950 tracking-tight leading-[1.12] mb-6">
               {t('home.heroCooling')}{' '}
               <span className="text-[#ff6b35] block sm:inline font-black">
-                {t('home.heroIntakeAt')} {siteInfo.team_name}.
+                {t('home.heroIntakeAt')} {teamName}.
               </span>
             </h1>
 
             {/* Subtitle */}
             <p className="text-base sm:text-lg md:text-xl text-slate-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-              {t('home.heroDescription', { teamName: siteInfo.team_name, address: siteInfo.workshop_address })}
+              {t('home.heroDescription', { teamName, address: workshopAddress })}
             </p>
 
             {/* Action buttons */}
@@ -191,7 +201,7 @@ export function HomePage() {
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-blue-600" />
-                <span>{siteInfo.workshop_address}</span>
+                <span>{workshopAddress}</span>
               </div>
             </div>
           </div>
@@ -231,8 +241,8 @@ export function HomePage() {
             </div>
             {isWarrantyActive && (
               <div>
-                <div className="text-3xl sm:text-4xl font-black text-emerald-600 font-mono">{siteInfo.warranty_policy_days || t('home.defaultWarrantyDays')}</div>
-                <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">{siteInfo.warranty_policy_title || t('home.defaultWarrantyTitle')}</div>
+                <div className="text-3xl sm:text-4xl font-black text-emerald-600 font-mono">{warrantyDays || t('home.defaultWarrantyDays')}</div>
+                <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">{warrantyTitle || t('home.defaultWarrantyTitle')}</div>
               </div>
             )}
           </div>
@@ -274,7 +284,7 @@ export function HomePage() {
               </div>
               <h3 className="font-bold text-slate-900 text-base mb-1">{t('home.step2Title')}</h3>
               <p className="text-xs text-slate-500 leading-relaxed">
-                {t('home.step2Desc', { address: siteInfo.workshop_address })}
+                {t('home.step2Desc', { address: workshopAddress })}
               </p>
             </div>
 

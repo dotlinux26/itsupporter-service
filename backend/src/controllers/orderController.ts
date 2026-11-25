@@ -429,17 +429,37 @@ export function technicianPaymentHandler(req: Request, res: Response, next: Next
     const order = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow | undefined;
     if (!order) { next(new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404)); return; }
     ensureAssignedTechnician(order, user);
+    if (!['IN_PROGRESS', 'COMPLETED_UNPAID'].includes(order.status)) {
+      next(new AppError('CONFLICT', 'Chỉ cập nhật thanh toán khi đơn đang thực hiện hoặc chờ xác nhận đã thu tiền.', 409)); return;
+    }
 
-    getDb().prepare(`
-      UPDATE orders SET
-        payment_status = ?,
-        unpaid_reason = ?,
-        payment_qr_path = COALESCE(?, payment_qr_path),
-        updated_at = datetime('now')
-      WHERE id = ?
-    `).run(payment_status, unpaid_reason, payment_qr_path, id);
+    const note = req.body.note ? String(req.body.note).trim() : '';
+    if (payment_status === 'UNPAID' && !unpaid_reason?.trim()) {
+      next(new AppError('VALIDATION_ERROR', 'Vui lòng ghi rõ lý do chưa thu được tiền.', 400)); return;
+    }
+    if (order.status === 'COMPLETED_UNPAID' && payment_status === 'PAID' && !note) {
+      next(new AppError('VALIDATION_ERROR', 'Vui lòng nhập ghi chú khi xác nhận đã nhận tiền.', 400)); return;
+    }
 
-    logStatusChange(id, order.status, order.status, user.id, `Cập nhật thanh toán: ${payment_status} ${unpaid_reason ? `(Lý do: ${unpaid_reason})` : ''}`);
+    const db = getDb();
+    db.transaction(() => {
+      db.prepare(`
+        UPDATE orders SET
+          payment_status = ?,
+          unpaid_reason = ?,
+          payment_qr_path = COALESCE(?, payment_qr_path),
+          updated_at = datetime('now')
+        WHERE id = ?
+      `).run(payment_status, unpaid_reason, payment_qr_path, id);
+
+      logStatusChange(
+        id,
+        order.status,
+        order.status,
+        user.id,
+        `Cập nhật thanh toán: ${payment_status}${unpaid_reason ? ` (Lý do: ${unpaid_reason})` : ''}${note ? ` — ${note}` : ''}`
+      );
+    })();
     const updated = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow;
     res.json({ data: updated });
   } catch (err) { next(err); }
@@ -454,7 +474,10 @@ export function technicianCompleteHandler(req: Request, res: Response, next: Nex
     const order = getDb().prepare('SELECT * FROM orders WHERE id = ?').get(id) as (OrderRow & { actor_name: string }) | undefined;
     if (!order) { next(new AppError('NOT_FOUND', 'Không tìm thấy đơn.', 404)); return; }
     ensureAssignedTechnician(order, user);
-    if (order.status !== 'IN_PROGRESS') { next(new AppError('CONFLICT', 'Chỉ hoàn thành được đơn IN_PROGRESS.', 409)); return; }
+    const isFinalizingUnpaid = order.status === 'COMPLETED_UNPAID';
+    if (order.status !== 'IN_PROGRESS' && !isFinalizingUnpaid) {
+      next(new AppError('CONFLICT', 'Chỉ hoàn thành được đơn đang thực hiện hoặc đang chờ thanh toán.', 409)); return;
+    }
     const completion_result = String(req.body.completion_result ?? 'SUCCESS');
     if (!['SUCCESS', 'FAILED', 'CANCELLED'].includes(completion_result)) {
       next(new AppError('VALIDATION_ERROR', 'Kết quả không hợp lệ.', 400)); return;
@@ -462,41 +485,64 @@ export function technicianCompleteHandler(req: Request, res: Response, next: Nex
 
     const paymentStatus = req.body.payment_status === 'UNPAID' ? 'UNPAID' : 'PAID';
     const unpaidReason = req.body.unpaid_reason ? String(req.body.unpaid_reason).trim() : null;
-    const note = req.body.note ? String(req.body.note).trim() : `Hoàn thành dịch vụ: ${completion_result}`;
+    const note = req.body.note ? String(req.body.note).trim() : '';
+    if (isFinalizingUnpaid && (order.payment_status !== 'PAID' || paymentStatus !== 'PAID')) {
+      next(new AppError('PRE_CONDITION_FAILED', 'Vui lòng xác nhận đã thu tiền trước khi hoàn tất đơn.', 409)); return;
+    }
+    if (isFinalizingUnpaid && (completion_result !== 'SUCCESS' || !note)) {
+      next(new AppError('VALIDATION_ERROR', 'Vui lòng ghi chú khi chuyển đơn sang Hoàn thành.', 400)); return;
+    }
+    if (!isFinalizingUnpaid && completion_result === 'SUCCESS' && paymentStatus === 'UNPAID' && (!unpaidReason || !note)) {
+      next(new AppError('VALIDATION_ERROR', 'Vui lòng ghi rõ lý do chưa thu được tiền và ghi chú hoàn thành dịch vụ.', 400)); return;
+    }
+    const nextStatus =
+      isFinalizingUnpaid
+        ? 'COMPLETED'
+        : completion_result === 'SUCCESS' && paymentStatus === 'UNPAID'
+          ? 'COMPLETED_UNPAID'
+          : 'COMPLETED';
+    const noteForTimeline = note || (unpaidReason ? `Dịch vụ đã xong, khách chưa chuyển tiền: ${unpaidReason}` : `Hoàn thành dịch vụ: ${completion_result}`);
     const now = new Date().toISOString();
 
-    getDb().prepare(`
-      UPDATE orders SET 
-        status = 'COMPLETED', 
-        completion_result = ?, 
-        payment_status = ?,
-        unpaid_reason = ?,
-        completed_at = ?, 
-        updated_at = datetime('now') 
-      WHERE id = ?
-    `).run(completion_result, paymentStatus, unpaidReason, now, id);
+    const db = getDb();
+    db.transaction(() => {
+      db.prepare(`
+        UPDATE orders SET
+          status = ?,
+          completion_result = ?,
+          payment_status = ?,
+          unpaid_reason = ?,
+          completed_at = COALESCE(completed_at, ?),
+          updated_at = datetime('now')
+        WHERE id = ?
+      `).run(nextStatus, completion_result, isFinalizingUnpaid ? 'PAID' : paymentStatus, isFinalizingUnpaid ? null : unpaidReason, now, id);
 
-    logStatusChange(
-      id,
-      'IN_PROGRESS',
-      'COMPLETED',
-      user.id,
-      `${note} - Thanh toán: ${paymentStatus === 'PAID' ? 'Đã thu tiền' : 'Chưa thu tiền' + (unpaidReason ? ` (${unpaidReason})` : '')}`
-    );
+      logStatusChange(
+        id,
+        order.status,
+        nextStatus,
+        user.id,
+        `${noteForTimeline} — Thanh toán: ${isFinalizingUnpaid || paymentStatus === 'PAID' ? 'Đã thu tiền' : `Chưa thu tiền (${unpaidReason})`}`
+      );
+
+      if (nextStatus === 'COMPLETED') {
+        const completedOrder = findOrderById(id) as OrderRow;
+        settleOrderLedger(completedOrder, user.id);
+      }
+    })();
 
     const completedOrder = findOrderById(id) as OrderRow;
-    // settle ledger
-    settleOrderLedger(completedOrder, user.id);
-
-    try {
-      sendOrderNotification(
-        order.customer_id,
-        id,
-        'ORDER_COMPLETED',
-        'Đơn dịch vụ đã hoàn thành!',
-        `Kỹ thuật viên ${user.name} đã hoàn tất bảo dưỡng đơn ${order.code}. Hãy vào đánh giá dịch vụ nhé!`
-      );
-    } catch {}
+    if (nextStatus === 'COMPLETED') {
+      try {
+        sendOrderNotification(
+          order.customer_id,
+          id,
+          'ORDER_COMPLETED',
+          'Đơn dịch vụ đã hoàn thành!',
+          `Kỹ thuật viên ${user.name} đã hoàn tất bảo dưỡng đơn ${order.code}. Hãy vào đánh giá dịch vụ nhé!`
+        );
+      } catch {}
+    }
 
     res.json({ data: completedOrder });
   } catch (err) { next(err); }

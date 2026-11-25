@@ -78,7 +78,9 @@ export function BookingPage() {
   const [selectedDate, setSelectedDate] = useState<string>(initialDate);
   const [selectedTime, setSelectedTime] = useState<string>(initialTime);
   const [selectedTechId, setSelectedTechId] = useState<number | null>(initialTechId);
-  const [workshopAddress, setWorkshopAddress] = useState<string>('Phòng 1603, Tòa A1, Cơ sở 1 - Đại học Công nghiệp Hà Nội');
+  const [workshopAddressVi, setWorkshopAddressVi] = useState<string>('Phòng 1603, Tòa A1, Cơ sở 1 - Đại học Công nghiệp Hà Nội');
+  const [workshopAddressEn, setWorkshopAddressEn] = useState<string>('');
+  const workshopAddress = isEn ? workshopAddressEn || workshopAddressVi : workshopAddressVi;
   const [warrantyStatus, setWarrantyStatus] = useState<'EXPIRED' | 'UNDER_WARRANTY' | 'UNKNOWN'>('EXPIRED');
   const [note, setNote] = useState<string>('');
 
@@ -166,7 +168,10 @@ export function BookingPage() {
       if (infoRes?.data?.data) {
         const info = infoRes.data.data;
         if (info.workshop_address) {
-          setWorkshopAddress(info.workshop_address);
+          setWorkshopAddressVi(info.workshop_address);
+        }
+        if (info.workshop_address_en) {
+          setWorkshopAddressEn(info.workshop_address_en);
         }
         if (info.server_today) {
           setServerToday(info.server_today);
@@ -368,6 +373,8 @@ export function BookingPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {packages.map((pkg) => {
                 const isSelected = pkg.id === selectedPackageId;
+                const packageName = isEn ? pkg.name_en || pkg.name : pkg.name;
+                const packageDescription = isEn ? pkg.description_en || pkg.description : pkg.description;
                 return (
                   <div
                     key={pkg.id}
@@ -380,13 +387,13 @@ export function BookingPage() {
                   >
                     <div>
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="font-bold text-slate-900 text-base">{pkg.name}</h3>
+                        <h3 className="font-bold text-slate-900 text-base">{packageName}</h3>
                         <span className="text-lg font-extrabold text-orange-600 whitespace-nowrap">
                           {pkg.price.toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
                         </span>
                       </div>
                       <div className="text-xs text-slate-600 line-clamp-3 mb-3">
-                        <MarkdownRenderer content={pkg.description || ''} />
+                        <MarkdownRenderer content={packageDescription || ''} />
                       </div>
                     </div>
 

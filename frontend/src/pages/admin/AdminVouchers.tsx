@@ -23,7 +23,9 @@ interface VoucherProgramItem {
   id: number;
   code: string;
   name: string;
+  name_en?: string;
   description?: string;
+  description_en?: string;
   discount_type: 'percent' | 'fixed';
   discount_value: number;
   max_usage: number;
@@ -61,7 +63,9 @@ export function AdminVouchers() {
   // Edit Program state
   const [editingProgram, setEditingProgram] = useState<VoucherProgramItem | null>(null);
   const [editName, setEditName] = useState('');
+  const [editNameEn, setEditNameEn] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [editDescriptionEn, setEditDescriptionEn] = useState('');
   const [editIsActive, setEditIsActive] = useState(1);
   const [editValidTo, setEditValidTo] = useState('');
   const [updating, setUpdating] = useState(false);
@@ -79,7 +83,9 @@ export function AdminVouchers() {
   // Form state for new program
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
+  const [nameEn, setNameEn] = useState('');
   const [description, setDescription] = useState('');
+  const [descriptionEn, setDescriptionEn] = useState('');
   const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
   const [discountValue, setDiscountValue] = useState<number>(10);
   const [validTo, setValidTo] = useState('');
@@ -108,7 +114,9 @@ export function AdminVouchers() {
       await voucherApi.createProgram({
         code: code.trim().toUpperCase(),
         name: name.trim(),
+        name_en: nameEn.trim() || name.trim(),
         description: description.trim() || undefined,
+        description_en: descriptionEn.trim() || description.trim() || undefined,
         discount_type: discountType,
         discount_value: Number(discountValue),
         valid_to: validTo ? new Date(validTo).toISOString() : undefined,
@@ -117,7 +125,9 @@ export function AdminVouchers() {
       setShowCreateModal(false);
       setCode('');
       setName('');
+      setNameEn('');
       setDescription('');
+      setDescriptionEn('');
       loadPrograms();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t('admin.programCreateFail', 'Tạo chương trình thất bại');
@@ -147,7 +157,9 @@ export function AdminVouchers() {
   const openEditModal = (p: VoucherProgramItem) => {
     setEditingProgram(p);
     setEditName(p.name);
+    setEditNameEn(p.name_en || p.name);
     setEditDescription(p.description || '');
+    setEditDescriptionEn(p.description_en || p.description || '');
     setEditIsActive(p.is_active);
     setEditValidTo(p.valid_to ? p.valid_to.slice(0, 10) : '');
   };
@@ -160,7 +172,9 @@ export function AdminVouchers() {
       setError(null);
       await voucherApi.updateProgram(editingProgram.id, {
         name: editName.trim(),
+        name_en: editNameEn.trim() || editName.trim(),
         description: editDescription.trim() || undefined,
+        description_en: editDescriptionEn.trim() || editDescription.trim() || undefined,
         is_active: editIsActive,
         valid_to: editValidTo ? new Date(editValidTo).toISOString() : undefined,
       });
@@ -299,8 +313,8 @@ export function AdminVouchers() {
                         {p.is_active ? t('admin.active', 'Đang áp dụng') : t('admin.inactive', 'Tạm dừng')}
                       </span>
                     </div>
-                    <h3 className="text-base font-bold text-gray-900 mt-2">{p.name}</h3>
-                    <p className="text-xs text-gray-500 mt-1">{p.description || t('common.noDesc', 'Không có mô tả')}</p>
+                    <h3 className="text-base font-bold text-gray-900 mt-2">{isEn ? p.name_en || p.name : p.name}</h3>
+                    <p className="text-xs text-gray-500 mt-1">{(isEn ? p.description_en || p.description : p.description) || t('common.noDesc', 'Không có mô tả')}</p>
                   </div>
                   <div className="text-right shrink-0">
                     <div className="text-xl font-extrabold text-orange-600">
@@ -408,6 +422,12 @@ export function AdminVouchers() {
                   className="input w-full"
                 />
               </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  {isEn ? 'Program name (English)' : 'Tên chương trình (English)'}
+                </label>
+                <input type="text" value={nameEn} onChange={(e) => setNameEn(e.target.value)} className="input w-full" />
+              </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
@@ -418,6 +438,13 @@ export function AdminVouchers() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="input w-full"
+                />
+                <textarea
+                  rows={2}
+                  value={descriptionEn}
+                  onChange={(e) => setDescriptionEn(e.target.value)}
+                  className="input w-full mt-2"
+                  placeholder="Description (English)"
                 />
               </div>
 
@@ -525,6 +552,12 @@ export function AdminVouchers() {
                   className="input w-full"
                 />
               </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  {isEn ? 'Program name (English)' : 'Tên chương trình (English)'}
+                </label>
+                <input type="text" value={editNameEn} onChange={(e) => setEditNameEn(e.target.value)} className="input w-full" />
+              </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
@@ -535,6 +568,13 @@ export function AdminVouchers() {
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   className="input w-full"
+                />
+                <textarea
+                  rows={2}
+                  value={editDescriptionEn}
+                  onChange={(e) => setEditDescriptionEn(e.target.value)}
+                  className="input w-full mt-2"
+                  placeholder="Description (English)"
                 />
               </div>
 

@@ -9,14 +9,17 @@ interface VoucherItem {
   code: string;
   status: 'active' | 'used' | 'expired' | 'voided';
   program_name: string;
+  program_name_en?: string;
   description?: string;
+  description_en?: string;
   discount_type: 'percent' | 'fixed';
   discount_value: number;
   valid_to?: string | null;
 }
 
 export function MyVouchersPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith('en');
   const [vouchers, setVouchers] = useState<VoucherItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,8 +82,8 @@ export function MyVouchersPage() {
             <VoucherCard
               key={v.id}
               code={v.code}
-              name={v.program_name}
-              description={v.description || t('voucher.loyalCustomerDesc')}
+              name={isEn ? v.program_name_en || v.program_name : v.program_name}
+              description={(isEn ? v.description_en || v.description : v.description) || t('voucher.loyalCustomerDesc')}
               discountType={v.discount_type}
               discountValue={v.discount_value}
               status={v.status}

@@ -57,7 +57,9 @@ export function TechnicianDashboard() {
 
       const allOrders: any[] = allOrdersRes.data?.data || [];
       const pending = allOrders.filter((o) => o.status === 'PENDING');
-      const inProgress = allOrders.filter((o) => o.status === 'IN_PROGRESS' || o.status === 'CONFIRMED');
+      const inProgress = allOrders.filter((o) =>
+        o.status === 'IN_PROGRESS' || o.status === 'CONFIRMED' || o.status === 'COMPLETED_UNPAID'
+      );
 
       setPendingOrders(pending);
       setCurrentOrders(inProgress);
@@ -231,8 +233,12 @@ export function TechnicianDashboard() {
                             <span className="font-mono font-bold text-sm text-gray-900 group-hover:text-primary">
                               #{order.code}
                             </span>
-                            <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
-                              {order.status === 'CONFIRMED' ? t('status.confirmed') : t('status.in_progress')}
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-md border ${
+                              order.status === 'COMPLETED_UNPAID'
+                                ? 'text-amber-800 bg-amber-50 border-amber-200'
+                                : 'text-blue-700 bg-blue-50 border-blue-200'
+                            }`}>
+                              {t(`status.${order.status.toLowerCase()}`)}
                             </span>
                           </div>
                           <div className="text-xs font-medium text-gray-800 mt-1">

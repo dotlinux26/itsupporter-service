@@ -381,6 +381,7 @@ export function ManagerOrders() {
               <option value="PENDING">{t('status.pending')}</option>
               <option value="CONFIRMED">{t('status.confirmed')}</option>
               <option value="IN_PROGRESS">{t('status.in_progress')}</option>
+              <option value="COMPLETED_UNPAID">{t('status.completed_unpaid')}</option>
               <option value="COMPLETED">{t('status.completed')}</option>
               <option value="CANCELLED">{t('status.cancelled')}</option>
             </select>
@@ -533,7 +534,9 @@ export function ManagerOrders() {
                         value={order.status}
                         onChange={(e) => handleStatusChangeRequest(order, e.target.value)}
                         className={`text-[11px] font-semibold px-2 py-1 rounded-lg border appearance-none cursor-pointer transition ${
-                          order.status === 'COMPLETED'
+                          order.status === 'COMPLETED_UNPAID'
+                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                            : order.status === 'COMPLETED'
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : order.status === 'IN_PROGRESS'
                             ? 'bg-blue-50 text-blue-700 border-blue-200'
@@ -543,10 +546,12 @@ export function ManagerOrders() {
                             ? 'bg-rose-50 text-rose-700 border-rose-200'
                             : 'bg-yellow-50 text-yellow-700 border-yellow-200'
                         }`}
+                        disabled={order.status === 'COMPLETED_UNPAID'}
                       >
                         <option value="PENDING">{t('status.pending')}</option>
                         <option value="CONFIRMED">{t('status.confirmed')}</option>
                         <option value="IN_PROGRESS">{t('status.in_progress')}</option>
+                        <option value="COMPLETED_UNPAID" disabled>{t('status.completed_unpaid')}</option>
                         <option value="COMPLETED">{t('status.completed')}</option>
                         <option value="CANCELLED">{t('status.cancelled')}</option>
                       </select>
@@ -793,7 +798,9 @@ export function ManagerOrders() {
                       <div className="flex items-center gap-2 mt-1">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                            selectedOrderDetail.status === 'COMPLETED'
+                            selectedOrderDetail.status === 'COMPLETED_UNPAID'
+                              ? 'bg-amber-50 text-amber-800 border-amber-200'
+                              : selectedOrderDetail.status === 'COMPLETED'
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                               : selectedOrderDetail.status === 'IN_PROGRESS'
                               ? 'bg-blue-50 text-blue-700 border-blue-200'
@@ -804,7 +811,7 @@ export function ManagerOrders() {
                               : 'bg-yellow-50 text-yellow-700 border-yellow-200'
                           }`}
                         >
-                          {selectedOrderDetail.status}
+                          {t(`status.${String(selectedOrderDetail.status).toLowerCase()}`, { defaultValue: selectedOrderDetail.status })}
                         </span>
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${

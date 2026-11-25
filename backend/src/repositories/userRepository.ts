@@ -164,6 +164,43 @@ export function ensureTechnicianProfile(userId: number): void {
     .run(userId);
 }
 
+export function ensureTechnicianAlias(userId: number, name: string): string {
+  const db = getDb();
+  ensureTechnicianProfile(userId);
+
+  const createAlias = db.transaction(() => {
+    const current = getTechnicianProfile(userId)?.alias?.trim();
+    if (current) return current;
+
+    const slug = name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/gi, 'd')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    const rawBase = slug || `tech-${userId}`;
+    const base = ['admin', 'api', 'login', 'register', 'dashboard', 'settings', 'manager', 'technician', 'orders', 'booking', 'services', 'about', 'terms', 'privacy', 'auth', 'help', 'support', 'home', 'root', 'u', 'ktv'].includes(rawBase)
+      ? `ktv-${rawBase}`
+      : rawBase;
+
+    let suffix = 1;
+    let alias = '';
+    do {
+      const suffixText = suffix === 1 ? '' : `-${suffix}`;
+      const candidateBase = base.slice(0, 30 - suffixText.length).replace(/-+$/g, '');
+      alias = `${candidateBase}${suffixText}`;
+      suffix += 1;
+    } while (db.prepare('SELECT 1 FROM technician_profiles WHERE LOWER(alias) = LOWER(?) AND user_id != ?').get(alias, userId));
+
+    db.prepare("UPDATE technician_profiles SET alias = ?, updated_at = datetime('now') WHERE user_id = ? AND (alias IS NULL OR alias = '')")
+      .run(alias, userId);
+    return getTechnicianProfile(userId)?.alias || alias;
+  });
+
+  return createAlias();
+}
+
 export function updateTechnicianProfile(
   userId: number,
   patch: {

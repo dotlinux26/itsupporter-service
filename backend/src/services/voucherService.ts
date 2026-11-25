@@ -155,7 +155,9 @@ export function getProgramVouchers(programId: number) {
 export function createVoucherProgramService(input: {
   code: string;
   name: string;
+  name_en?: string;
   description?: string | null;
+  description_en?: string | null;
   discount_type: 'percent' | 'fixed';
   discount_value: number;
   max_usage: number;
@@ -178,7 +180,9 @@ export function createVoucherProgramService(input: {
 export function updateVoucherProgramService(id: number, patch: {
   code?: string;
   name?: string;
+  name_en?: string;
   description?: string | null;
+  description_en?: string | null;
   discount_type?: 'percent' | 'fixed';
   discount_value?: number;
   max_usage?: number;

@@ -272,6 +272,16 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                   </p>
                 </div>
               )}
+              <div className="pt-4 border-t border-slate-100 flex justify-end">
+                <Link
+                  to={`/ktv/${selectedTech.alias || selectedTech.id}`}
+                  onClick={() => setSelectedTech(null)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold transition"
+                >
+                  {t('home.viewProfile')}
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
 
               {/* Skills */}
               <div>

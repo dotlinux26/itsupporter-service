@@ -113,6 +113,14 @@ function resolveTimelineEvent(item: OrderTimelineItem, index: number, t: (key: s
         icon: CheckCircle2,
         defaultDesc: t('timeline.completedDesc'),
       };
+    case 'COMPLETED_UNPAID':
+      return {
+        title: t('timeline.completedUnpaidTitle'),
+        badgeLabel: t('timeline.completedUnpaid'),
+        badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
+        icon: Clock,
+        defaultDesc: t('timeline.completedUnpaidDesc'),
+      };
     case 'CANCELLED':
       return {
         title: t('timeline.cancelledTitle'),
@@ -221,12 +229,12 @@ export function OrderTimeline({
             </div>
           )}
 
-          {(orderStatus === 'IN_PROGRESS' || orderStatus === 'COMPLETED') && (
+          {(orderStatus === 'IN_PROGRESS' || orderStatus === 'COMPLETED' || orderStatus === 'COMPLETED_UNPAID') && (
             <div className="flex items-start gap-3.5 relative">
               <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-700 border border-orange-200 flex items-center justify-center shrink-0">
                 <Clock className="w-4 h-4" />
               </div>
-              <div className={`flex-1 ${orderStatus === 'COMPLETED' ? 'border-l-2 border-slate-200 pb-4' : 'pb-1'} pl-4 -ml-7 mt-8`}>
+              <div className={`flex-1 ${orderStatus !== 'IN_PROGRESS' ? 'border-l-2 border-slate-200 pb-4' : 'pb-1'} pl-4 -ml-7 mt-8`}>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-900 text-sm">{t('timeline.workStartedTitle')}</span>
                   <span className="text-xs text-slate-500 font-mono">{formatVietnamTime(startedAt)}</span>
@@ -236,18 +244,22 @@ export function OrderTimeline({
             </div>
           )}
 
-          {orderStatus === 'COMPLETED' && (
+          {(orderStatus === 'COMPLETED' || orderStatus === 'COMPLETED_UNPAID') && (
             <div className="flex items-start gap-3.5 relative">
-              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-4 h-4" />
+              <div className={`w-8 h-8 rounded-full ${orderStatus === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-amber-100 text-amber-800 border-amber-200'} border flex items-center justify-center shrink-0`}>
+                {orderStatus === 'COMPLETED' ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
               </div>
               <div className="flex-1 pb-1 pl-4 -ml-7 mt-8">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-900 text-sm">{t('timeline.completedTitle')}</span>
+                  <span className="font-semibold text-slate-900 text-sm">
+                    {orderStatus === 'COMPLETED' ? t('timeline.completedTitle') : t('timeline.completedUnpaidTitle')}
+                  </span>
                   <span className="text-xs text-slate-500 font-mono">{formatVietnamTime(completedAt)}</span>
                 </div>
                 <p className="text-xs text-slate-600">
-                  {completionResult === 'SUCCESS' ? t('timeline.serviceSuccess') : t('timeline.cancelledDesc')}
+                  {orderStatus === 'COMPLETED_UNPAID'
+                    ? t('timeline.completedUnpaidDesc')
+                    : completionResult === 'SUCCESS' ? t('timeline.serviceSuccess') : t('timeline.cancelledDesc')}
                 </p>
               </div>
             </div>

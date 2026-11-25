@@ -91,6 +91,9 @@ export function ServicesPage() {
             const bookingUrl = isAuthenticated 
               ? `/booking?packageId=${pkg.id}`
               : `/login?redirect=/booking&packageId=${pkg.id}`;
+            const packageName = isEn ? pkg.name_en || pkg.name : pkg.name;
+            const packageDescription = isEn ? pkg.description_en || pkg.description : pkg.description;
+            const packageFeatures = isEn ? pkg.features_en || pkg.features : pkg.features;
 
             return (
               <div 
@@ -101,13 +104,13 @@ export function ServicesPage() {
                   {pkg.image && (
                     <img 
                       src={pkg.image} 
-                      alt={pkg.name} 
+                      alt={packageName}
                       className="w-full h-48 object-cover rounded-xl mb-6 group-hover:scale-101 transition-transform" 
                     />
                   )}
 
                   <div className="flex items-start justify-between gap-4 mb-3">
-                    <h3 className="text-2xl font-bold text-slate-900">{pkg.name}</h3>
+                    <h3 className="text-2xl font-bold text-slate-900">{packageName}</h3>
                     <div className="text-right">
                       <span className="text-2xl font-extrabold text-orange-600 block">
                         {pkg.price.toLocaleString(isEn ? 'en-US' : 'vi-VN')} {isEn ? 'VND' : 'đ'}
@@ -117,21 +120,21 @@ export function ServicesPage() {
                   </div>
 
                   <div className="text-sm text-slate-600 mb-6 prose prose-sm max-w-none">
-                    <MarkdownRenderer content={pkg.description || ''} />
+                    <MarkdownRenderer content={packageDescription || ''} />
                   </div>
 
                   {(() => {
                     let featureList: string[] = [];
-                    if (pkg.features) {
-                      if (Array.isArray(pkg.features)) {
-                        featureList = pkg.features;
+                    if (packageFeatures) {
+                      if (Array.isArray(packageFeatures)) {
+                        featureList = packageFeatures;
                       } else {
                         try {
-                          const parsed = JSON.parse(pkg.features);
+                          const parsed = JSON.parse(packageFeatures);
                           if (Array.isArray(parsed)) featureList = parsed;
-                          else featureList = String(pkg.features).split('\n').filter(Boolean);
+                          else featureList = String(packageFeatures).split('\n').filter(Boolean);
                         } catch {
-                          featureList = String(pkg.features).split('\n').filter(Boolean);
+                          featureList = String(packageFeatures).split('\n').filter(Boolean);
                         }
                       }
                     }

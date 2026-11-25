@@ -38,18 +38,21 @@ export interface AccountRecoveryRequest {
 export interface ServicePackage {
   id: number;
   name: string;
+  name_en?: string;
   description: string | null;
+  description_en?: string | null;
   price: number;
   image: string | null;
   duration_minutes: number;
   features: string;
+  features_en?: string;
   display_order: number;
   is_active: number;
   created_at: string;
   updated_at: string;
 }
 
-export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED';
+export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'COMPLETED_UNPAID' | 'CANCELLED';
 export type CompletionResult = 'SUCCESS' | 'FAILED' | 'CANCELLED';
 export type PaymentStatus = 'UNPAID' | 'PAID';
 
@@ -86,9 +89,12 @@ export interface OrderRow extends Order {
   customer_avatar_url?: string | null;
   customer_contact_info?: string | null;
   package_name?: string;
+  package_name_en?: string;
   package_price?: number;
   package_description?: string | null;
+  package_description_en?: string | null;
   package_features?: string | null;
+  package_features_en?: string | null;
   technician_name?: string | null;
   technician_phone?: string | null;
   technician_email?: string | null;
@@ -207,6 +213,7 @@ export interface TechnicianBrief {
   phone?: string;
   bio?: string | null;
   public_profile?: string | null;
+  alias?: string | null;
 }
 
 export interface Settlement {

@@ -12,8 +12,11 @@ export interface SystemSettings {
   technicianSharePercent: number;
   teamSharePercent: number;
   teamName: string;
+  teamNameEn: string;
   university: string;
+  universityEn: string;
   workshopAddress: string;
+  workshopAddressEn: string;
   contactPhone: string;
   contactEmail: string;
   facebookPage: string;
@@ -22,11 +25,16 @@ export interface SystemSettings {
   googleMapEmbedUrl: string;
   googleMapDirectUrl: string;
   workingHoursDisplay: string;
+  workingHoursDisplayEn: string;
   bookingNotice: string;
+  bookingNoticeEn: string;
   warrantyPolicyEnabled: boolean;
   warrantyPolicyDays: string;
+  warrantyPolicyDaysEn: string;
   warrantyPolicyTitle: string;
+  warrantyPolicyTitleEn: string;
   warrantyPolicyContent: string;
+  warrantyPolicyContentEn: string;
   turnstileEnabled: boolean;
   turnstileSiteKey: string;
   turnstileSecret: string;
@@ -35,8 +43,13 @@ export interface SystemSettings {
   telegramChatId: string;
   telegramApiUrl: string;
   aboutMarkdown: string;
+  aboutMarkdownEn: string;
   termsMarkdown: string;
+  termsMarkdownEn: string;
+  privacyMarkdown: string;
+  privacyMarkdownEn: string;
   totpGuideMarkdown: string;
+  totpGuideMarkdownEn: string;
   totpGuideVideoUrl: string;
 }
 
@@ -60,8 +73,11 @@ export function getSystemSettings(): SystemSettings {
     technicianSharePercent: Number(getVal('technician_share_percent', '70')),
     teamSharePercent: Number(getVal('team_share_percent', '30')),
     teamName: getVal('team_name', 'IT Supporter HaUI'),
+    teamNameEn: getVal('team_name_en', getVal('team_name', 'IT Supporter HaUI')),
     university: getVal('university', 'Đại học Công nghiệp Hà Nội'),
+    universityEn: getVal('university_en', getVal('university', 'Đại học Công nghiệp Hà Nội')),
     workshopAddress: getVal('workshop_address', 'Phòng 1603, Tòa A1, Cơ sở 1 - Đại học Công nghiệp Hà Nội'),
+    workshopAddressEn: getVal('workshop_address_en', getVal('workshop_address', 'Phòng 1603, Tòa A1, Cơ sở 1 - Đại học Công nghiệp Hà Nội')),
     contactPhone: getVal('contact_phone', '0337.616.423'),
     contactEmail: getVal('contact_email', 'it.supporter@fit-haui.edu.vn'),
     facebookPage: getVal('facebook_page', 'https://www.facebook.com/itsupporter.haui/'),
@@ -73,17 +89,22 @@ export function getSystemSettings(): SystemSettings {
     ),
     googleMapDirectUrl: getVal('google_map_direct_url', 'https://maps.google.com/?q=21.053724,105.744598'),
     workingHoursDisplay: getVal('working_hours_display', '07:00 - 19:00 (Thứ 2 - Thứ 7)'),
+    workingHoursDisplayEn: getVal('working_hours_display_en', getVal('working_hours_display', '07:00 - 19:00 (Thứ 2 - Thứ 7)')),
     bookingNotice: getVal(
       'booking_notice',
       'Khách hàng đặt lịch trước tối thiểu 4 tiếng, sau đó mang máy tới trực tiếp phòng 1603 Tòa A1 để kỹ thuật viên kiểm tra & bảo dưỡng.'
     ),
+    bookingNoticeEn: getVal('booking_notice_en', getVal('booking_notice', 'Khách hàng đặt lịch trước tối thiểu 4 tiếng, sau đó mang máy tới trực tiếp phòng 1603 Tòa A1 để kỹ thuật viên kiểm tra & bảo dưỡng.')),
     warrantyPolicyEnabled: getVal('warranty_policy_enabled', 'false') === 'true',
     warrantyPolicyDays: getVal('warranty_policy_days', '30 Ngày'),
+    warrantyPolicyDaysEn: getVal('warranty_policy_days_en', getVal('warranty_policy_days', '30 Ngày')),
     warrantyPolicyTitle: getVal('warranty_policy_title', 'Bảo hành hỗ trợ kỹ thuật'),
+    warrantyPolicyTitleEn: getVal('warranty_policy_title_en', getVal('warranty_policy_title', 'Bảo hành hỗ trợ kỹ thuật')),
     warrantyPolicyContent: getVal(
       'warranty_policy_content',
       'Hỗ trợ kỹ thuật và kiểm tra lại miễn phí trong thời gian cam kết nếu máy phát sinh hiện tượng nóng lại hoặc lỗi sau vệ sinh.'
     ),
+    warrantyPolicyContentEn: getVal('warranty_policy_content_en', getVal('warranty_policy_content', 'Hỗ trợ kỹ thuật và kiểm tra lại miễn phí trong thời gian cam kết nếu máy phát sinh hiện tượng nóng lại hoặc lỗi sau vệ sinh.')),
     turnstileEnabled: getVal('turnstile_enabled', String(config.turnstile.enabled)) === 'true',
     turnstileSiteKey: getVal('turnstile_site_key', config.turnstile.siteKey),
     turnstileSecret: getVal('turnstile_secret', config.turnstile.secret),
@@ -113,6 +134,7 @@ Cung cấp dịch vụ IT chất lượng cao, minh bạch, công bằng cho c�
 - Kiểm tra và cài đặt phần mềm
 - Hỗ trợ làm sạch hệ thống, cài đặt phần mềm theo yêu cầu`
     ),
+    aboutMarkdownEn: getVal('about_markdown_en', ''),
     termsMarkdown: getVal(
       'terms_markdown',
       `# Quy định & Cam kết dịch vụ
@@ -141,6 +163,12 @@ Các điều khoản minh bạch, quyền lợi và cam kết phục vụ chuẩ
 - **Quy định thanh toán**: Thu đúng số tiền cuối cùng hiển thị trên đơn, hiển thị mã VietQR cho khách quét và cập nhật trạng thái thanh toán ngay khi có xác nhận.
 - **Quy định trách nhiệm**: Chịu trách nhiệm bảo dưỡng toàn diện, bảo đảm an toàn dữ liệu và phần cứng của khách.`
     ),
+    termsMarkdownEn: getVal('terms_markdown_en', ''),
+    privacyMarkdown: getVal(
+      'privacy_markdown',
+      '# Thông tin cá nhân & quyền riêng tư\n\nThông tin tài khoản, đặt lịch và cứu trợ được sử dụng để xác thực, điều phối dịch vụ và hỗ trợ khách hàng. Cloudflare Turnstile xử lý token xác thực cùng tín hiệu kỹ thuật để ngăn bot và spam.'
+    ),
+    privacyMarkdownEn: getVal('privacy_markdown_en', ''),
     totpGuideMarkdown: getVal(
       'totp_guide_markdown',
       `# Hướng dẫn Cài đặt & Sử dụng Google Authenticator (TOTP)
@@ -174,6 +202,7 @@ Mã 6 chữ số thay đổi mỗi 30 giây dựa trên đồng hồ thời gian
 1. Đảm bảo điện thoại của bạn đang bật chế độ **"Đặt giờ tự động (Set time automatically)"** theo mạng.
 2. Trên Android: Mở Google Authenticator -> bấm menu 3 chấm -> **Cài đặt** -> **Đồng bộ hóa thời gian** -> **Đồng bộ ngay (Sync now)**.`
     ),
+    totpGuideMarkdownEn: getVal('totp_guide_markdown_en', ''),
     totpGuideVideoUrl: getVal('totp_guide_video_url', 'https://www.youtube-nocookie.com/embed/n4sM0fK6n8A?autoplay=1'),
   };
 }

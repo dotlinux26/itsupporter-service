@@ -72,6 +72,8 @@ export function toPublicUser(user: User): PublicUser {
   let bank_info: string | null = null;
   let bank_qr_path: string | null = null;
   if (user.role === 'TECHNICIAN') {
+    userRepo.ensureTechnicianProfile(user.id);
+    userRepo.ensureTechnicianAlias(user.id, user.name);
     const techProf = userRepo.getTechnicianProfile(user.id);
     if (techProf) {
       bio = techProf.bio;

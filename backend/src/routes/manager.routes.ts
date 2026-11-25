@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/auth.js';
 import { getAuthUser } from '../middleware/auth.js';
+import { ensureTechnicianAlias } from '../repositories/userRepository.js';
 import { getDb } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import type { OrderRow } from '../models/index.js';
@@ -26,7 +27,7 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
 
     const revRow = db.prepare(`
       SELECT 
-        COALESCE(SUM(final_amount), 0) AS total_revenue,
+        COALESCE(SUM(CASE WHEN status = 'COMPLETED' AND payment_status = 'PAID' THEN final_amount ELSE 0 END), 0) AS total_revenue,
         COUNT(*) AS total_orders,
         COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS completed_orders,
         COUNT(CASE WHEN status = 'PENDING' THEN 1 END) AS pending_orders,
@@ -56,7 +57,7 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
         SELECT 
           COUNT(*) AS total_jobs,
           COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) AS completed_jobs,
-          COALESCE(SUM(CASE WHEN status = 'COMPLETED' THEN final_amount ELSE 0 END), 0) AS generated_revenue
+          COALESCE(SUM(CASE WHEN status = 'COMPLETED' AND payment_status = 'PAID' THEN final_amount ELSE 0 END), 0) AS generated_revenue
         FROM orders
         WHERE technician_id = ?
       `).get(tech.id) as any;
@@ -94,7 +95,7 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
         WHERE (
           DATE(completed_at, '+7 hours') = ? 
           OR (completed_at IS NULL AND scheduled_date = ?)
-        ) AND status = 'COMPLETED'
+        ) AND status = 'COMPLETED' AND payment_status = 'PAID'
       `).get(dateStr, dateStr) as any;
 
       const rev = Number(row?.revenue || 0);
@@ -117,7 +118,7 @@ router.get('/analytics', authenticate, requireRole('MANAGER', 'ADMIN'), (req, re
         p.name,
         p.price,
         COUNT(o.id) AS order_count,
-        COALESCE(SUM(CASE WHEN o.status = 'COMPLETED' THEN o.final_amount ELSE 0 END), 0) AS total_revenue
+        COALESCE(SUM(CASE WHEN o.status = 'COMPLETED' AND o.payment_status = 'PAID' THEN o.final_amount ELSE 0 END), 0) AS total_revenue
       FROM service_packages p
       LEFT JOIN orders o ON o.package_id = p.id
       GROUP BY p.id
@@ -171,11 +172,15 @@ router.get('/orders', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, 
 router.get('/technicians', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
   try {
     const techs = getDb()
-      .prepare(`SELECT u.id, u.name, u.email, u.phone, u.avatar_url, u.status, u.created_at
+      .prepare(`SELECT u.id, u.name, u.email, u.phone, u.avatar_url, u.status, u.created_at, tp.alias
                 FROM users u
+                LEFT JOIN technician_profiles tp ON tp.user_id = u.id
                WHERE u.role = 'TECHNICIAN'
                ORDER BY u.name ASC`)
-      .all() as Array<{ id: number; name: string; email: string; phone: string; avatar_url: string | null; status: string; created_at: string }>;
+      .all() as Array<{ id: number; name: string; email: string; phone: string; avatar_url: string | null; status: string; created_at: string; alias: string | null }>;
+    for (const tech of techs) {
+      tech.alias = ensureTechnicianAlias(tech.id, tech.name);
+    }
     res.json({ data: techs });
   } catch (err) { next(err); }
 });
@@ -184,10 +189,10 @@ router.get('/technicians', authenticate, requireRole('MANAGER', 'ADMIN'), (req, 
 router.get('/packages', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
   try {
     const pkgs = getDb()
-      .prepare(`SELECT id, name, description, price, image, duration_minutes, features, display_order, is_active, created_at
+      .prepare(`SELECT id, name, name_en, description, description_en, price, image, duration_minutes, features, features_en, display_order, is_active, created_at
                 FROM service_packages
                 ORDER BY display_order ASC, id ASC`)
-      .all() as Array<{ id: number; name: string; description: string; price: number; image: string | null; duration_minutes: number; features: string; display_order: number; is_active: number; created_at: string }>;
+      .all() as Array<{ id: number; name: string; name_en: string | null; description: string | null; description_en: string | null; price: number; image: string | null; duration_minutes: number; features: string; features_en: string | null; display_order: number; is_active: number; created_at: string }>;
     res.json({ data: pkgs });
   } catch (err) { next(err); }
 });
@@ -500,6 +505,9 @@ router.patch('/orders/:id/status', authenticate, requireRole('MANAGER', 'ADMIN')
     const db = getDb();
     const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId) as OrderRow | undefined;
     if (!order) throw new AppError('NOT_FOUND', 'Không tìm thấy đơn hàng.', 404);
+    if (order.status === 'COMPLETED_UNPAID') {
+      throw new AppError('CONFLICT', 'Đơn chờ thanh toán phải được KTV phụ trách xác nhận thu tiền và hoàn tất.', 409);
+    }
 
     const currentUser = getAuthUser(req);
     const oldStatus = order.status;
@@ -579,20 +587,23 @@ router.patch('/orders/:id/status', authenticate, requireRole('MANAGER', 'ADMIN')
 // Manager: POST /packages (create new package)
 router.post('/packages', authenticate, requireRole('MANAGER', 'ADMIN'), (req, res, next) => {
   try {
-    const { name, description, price, duration_minutes, features, is_active } = req.body;
+    const { name, name_en, description, description_en, price, duration_minutes, features, features_en, is_active } = req.body;
     if (!name || price == null) {
       throw new AppError('VALIDATION_ERROR', 'Vui lòng điền đầy đủ tên gói và giá.', 400);
     }
     const db = getDb();
     const result = db.prepare(`
-      INSERT INTO service_packages (name, description, price, duration_minutes, features, is_active, display_order)
-      VALUES (?, ?, ?, ?, ?, ?, 99)
+      INSERT INTO service_packages (name, name_en, description, description_en, price, duration_minutes, features, features_en, is_active, display_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 99)
     `).run(
       String(name).trim(),
+      name_en ? String(name_en).trim() : String(name).trim(),
       description ? String(description).trim() : '',
+      description_en ? String(description_en).trim() : (description ? String(description).trim() : ''),
       Number(price),
       Number(duration_minutes) || 60,
       features ? String(features).trim() : '',
+      features_en ? String(features_en).trim() : (features ? String(features).trim() : ''),
       is_active !== undefined ? (is_active ? 1 : 0) : 1
     );
     const newPkg = db.prepare('SELECT * FROM service_packages WHERE id = ?').get(Number(result.lastInsertRowid));
@@ -609,17 +620,20 @@ router.patch('/packages/:id', authenticate, requireRole('MANAGER', 'ADMIN'), (re
     if (!current) throw new AppError('NOT_FOUND', 'Không tìm thấy gói dịch vụ.', 404);
 
     const name = req.body.name !== undefined ? String(req.body.name).trim() : current.name;
+    const name_en = req.body.name_en !== undefined ? String(req.body.name_en).trim() : (current.name_en || current.name);
     const description = req.body.description !== undefined ? String(req.body.description).trim() : current.description;
+    const description_en = req.body.description_en !== undefined ? String(req.body.description_en).trim() : (current.description_en || current.description);
     const price = req.body.price !== undefined ? Number(req.body.price) : current.price;
     const duration_minutes = req.body.duration_minutes !== undefined ? Number(req.body.duration_minutes) : current.duration_minutes;
     const features = req.body.features !== undefined ? String(req.body.features).trim() : current.features;
+    const features_en = req.body.features_en !== undefined ? String(req.body.features_en).trim() : (current.features_en || current.features);
     const is_active = req.body.is_active !== undefined ? (req.body.is_active ? 1 : 0) : current.is_active;
 
     db.prepare(`
       UPDATE service_packages 
-      SET name = ?, description = ?, price = ?, duration_minutes = ?, features = ?, is_active = ?
+      SET name = ?, name_en = ?, description = ?, description_en = ?, price = ?, duration_minutes = ?, features = ?, features_en = ?, is_active = ?
       WHERE id = ?
-    `).run(name, description, price, duration_minutes, features, is_active, id);
+    `).run(name, name_en, description, description_en, price, duration_minutes, features, features_en, is_active, id);
 
     const updated = db.prepare('SELECT * FROM service_packages WHERE id = ?').get(id);
     res.json({ data: updated, message: 'Cập nhật gói dịch vụ thành công.' });

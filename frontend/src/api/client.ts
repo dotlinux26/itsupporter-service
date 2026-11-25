@@ -90,8 +90,8 @@ api.interceptors.response.use(
 export const authApi = {
   login: (email: string, password: string, rememberMe?: boolean) =>
     api.post('/auth/login', { email, password, rememberMe }),
-  register: (name: string, email: string, password: string, phone?: string) =>
-    api.post('/auth/register', { name, email, password, phone }),
+  register: (name: string, email: string, password: string, phone: string | undefined, termsAccepted: boolean) =>
+    api.post('/auth/register', { name, email, password, phone, termsAccepted }),
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
   refresh: () => api.post('/auth/refresh'),
@@ -132,8 +132,14 @@ export const authApi = {
     api.post('/auth/2fa/confirm', { token, secret, backupCodes }),
   disable2FA: (tokenOrPassword: string) =>
     api.post('/auth/2fa/disable', { tokenOrPassword }),
-  forgotPasswordTotp: (identifier: string, code: string, newPassword: string) =>
-    api.post('/auth/forgot-password/totp', { identifier, code, newPassword }),
+  forgotPasswordTotp: (identifier: string, code: string, newPassword: string, turnstileToken?: string) =>
+    api.post('/auth/forgot-password/totp', {
+      identifier,
+      code,
+      newPassword,
+      turnstileToken,
+      'cf-turnstile-response': turnstileToken,
+    }),
 };
 
 
@@ -208,7 +214,7 @@ export const technicianApi = {
     api.post(`/technician/orders/${id}/sale-program`, { programId }),
   redeemVoucher: (id: number, code: string) =>
     api.post(`/technician/orders/${id}/redeem-voucher`, { code }),
-  payment: (id: number, data: { payment_status: 'PAID' | 'UNPAID'; unpaid_reason?: string | null; payment_qr_path?: string | null }) =>
+  payment: (id: number, data: { payment_status: 'PAID' | 'UNPAID'; unpaid_reason?: string | null; payment_qr_path?: string | null; note?: string | null }) =>
     api.post(`/technician/orders/${id}/payment`, data),
   complete: (id: number, data: {
     completion_result: 'SUCCESS' | 'FAILED' | 'CANCELLED';
@@ -234,18 +240,24 @@ export const managerApi = {
   packages: () => api.get('/manager/packages'),
   createPackage: (data: {
     name: string;
+    name_en?: string;
     description?: string;
+    description_en?: string;
     price: number;
     duration_minutes?: number;
     features?: string;
+    features_en?: string;
     is_active?: boolean | number;
   }) => api.post('/manager/packages', data),
   updatePackage: (id: number, data: Partial<{
     name: string;
+    name_en: string;
     description: string;
+    description_en: string;
     price: number;
     duration_minutes: number;
     features: string;
+    features_en: string;
     is_active: boolean | number;
   }>) => api.patch(`/manager/packages/${id}`, data),
   deletePackage: (id: number) => api.delete(`/manager/packages/${id}`),
@@ -279,14 +291,23 @@ export const voucherApi = {
   createProgram: (data: {
     code: string;
     name: string;
+    name_en?: string;
     description?: string;
+    description_en?: string;
     discount_type: 'percent' | 'fixed';
     discount_value: number;
     max_usage?: number;
     valid_from?: string;
     valid_to?: string;
   }) => api.post('/vouchers/programs', data),
-  updateProgram: (id: number, data: Partial<{ name: string; description: string; is_active: number; valid_to: string }>) =>
+  updateProgram: (id: number, data: Partial<{
+    name: string;
+    name_en: string;
+    description: string;
+    description_en: string;
+    is_active: number;
+    valid_to: string;
+  }>) =>
     api.patch(`/vouchers/programs/${id}`, data),
   deleteProgram: (id: number) => api.delete(`/vouchers/programs/${id}`),
   generateCodes: (programId: number, count: number, customerId?: number) =>
@@ -353,6 +374,8 @@ export const publicApi = {
     contactPhone: string;
     contactEmail?: string;
     reason: string;
+    turnstileToken?: string;
+    'cf-turnstile-response'?: string;
   }) => api.post('/public/recovery-requests', data),
   health: () => api.get('/health'),
   activeQr: () => api.get('/admin/qr/active'),

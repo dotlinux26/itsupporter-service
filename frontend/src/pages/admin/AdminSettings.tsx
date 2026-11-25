@@ -95,6 +95,17 @@ Mã 6 chữ số thay đổi mỗi 30 giây dựa trên đồng hồ thời gian
 1. Đảm bảo điện thoại của bạn đang bật chế độ **"Đặt giờ tự động (Set time automatically)"** theo mạng.
 2. Trên Android: Mở Google Authenticator -> bấm menu 3 chấm -> **Cài đặt** -> **Đồng bộ hóa thời gian** -> **Đồng bộ ngay (Sync now)**.`;
 
+const DEFAULT_PRIVACY_MD = `# Thông tin cá nhân & quyền riêng tư
+
+Thông tin tài khoản, đặt lịch và cứu trợ được sử dụng để xác thực, điều phối dịch vụ và hỗ trợ khách hàng.
+
+Cloudflare Turnstile được dùng để ngăn bot và spam. Cloudflare xử lý token xác thực cùng tín hiệu kỹ thuật của trình duyệt/địa chỉ IP.`;
+const DEFAULT_PRIVACY_MD_EN = `# Personal Information & Privacy
+
+Account, booking, and recovery information is used to authenticate users, coordinate services, and provide customer support.
+
+Cloudflare Turnstile helps prevent bots and spam. Cloudflare processes a verification token and technical browser/IP signals.`;
+
 export function AdminSettings() {
   const { t, i18n } = useTranslation();
   const isEn = i18n.language?.startsWith('en');
@@ -104,7 +115,8 @@ export function AdminSettings() {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Markdown editor state
-  const [markdownTab, setMarkdownTab] = useState<'about' | 'terms' | 'totpGuide'>('about');
+  const [markdownTab, setMarkdownTab] = useState<'about' | 'terms' | 'privacy' | 'totpGuide'>('about');
+  const [markdownLanguage, setMarkdownLanguage] = useState<'vi' | 'en'>('vi');
 
   // Telegram test & detect state
   const [testingTelegram, setTestingTelegram] = useState(false);
@@ -207,6 +219,24 @@ export function AdminSettings() {
       </div>
     );
   }
+
+  const markdownKeyPrefix = markdownTab === 'about'
+    ? 'aboutMarkdown'
+    : markdownTab === 'terms'
+    ? 'termsMarkdown'
+    : markdownTab === 'privacy'
+    ? 'privacyMarkdown'
+    : 'totpGuideMarkdown';
+  const markdownField = `${markdownKeyPrefix}${markdownLanguage === 'en' ? 'En' : ''}`;
+  const markdownFallback = markdownLanguage === 'en'
+    ? (markdownTab === 'privacy' ? DEFAULT_PRIVACY_MD_EN : '')
+    : markdownTab === 'privacy'
+    ? DEFAULT_PRIVACY_MD
+    : markdownTab === 'about'
+    ? DEFAULT_ABOUT_MD
+    : markdownTab === 'terms'
+    ? DEFAULT_TERMS_MD
+    : DEFAULT_TOTP_GUIDE_MD;
 
   return (
     <div className="container py-5 sm:py-8 md:py-12 max-w-4xl mx-auto">
@@ -584,6 +614,24 @@ export function AdminSettings() {
           </div>
         </div>
 
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs space-y-5">
+          <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 text-slate-900 font-bold text-base">
+            <Building2 className="w-5 h-5 text-blue-600" />
+            <span>English public content</span>
+          </div>
+          <p className="text-xs text-slate-500">Translations are used when visitors select English. If a translation is empty, the Vietnamese value remains as a safe fallback.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <input aria-label="Team name (English)" value={settings.teamNameEn ?? settings.teamName ?? 'IT Supporter HaUI'} onChange={e => setSettings((prev: any) => ({ ...prev, teamNameEn: e.target.value }))} className="input w-full" placeholder="Team name (English)" />
+            <input aria-label="University (English)" value={settings.universityEn ?? settings.university ?? 'Hanoi University of Industry'} onChange={e => setSettings((prev: any) => ({ ...prev, universityEn: e.target.value }))} className="input w-full" placeholder="University (English)" />
+            <input aria-label="Workshop address (English)" value={settings.workshopAddressEn ?? settings.workshopAddress ?? ''} onChange={e => setSettings((prev: any) => ({ ...prev, workshopAddressEn: e.target.value }))} className="input w-full md:col-span-2" placeholder="Workshop address (English)" />
+            <input aria-label="Working hours (English)" value={settings.workingHoursDisplayEn ?? settings.workingHoursDisplay ?? ''} onChange={e => setSettings((prev: any) => ({ ...prev, workingHoursDisplayEn: e.target.value }))} className="input w-full" placeholder="Working hours (English)" />
+            <input aria-label="Warranty period (English)" value={settings.warrantyPolicyDaysEn ?? settings.warrantyPolicyDays ?? ''} onChange={e => setSettings((prev: any) => ({ ...prev, warrantyPolicyDaysEn: e.target.value }))} className="input w-full" placeholder="Warranty period (English)" />
+            <textarea aria-label="Booking notice (English)" rows={2} value={settings.bookingNoticeEn ?? settings.bookingNotice ?? ''} onChange={e => setSettings((prev: any) => ({ ...prev, bookingNoticeEn: e.target.value }))} className="input w-full md:col-span-2" placeholder="Booking notice (English)" />
+            <input aria-label="Warranty policy title (English)" value={settings.warrantyPolicyTitleEn ?? settings.warrantyPolicyTitle ?? ''} onChange={e => setSettings((prev: any) => ({ ...prev, warrantyPolicyTitleEn: e.target.value }))} className="input w-full md:col-span-2" placeholder="Warranty policy title (English)" />
+            <textarea aria-label="Warranty policy content (English)" rows={3} value={settings.warrantyPolicyContentEn ?? settings.warrantyPolicyContent ?? ''} onChange={e => setSettings((prev: any) => ({ ...prev, warrantyPolicyContentEn: e.target.value }))} className="input w-full md:col-span-2" placeholder="Warranty policy details (English)" />
+          </div>
+        </div>
+
         {/* SECTION 6: BẢO MẬT & CHỐNG SPAM BOT (CLOUDFLARE TURNSTILE) */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs space-y-5">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -792,6 +840,17 @@ export function AdminSettings() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setMarkdownTab('privacy')}
+                  className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                    markdownTab === 'privacy'
+                      ? 'bg-white text-orange-600 shadow-2xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {isEn ? 'Privacy Policy' : 'Quyền riêng tư'}
+                </button>
+                <button
+                  type="button"
                   onClick={() => setMarkdownTab('totpGuide')}
                   className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
                     markdownTab === 'totpGuide'
@@ -800,6 +859,22 @@ export function AdminSettings() {
                   }`}
                 >
                   {isEn ? 'TOTP Guide' : 'Hướng dẫn Authenticator'}
+                </button>
+              </div>
+              <div className="bg-slate-100 p-1 rounded-xl flex items-center text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setMarkdownLanguage('vi')}
+                  className={`px-3 py-1.5 rounded-lg transition ${markdownLanguage === 'vi' ? 'bg-white text-orange-600 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  VI
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMarkdownLanguage('en')}
+                  className={`px-3 py-1.5 rounded-lg transition ${markdownLanguage === 'en' ? 'bg-white text-orange-600 shadow-2xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}
+                >
+                  EN
                 </button>
               </div>
             </div>
@@ -814,6 +889,10 @@ export function AdminSettings() {
               ? (isEn
                   ? 'Editing rules & commitments rendered on the /terms page. Standardize rights and obligations between technicians and customers.'
                   : 'Nội dung hiển thị trên trang Quy định & Cam kết dịch vụ (/terms). Chuẩn hóa quyền lợi và trách nhiệm.')
+              : markdownTab === 'privacy'
+              ? (isEn
+                  ? 'Editing the Privacy Policy rendered on the /privacy page.'
+                  : 'Nội dung hiển thị trên trang Quyền riêng tư (/privacy), gồm dữ liệu được thu thập và mục đích sử dụng.')
               : (isEn
                   ? 'Editing TOTP Google Authenticator instructions shown in public modal & user onboarding guide.'
                   : 'Nội dung hướng dẫn cài đặt Google Authenticator / TOTP hiển thị trong Modal hướng dẫn và bảng trợ giúp.')}
@@ -852,35 +931,13 @@ export function AdminSettings() {
           {/* Editor / Preview Area */}
           <div className="pt-1">
             <MarkdownEditorWithUpload
-              value={
-                markdownTab === 'about'
-                  ? (settings.aboutMarkdown ?? DEFAULT_ABOUT_MD)
-                  : markdownTab === 'terms'
-                  ? (settings.termsMarkdown ?? DEFAULT_TERMS_MD)
-                  : (settings.totpGuideMarkdown ?? DEFAULT_TOTP_GUIDE_MD)
-              }
+              value={settings[markdownField] ?? markdownFallback}
               onChange={(val) => {
-                if (markdownTab === 'about') {
-                  setSettings((prev: any) => ({ ...prev, aboutMarkdown: val }));
-                } else if (markdownTab === 'terms') {
-                  setSettings((prev: any) => ({ ...prev, termsMarkdown: val }));
-                } else {
-                  setSettings((prev: any) => ({ ...prev, totpGuideMarkdown: val }));
-                }
+                setSettings((prev: any) => ({ ...prev, [markdownField]: val }));
               }}
               onRestoreDefault={() => {
-                if (markdownTab === 'about') {
-                  if (window.confirm(isEn ? 'Reset About Page content to system default?' : 'Khôi phục nội dung trang Về chúng tôi về mặc định ban đầu?')) {
-                    setSettings((prev: any) => ({ ...prev, aboutMarkdown: DEFAULT_ABOUT_MD }));
-                  }
-                } else if (markdownTab === 'terms') {
-                  if (window.confirm(isEn ? 'Reset Terms Page content to system default?' : 'Khôi phục nội dung trang Điều khoản dịch vụ về mặc định ban đầu?')) {
-                    setSettings((prev: any) => ({ ...prev, termsMarkdown: DEFAULT_TERMS_MD }));
-                  }
-                } else {
-                  if (window.confirm(isEn ? 'Reset TOTP Guide content to system default?' : 'Khôi phục tài liệu hướng dẫn Authenticator về mặc định ban đầu?')) {
-                    setSettings((prev: any) => ({ ...prev, totpGuideMarkdown: DEFAULT_TOTP_GUIDE_MD }));
-                  }
+                if (window.confirm(isEn ? 'Reset this page and language to the system default?' : 'Khôi phục trang và ngôn ngữ này về mặc định?')) {
+                  setSettings((prev: any) => ({ ...prev, [markdownField]: markdownFallback }));
                 }
               }}
               minHeight="420px"

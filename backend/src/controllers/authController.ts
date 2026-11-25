@@ -16,6 +16,7 @@ import { updateUserProfile, findUserById, updateUserPassword, updateTechnicianPr
 import { hashPassword, verifyPassword } from '../utils/password.js';
 import { BadRequestError, NotFoundError, ConflictError } from '../utils/AppError.js';
 import { publicFilePath } from '../utils/upload.js';
+import { verifyTurnstile } from '../services/turnstileService.js';
 
 const isProd = config.isProd;
 
@@ -58,7 +59,7 @@ export const registerController = asyncHandler(async (req, res) => {
     actorEmail: result.user.email,
     action: 'REGISTER',
     ip: req.ip,
-    metadata: { lang },
+    metadata: { lang, termsAccepted: body.termsAccepted, termsAcceptedAt: new Date().toISOString() },
   });
 
   setAuthCookies(res, result.accessToken, result.refreshToken);
@@ -148,6 +149,15 @@ export const disable2FAController = asyncHandler(async (req, res) => {
 
 
 export const forgotPasswordTotpController = asyncHandler(async (req, res) => {
+  const turnstile = await verifyTurnstile(
+    req.body.turnstileToken || req.body['cf-turnstile-response'],
+    req.ip,
+    'booking'
+  );
+  if (!turnstile.success) {
+    throw new BadRequestError(turnstile.error || 'Xác thực Turnstile không thành công.');
+  }
+
   const { identifier, code, newPassword } = req.body;
   if (!identifier || !code || !newPassword) {
     throw new BadRequestError('Vui lòng điền đầy đủ thông tin: Tài khoản/Email, Mã xác thực và Mật khẩu mới.');

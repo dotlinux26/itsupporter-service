@@ -56,11 +56,14 @@ export function toPublicTechnicianDTO(
 export interface PublicPackageDTO {
   id: number;
   name: string;
+  name_en?: string;
   description: string | null;
+  description_en?: string | null;
   price: number;
   image: string | null;
   duration_minutes: number;
   features: string[];
+  features_en?: string[];
   display_order: number;
 }
 
@@ -74,11 +77,20 @@ export function toPublicPackageDTO(pkg: ServicePackage): PublicPackageDTO {
   return {
     id: pkg.id,
     name: pkg.name,
+    name_en: pkg.name_en || pkg.name,
     description: pkg.description,
+    description_en: pkg.description_en || pkg.description,
     price: pkg.price,
     image: pkg.image,
     duration_minutes: pkg.duration_minutes,
     features,
+    features_en: (() => {
+      try {
+        return JSON.parse(pkg.features_en || pkg.features || '[]');
+      } catch {
+        return features;
+      }
+    })(),
     display_order: pkg.display_order,
   };
 }

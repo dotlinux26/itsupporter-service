@@ -22,10 +22,13 @@ export function ManagerPackages() {
 
   // Form state
   const [name, setName] = useState('');
+  const [nameEn, setNameEn] = useState('');
   const [description, setDescription] = useState('');
+  const [descriptionEn, setDescriptionEn] = useState('');
   const [price, setPrice] = useState<number | ''>('');
   const [durationMinutes, setDurationMinutes] = useState<number | ''>(60);
   const [features, setFeatures] = useState('');
+  const [featuresEn, setFeaturesEn] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -56,10 +59,13 @@ export function ManagerPackages() {
   const openCreateModal = () => {
     setEditingPkg(null);
     setName('');
+    setNameEn('');
     setDescription('');
+    setDescriptionEn('');
     setPrice('');
     setDurationMinutes(60);
     setFeatures('');
+    setFeaturesEn('');
     setIsActive(true);
     setModalOpen(true);
   };
@@ -67,10 +73,13 @@ export function ManagerPackages() {
   const openEditModal = (pkg: any) => {
     setEditingPkg(pkg);
     setName(pkg.name);
+    setNameEn(pkg.name_en || pkg.name);
     setDescription(pkg.description || '');
+    setDescriptionEn(pkg.description_en || pkg.description || '');
     setPrice(pkg.price);
     setDurationMinutes(pkg.duration_minutes || 60);
     setFeatures(pkg.features || '');
+    setFeaturesEn(pkg.features_en || pkg.features || '');
     setIsActive(!!pkg.is_active);
     setModalOpen(true);
   };
@@ -84,20 +93,26 @@ export function ManagerPackages() {
       if (editingPkg) {
         await managerApi.updatePackage(editingPkg.id, {
           name: name.trim(),
+          name_en: nameEn.trim() || name.trim(),
           description: description.trim(),
+          description_en: descriptionEn.trim() || description.trim(),
           price: Number(price),
           duration_minutes: Number(durationMinutes) || 60,
           features: features.trim(),
+          features_en: featuresEn.trim() || features.trim(),
           is_active: isActive ? 1 : 0,
         });
         showFeedback('success', isEn ? `Updated package "${name}".` : `Đã cập nhật gói "${name}".`);
       } else {
         await managerApi.createPackage({
           name: name.trim(),
+          name_en: nameEn.trim() || name.trim(),
           description: description.trim(),
+          description_en: descriptionEn.trim() || description.trim(),
           price: Number(price),
           duration_minutes: Number(durationMinutes) || 60,
           features: features.trim(),
+          features_en: featuresEn.trim() || features.trim(),
           is_active: isActive ? 1 : 0,
         });
         showFeedback('success', isEn ? `Created new service package.` : `Đã tạo gói dịch vụ mới.`);
@@ -201,7 +216,7 @@ export function ManagerPackages() {
                     <span className="text-[10px] font-bold uppercase tracking-wider text-primary block">
                       {isEn ? `Package #${pkg.id}` : `Gói #${pkg.id}`}
                     </span>
-                    <h3 className="font-bold text-lg text-gray-900">{pkg.name}</h3>
+                    <h3 className="font-bold text-lg text-gray-900">{isEn ? pkg.name_en || pkg.name : pkg.name}</h3>
                   </div>
                   <button
                     type="button"
@@ -217,13 +232,13 @@ export function ManagerPackages() {
                 </div>
 
                 <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">
-                  {pkg.description || (isEn ? 'No short description...' : 'Chưa có mô tả ngắn...')}
+                  {(isEn ? pkg.description_en || pkg.description : pkg.description) || (isEn ? 'No short description...' : 'Chưa có mô tả ngắn...')}
                 </p>
 
                 {/* Features list */}
-                {pkg.features && (
+                {(isEn ? pkg.features_en || pkg.features : pkg.features) && (
                   <ul className="space-y-1.5 pt-2 border-t border-gray-100 text-xs text-gray-700">
-                    {pkg.features.split('\n').map((feature: string, i: number) => (
+                    {(isEn ? pkg.features_en || pkg.features : pkg.features).split('\n').map((feature: string, i: number) => (
                       <li key={i} className="flex items-start gap-2">
                         <span className="text-emerald-500 font-bold">✓</span>
                         <span className="line-clamp-1">{feature}</span>
@@ -292,6 +307,12 @@ export function ManagerPackages() {
                   className="input text-sm"
                 />
               </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  {isEn ? 'Package name (English)' : 'Tên gói (English)'}
+                </label>
+                <input type="text" value={nameEn} onChange={(e) => setNameEn(e.target.value)} className="input text-sm" placeholder="English package name" />
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -337,6 +358,13 @@ export function ManagerPackages() {
                   className="input text-sm resize-none"
                   placeholder={isEn ? "Brief service summary for customers..." : "Mô tả tóm tắt dịch vụ cho khách hàng..."}
                 />
+                <textarea
+                  value={descriptionEn}
+                  onChange={(e) => setDescriptionEn(e.target.value)}
+                  rows={2}
+                  className="input text-sm resize-none mt-2"
+                  placeholder="Short description (English)"
+                />
               </div>
 
               <div>
@@ -349,6 +377,13 @@ export function ManagerPackages() {
                   rows={4}
                   className="input text-xs font-mono leading-relaxed"
                   placeholder={isEn ? "Deep cleaning fan & exhaust vents\nHigh-grade thermal repaste\nCPU/GPU thermal stress test\n3-month paste warranty" : `Vệ sinh sạch quạt & khe tản nhiệt\nTra keo tản nhiệt chuyên dụng\nKiểm tra nhiệt độ CPU/GPU trước & sau\nBảo hành keo 3 tháng`}
+                />
+                <textarea
+                  value={featuresEn}
+                  onChange={(e) => setFeaturesEn(e.target.value)}
+                  rows={4}
+                  className="input text-xs font-mono leading-relaxed mt-2"
+                  placeholder="Features (English, one per line)"
                 />
               </div>
 

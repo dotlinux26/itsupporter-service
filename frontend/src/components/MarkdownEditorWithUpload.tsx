@@ -335,16 +335,16 @@ export const MarkdownEditorWithUpload: React.FC<MarkdownEditorWithUploadProps> =
         <div
           className={`${
             viewMode === 'edit' ? 'hidden' : viewMode === 'split' ? 'block' : 'col-span-2'
-          } p-4 bg-slate-950/50 overflow-y-auto max-h-[600px]`}
+          } p-4 bg-white overflow-y-auto max-h-[600px]`}
           style={{ minHeight }}
         >
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 flex items-center gap-1.5 border-b border-slate-200 pb-1.5">
             <Eye className="w-3 h-3 text-orange-400" /> Xem trước kết quả (Live Preview)
           </div>
           {value ? (
-            <MarkdownRenderer content={value} className="text-slate-200" />
+            <MarkdownRenderer content={value} className="text-slate-800" />
           ) : (
-            <p className="text-xs text-slate-600 italic">Chưa có nội dung xem trước.</p>
+            <p className="text-xs text-slate-500 italic">Chưa có nội dung xem trước.</p>
           )}
         </div>
       </div>

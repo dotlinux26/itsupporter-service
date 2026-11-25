@@ -12,9 +12,10 @@ import { generateAvatarSvg } from '../utils/avatar.js';
 import logger from '../utils/logger.js';
 import { imageUpload } from '../utils/upload.js';
 import { AppError } from '../utils/AppError.js';
-import { createRecoveryRequest, findUserByIdentifier } from '../repositories/userRepository.js';
+import { createRecoveryRequest, ensureTechnicianAlias, findUserByIdentifier } from '../repositories/userRepository.js';
 import { notifyAccountRecoveryRequest } from '../services/telegramService.js';
 import { accountRecoveryRateLimiter } from '../middleware/rateLimit.js';
+import { verifyTurnstile } from '../services/turnstileService.js';
 
 const router = Router();
 
@@ -42,8 +43,11 @@ router.get('/info', (_req, res, next) => {
     res.json({
       data: {
         team_name: settings.teamName,
+        team_name_en: settings.teamNameEn || settings.teamName,
         university: settings.university,
+        university_en: settings.universityEn || settings.university,
         workshop_address: settings.workshopAddress,
+        workshop_address_en: settings.workshopAddressEn || settings.workshopAddress,
         contact_phone: settings.contactPhone,
         email: settings.contactEmail,
         facebook_page: settings.facebookPage,
@@ -52,11 +56,16 @@ router.get('/info', (_req, res, next) => {
         google_map_embed_url: settings.googleMapEmbedUrl,
         google_map_direct_url: settings.googleMapDirectUrl,
         working_hours_display: settings.workingHoursDisplay,
+        working_hours_display_en: settings.workingHoursDisplayEn || settings.workingHoursDisplay,
         booking_notice: settings.bookingNotice,
+        booking_notice_en: settings.bookingNoticeEn || settings.bookingNotice,
         warranty_policy_enabled: settings.warrantyPolicyEnabled,
         warranty_policy_days: settings.warrantyPolicyDays,
+        warranty_policy_days_en: settings.warrantyPolicyDaysEn || settings.warrantyPolicyDays,
         warranty_policy_title: settings.warrantyPolicyTitle,
+        warranty_policy_title_en: settings.warrantyPolicyTitleEn || settings.warrantyPolicyTitle,
         warranty_policy_content: settings.warrantyPolicyContent,
+        warranty_policy_content_en: settings.warrantyPolicyContentEn || settings.warrantyPolicyContent,
         late_penalty_minutes: settings.latePenaltyMinutes,
         late_penalty_percent: settings.latePenaltyPercent,
         free_service_after_minutes: settings.freeServiceAfterMinutes,
@@ -96,10 +105,15 @@ router.get('/info', (_req, res, next) => {
         server_timestamp: Date.now(),
         timezone: TIME_ZONE,
         about_markdown: settings.aboutMarkdown,
+        about_markdown_en: settings.aboutMarkdownEn || settings.aboutMarkdown,
         aboutMarkdown: settings.aboutMarkdown,
         terms_markdown: settings.termsMarkdown,
+        terms_markdown_en: settings.termsMarkdownEn || settings.termsMarkdown,
         termsMarkdown: settings.termsMarkdown,
+        privacy_markdown: settings.privacyMarkdown,
+        privacy_markdown_en: settings.privacyMarkdownEn || settings.privacyMarkdown,
         totp_guide_markdown: settings.totpGuideMarkdown,
+        totp_guide_markdown_en: settings.totpGuideMarkdownEn || settings.totpGuideMarkdown,
         totpGuideMarkdown: settings.totpGuideMarkdown,
         totp_guide_video_url: settings.totpGuideVideoUrl,
         totpGuideVideoUrl: settings.totpGuideVideoUrl,
@@ -117,7 +131,7 @@ router.get('/packages', (_req, res, next) => {
     const db = getDb();
     const packages = db
       .prepare(`
-        SELECT id, name, description, price, duration_minutes, features, display_order, is_active, image
+        SELECT id, name, name_en, description, description_en, price, duration_minutes, features, features_en, display_order, is_active, image
         FROM service_packages
         WHERE is_active = 1
         ORDER BY display_order ASC, id ASC
@@ -205,12 +219,18 @@ router.get('/technicians', (req, res, next) => {
           GROUP BY u.id
           ORDER BY u.name ASC
         `)
-        .all();
+        .all() as Array<{ id: number; name: string; alias: string | null; [key: string]: unknown }>;
+      for (const tech of allTechs) {
+        tech.alias = ensureTechnicianAlias(tech.id, tech.name);
+      }
       res.json({ data: allTechs });
       return;
     }
 
-    const availableTechs = getAvailableTechnicians(date, start);
+    const availableTechs = getAvailableTechnicians(date, start).map((tech) => ({
+      ...tech,
+      alias: ensureTechnicianAlias(tech.id, tech.name),
+    }));
     res.json({ data: availableTechs });
   } catch (err) {
     next(err);
@@ -595,6 +615,15 @@ function assertSafePlainText(value: string | undefined, fieldLabel: string, isEm
 // POST /api/public/recovery-requests - Submit helpdesk account recovery request
 router.post('/recovery-requests', accountRecoveryRateLimiter, async (req, res, next) => {
   try {
+    const turnstile = await verifyTurnstile(
+      req.body.turnstileToken || req.body['cf-turnstile-response'],
+      req.ip,
+      'booking'
+    );
+    if (!turnstile.success) {
+      throw new AppError('VALIDATION_ERROR', turnstile.error || 'Xác thực Turnstile không thành công.', 400);
+    }
+
     const { usernameOrEmail, fullName, contactPhone, contactEmail, reason } = req.body;
 
     if (!usernameOrEmail?.trim() || !fullName?.trim() || !contactPhone?.trim() || !reason?.trim()) {

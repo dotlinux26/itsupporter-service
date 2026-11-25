@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { managerApi, adminApi } from '../../api/client';
 import {
   Wrench,
@@ -11,6 +12,7 @@ import {
   Mail,
   UserX,
   Calendar,
+  ExternalLink,
 } from 'lucide-react';
 import { Avatar } from '../../components/Avatar';
 
@@ -220,6 +222,15 @@ export function ManagerTechnicians() {
                     <Mail className="w-3.5 h-3.5 text-gray-400" />
                     <span className="font-mono text-gray-800">{tech.email}</span>
                   </div>
+                  <Link
+                    to={`/ktv/${tech.alias || tech.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+                  >
+                    {isEn ? 'View public profile' : 'Xem hồ sơ cá nhân'}
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </Link>
                   {tech.phone && (
                     <div className="flex items-center gap-2">
                       <Phone className="w-3.5 h-3.5 text-gray-400" />

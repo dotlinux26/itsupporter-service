@@ -4,6 +4,9 @@ import { AppError } from '../utils/AppError.js';
 
 interface VoucherWithProgram extends Voucher {
   program_name: string;
+  program_name_en: string;
+  description: string | null;
+  description_en: string | null;
   program_code: string;
   discount_type: 'percent' | 'fixed';
   discount_value: number;
@@ -27,7 +30,8 @@ export function findVoucherById(id: number): Voucher | undefined {
 
 export function findVoucherByCode(code: string): (Voucher & { program: VoucherProgram }) | undefined {
   return getDb().prepare(`
-    SELECT v.*, vp.name as program_name, vp.code as program_code, vp.discount_type, vp.discount_value
+    SELECT v.*, vp.name as program_name, vp.name_en as program_name_en, vp.description, vp.description_en,
+           vp.code as program_code, vp.discount_type, vp.discount_value
     FROM vouchers v
     JOIN voucher_programs vp ON vp.id = v.program_id
     WHERE v.code = ?
@@ -36,7 +40,8 @@ export function findVoucherByCode(code: string): (Voucher & { program: VoucherPr
 
 export function findVouchersByCustomer(customerId: number): Voucher[] {
   return getDb().prepare(`
-    SELECT v.*, vp.name as program_name, vp.code as program_code, vp.discount_type, vp.discount_value
+    SELECT v.*, vp.name as program_name, vp.name_en as program_name_en, vp.description, vp.description_en,
+           vp.code as program_code, vp.discount_type, vp.discount_value
     FROM vouchers v
     JOIN voucher_programs vp ON vp.id = v.program_id
     WHERE v.customer_id = ?
@@ -46,7 +51,8 @@ export function findVouchersByCustomer(customerId: number): Voucher[] {
 
 export function findVouchersByTechnician(technicianId: number): Voucher[] {
   return getDb().prepare(`
-    SELECT v.*, vp.name as program_name, vp.code as program_code, vp.discount_type, vp.discount_value
+    SELECT v.*, vp.name as program_name, vp.name_en as program_name_en, vp.description, vp.description_en,
+           vp.code as program_code, vp.discount_type, vp.discount_value
     FROM vouchers v
     JOIN voucher_programs vp ON vp.id = v.program_id
     WHERE v.technician_id = ?
@@ -121,7 +127,8 @@ export function updateVoucherStatus(
 
 export function getVoucherWithProgram(code: string): (Voucher & { program: VoucherProgram }) | undefined {
   return getDb().prepare(`
-    SELECT v.*, vp.name as program_name, vp.code as program_code, vp.discount_type, vp.discount_value, vp.max_usage, vp.valid_from, vp.valid_to
+    SELECT v.*, vp.name as program_name, vp.name_en as program_name_en, vp.description, vp.description_en,
+           vp.code as program_code, vp.discount_type, vp.discount_value, vp.max_usage, vp.valid_from, vp.valid_to
     FROM vouchers v
     JOIN voucher_programs vp ON vp.id = v.program_id
     WHERE v.code = ?
@@ -149,7 +156,9 @@ export function listVoucherPrograms(): (VoucherProgram & { voucher_count: number
 export function createVoucherProgram(input: {
   code: string;
   name: string;
+  name_en?: string;
   description?: string | null;
+  description_en?: string | null;
   discount_type: 'percent' | 'fixed';
   discount_value: number;
   max_usage: number;
@@ -162,17 +171,19 @@ export function createVoucherProgram(input: {
   const result = db
     .prepare(
       `INSERT INTO voucher_programs (
-         code, name, description, discount_type, discount_value, max_usage,
+         code, name, name_en, description, description_en, discount_type, discount_value, max_usage,
          valid_from, valid_to, is_active, created_by
        ) VALUES (
-         @code, @name, @description, @discount_type, @discount_value, @max_usage,
+         @code, @name, @name_en, @description, @description_en, @discount_type, @discount_value, @max_usage,
          @valid_from, @valid_to, @is_active, @created_by
        )`
     )
     .run({
       code: input.code,
       name: input.name,
+      name_en: input.name_en || input.name,
       description: input.description ?? null,
+      description_en: input.description_en ?? input.description ?? null,
       discount_type: input.discount_type,
       discount_value: input.discount_value,
       max_usage: input.max_usage,
@@ -187,7 +198,9 @@ export function createVoucherProgram(input: {
 export function updateVoucherProgram(id: number, patch: {
   code?: string;
   name?: string;
+  name_en?: string;
   description?: string | null;
+  description_en?: string | null;
   discount_type?: 'percent' | 'fixed';
   discount_value?: number;
   max_usage?: number;
@@ -201,7 +214,9 @@ export function updateVoucherProgram(id: number, patch: {
   
   if (patch.code !== undefined) { fields.push('code = ?'); params.push(patch.code); }
   if (patch.name !== undefined) { fields.push('name = ?'); params.push(patch.name); }
+  if (patch.name_en !== undefined) { fields.push('name_en = ?'); params.push(patch.name_en); }
   if (patch.description !== undefined) { fields.push('description = ?'); params.push(patch.description); }
+  if (patch.description_en !== undefined) { fields.push('description_en = ?'); params.push(patch.description_en); }
   if (patch.discount_type !== undefined) { fields.push('discount_type = ?'); params.push(patch.discount_type); }
   if (patch.discount_value !== undefined) { fields.push('discount_value = ?'); params.push(patch.discount_value); }
   if (patch.max_usage !== undefined) { fields.push('max_usage = ?'); params.push(patch.max_usage); }

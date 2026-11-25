@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   ShieldAlert,
   QrCode,
@@ -29,7 +29,6 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
   onSuccess,
 }) => {
   const { user, refreshUser } = useAuth();
-  const [countdown, setCountdown] = useState<number>(15);
   const [loading, setLoading] = useState<boolean>(true);
   const [setupData, setSetupData] = useState<{
     secret: string;
@@ -44,51 +43,38 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
   const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
   const [hasDownloadedCodes, setHasDownloadedCodes] = useState<boolean>(false);
 
-  const timerRef = useRef<any>(null);
-
-  // Initialize countdown of 15 seconds whenever modal opens
-  useEffect(() => {
-    if (!isOpen) return;
-
-    setCountdown(15);
-    setErrorMsg('');
-    setVerifyCode('');
-    setHasDownloadedCodes(false);
-
-    timerRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    // Fetch setup keys
-    loadSetupData();
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isOpen]);
-
-  const loadSetupData = async () => {
+  const loadSetupData = useCallback(async () => {
     setLoading(true);
     setErrorMsg('');
     try {
       const res = await authApi.setupRecovery();
       const data = res.data?.data || res.data;
       setSetupData(data);
-      // Automatically download backup codes file
-      if (data?.backupCodes && data.backupCodes.length > 0) {
-        triggerDownload(data.backupCodes);
-      }
     } catch (err: any) {
       setErrorMsg(err.response?.data?.message || err.message || 'Không thể tạo khóa TOTP');
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setErrorMsg('');
+    setVerifyCode('');
+    setHasDownloadedCodes(false);
+    loadSetupData();
+  }, [isOpen, loadSetupData]);
+
+  const handleClose = () => {
+    try {
+      if (user?.id) {
+        sessionStorage.setItem(`recovery_prompt_dismissed_${user.id}`, 'true');
+      }
+    } catch (error) {
+      console.error('Failed to save recovery prompt dismissal for this session:', error);
+    }
+    onClose();
   };
 
   const triggerDownload = (codes: string[]) => {
@@ -122,7 +108,7 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
       URL.revokeObjectURL(url);
       setHasDownloadedCodes(true);
     } catch (e) {
-      console.warn('Auto download blocked', e);
+      console.warn('Failed to download recovery codes:', e);
     }
   };
 
@@ -153,7 +139,7 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
         await refreshUser();
       }
       if (onSuccess) onSuccess();
-      onClose();
+      handleClose();
     } catch (err: any) {
       setErrorMsg(
         err.response?.data?.message ||
@@ -195,7 +181,7 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
             <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 sm:gap-3">
               <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0 mt-0.5" />
               <div className="text-xs leading-relaxed text-amber-200">
-                <b>Khuyến cáo an toàn:</b> Hệ thống không sử dụng Email để cấp lại mật khẩu. Bạn bắt buộc cài đặt ứng dụng <b>Google Authenticator</b> để có thể tự khôi phục mật khẩu khi bị quên.
+                <b>Khuyến cáo an toàn:</b> Hệ thống không sử dụng Email để cấp lại mật khẩu. Bạn có thể thiết lập <b>Google Authenticator</b> để tự khôi phục mật khẩu hoặc tạm bỏ qua và cài đặt sau trong Cài đặt.
               </div>
             </div>
 
@@ -275,12 +261,12 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
                       className="self-start sm:self-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs font-semibold transition-colors shrink-0"
                     >
                       {hasDownloadedCodes ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Download className="w-3.5 h-3.5" />}
-                      <span>{hasDownloadedCodes ? 'Đã tải .txt (Tải lại)' : 'Tải file .txt'}</span>
+                      <span>{hasDownloadedCodes ? 'Đã tải .txt (Tải lại)' : 'Tải file mã dự phòng .txt'}</span>
                     </button>
                   </div>
 
                   <p className="text-xs text-slate-400">
-                    File <b className="text-white">itsupporter-recovery-codes.txt</b> đã được tải xuống tự động. Mỗi mã dùng được 1 lần khi không có điện thoại:
+                    Tải và lưu file <b className="text-white">itsupporter-recovery-codes.txt</b> an toàn. Mỗi mã dùng được 1 lần khi không có điện thoại:
                   </p>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 bg-slate-950/80 p-2 sm:p-3 rounded-xl border border-slate-800">
@@ -354,29 +340,18 @@ export const RecoveryPromptModal: React.FC<RecoveryPromptModalProps> = ({
             )}
           </div>
 
-          {/* Footer with 15-second countdown lock button */}
+          {/* Footer */}
           <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 px-4 sm:px-6 py-3.5 sm:py-4 border-t border-slate-800 bg-slate-950/60">
             <div className="text-xs text-slate-500 text-center sm:text-left">
-              {countdown > 0 ? (
-                <span className="flex items-center justify-center sm:justify-start gap-1.5 text-amber-400/90 font-medium">
-                  <Clock className="w-3.5 h-3.5 animate-pulse" /> Nút bỏ qua mở sau {countdown}s
-                </span>
-              ) : (
-                <span className="text-slate-400">Bạn có thể tạm bỏ qua và cài đặt sau trong Cài đặt</span>
-              )}
+              <span className="text-slate-400">Bạn có thể tạm bỏ qua và cài đặt sau trong Cài đặt</span>
             </div>
 
             <button
               type="button"
-              onClick={onClose}
-              disabled={countdown > 0}
-              className={`w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold transition-all text-center whitespace-nowrap shrink-0 ${
-                countdown > 0
-                  ? 'bg-slate-800/50 text-slate-600 border border-slate-800 cursor-not-allowed'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700'
-              }`}
+              onClick={handleClose}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold transition-all text-center whitespace-nowrap shrink-0 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700"
             >
-              {countdown > 0 ? `Bỏ qua sau (${countdown}s)` : 'Để sau (Chưa an toàn)'}
+              Bỏ qua, cài đặt sau
             </button>
           </div>
         </div>

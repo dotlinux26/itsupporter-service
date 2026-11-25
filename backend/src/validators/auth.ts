@@ -5,6 +5,7 @@ export const registerSchema = z.object({
   password: z.string().min(8, 'Mật khẩu phải có ít nhất 8 ký tự.').max(128),
   name: z.string().trim().min(1, 'Vui lòng nhập họ tên.').max(100),
   phone: z.string().trim().max(20).optional(),
+  termsAccepted: z.boolean().refine((accepted) => accepted, 'Vui lòng đồng ý với Điều khoản dịch vụ.'),
 });
 
 export const loginSchema = z.object({
