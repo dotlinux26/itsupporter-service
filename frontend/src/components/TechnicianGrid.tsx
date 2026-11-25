@@ -12,11 +12,7 @@ import {
   ArrowRight,
   Clock,
   Laptop,
-  BookOpen,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
-import { MarkdownRenderer } from './MarkdownRenderer';
 import type { TechnicianBrief } from '@/types';
 
 interface TechnicianGridProps {
@@ -28,7 +24,6 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
   const { t } = useTranslation();
   const [startIndex, setStartIndex] = useState(0);
   const [selectedTech, setSelectedTech] = useState<TechnicianBrief | null>(null);
-  const [isArticleExpanded, setIsArticleExpanded] = useState(false);
 
   const CARDS_PER_VIEW = 4;
 
@@ -123,7 +118,6 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
               key={tech.id}
               onClick={() => {
                 setSelectedTech(tech);
-                setIsArticleExpanded(false);
               }}
               className="bg-white rounded-2xl p-6 text-center border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-orange-400 transition-all group flex flex-col justify-between items-center cursor-pointer relative"
             >
@@ -282,104 +276,6 @@ export function TechnicianGrid({ technicians, loading }: TechnicianGridProps) {
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
-
-              {/* Skills */}
-              <div>
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                  {t('home.techSkillsTitle')}
-                </h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {(() => {
-                    let skills: string[] = [];
-                    try {
-                      if (selectedTech.public_profile) {
-                        const parsed = typeof selectedTech.public_profile === 'string' 
-                          ? JSON.parse(selectedTech.public_profile) 
-                          : selectedTech.public_profile;
-                        skills = parsed.skills || [];
-                      }
-                    } catch {}
-                    if (!skills.length) {
-                      return (
-                        <span className="text-xs text-slate-400 italic">
-                          {t('home.techNoSkills')}
-                        </span>
-                      );
-                    }
-                    return skills.map((s, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2.5 py-1 bg-orange-50 text-orange-800 border border-orange-200/60 rounded-lg text-xs font-medium flex items-center gap-1.5"
-                      >
-                        <Wrench className="w-3 h-3 text-orange-600" />
-                        {s}
-                      </span>
-                    ));
-                  })()}
-                </div>
-              </div>
-
-              {/* Detailed Markdown Article */}
-              {(() => {
-                let markdownContent = '';
-                try {
-                  if (selectedTech.public_profile) {
-                    const parsed = typeof selectedTech.public_profile === 'string'
-                      ? JSON.parse(selectedTech.public_profile)
-                      : selectedTech.public_profile;
-                    if (typeof parsed === 'string') {
-                      markdownContent = parsed;
-                    } else if (parsed && typeof parsed === 'object') {
-                      markdownContent = parsed.article || parsed.markdown || parsed.content || parsed.story || parsed.bio_detail || '';
-                    }
-                  }
-                } catch {
-                  markdownContent = selectedTech.public_profile || '';
-                }
-
-                if (!markdownContent || !markdownContent.trim()) {
-                  return null;
-                }
-
-                const isLongContent = markdownContent.length > 220;
-
-                return (
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                        <BookOpen className="w-3.5 h-3.5 text-orange-500" />
-                        {t('home.techArticleTitle')}
-                      </h4>
-                      {isLongContent && (
-                        <button
-                          type="button"
-                          onClick={() => setIsArticleExpanded(!isArticleExpanded)}
-                          className="text-[11px] font-bold text-orange-600 hover:text-orange-700 inline-flex items-center gap-1 px-2 py-0.5 rounded-md hover:bg-orange-50 transition cursor-pointer"
-                        >
-                          {isArticleExpanded ? (
-                            <>
-                              <span>{t('home.collapse')}</span>
-                              <ChevronUp className="w-3.5 h-3.5" />
-                            </>
-                          ) : (
-                            <>
-                              <span>{t('home.viewMore')}</span>
-                              <ChevronDown className="w-3.5 h-3.5" />
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                    <div 
-                      className={`bg-slate-50/90 p-3.5 rounded-xl border border-slate-200/80 overflow-y-auto text-xs text-slate-700 leading-relaxed transition-all duration-200 ${
-                        isArticleExpanded ? 'max-h-72 shadow-inner' : 'max-h-36'
-                      }`}
-                    >
-                      <MarkdownRenderer content={markdownContent} />
-                    </div>
-                  </div>
-                );
-              })()}
 
               {/* Shift info */}
               <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 text-xs text-slate-600 flex items-center justify-between">
